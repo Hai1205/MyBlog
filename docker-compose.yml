@@ -1,0 +1,185 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: myblog
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - app-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - app-network
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: postgres
+    environment:
+      POSTGRES_DB: myblog
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ai-service:
+    build:
+      context: .
+      dockerfile: backend/ai-service/Dockerfile
+    container_name: ai-service
+    env_file:
+      - backend/ai-service/.env
+    ports:
+      - "8085:8085"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  gateway-service:
+    build:
+      context: .
+      dockerfile: backend/gateway-service/Dockerfile
+    container_name: gateway-service
+    env_file:
+      - backend/gateway-service/.env
+    ports:
+      - "8080:8080"
+    networks:
+      - app-network
+
+  user-service:
+    build:
+      context: .
+      dockerfile: backend/user-service/Dockerfile
+    container_name: user-service
+    env_file:
+      - backend/user-service/.env
+    ports:
+      - "8083:8083"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  auth-service:
+    build:
+      context: .
+      dockerfile: backend/auth-service/Dockerfile
+    container_name: auth-service
+    env_file:
+      - backend/auth-service/.env
+    ports:
+      - "8082:8082"
+    depends_on:
+      - user-service
+    networks:
+      - app-network
+  
+  mail-service:
+    build:
+      context: .
+      dockerfile: backend/mail-service/Dockerfile
+    container_name: mail-service
+    env_file:
+      - backend/mail-service/.env
+    ports:
+      - "8086:8086"
+    networks:
+      - app-network
+
+  blog-service:
+    build:
+      context: .
+      dockerfile: backend/blog-service/Dockerfile
+    container_name: blog-service
+    env_file:
+      - backend/blog-service/.env
+    ports:
+      - "8084:8084"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      user-service:
+        condition: service_started
+    networks:
+      - app-network
+
+  stats-service:
+    build:
+      context: .
+      dockerfile: backend/stats-service/Dockerfile
+    container_name: stats-service
+    env_file:
+      - backend/stats-service/.env
+    ports:
+      - "8087:8087"
+    depends_on:
+      user-service:
+        condition: service_started
+      blog-service:
+        condition: service_started
+    networks:
+      - app-network
+
+  frontend:
+    build:
+      context: frontend/
+      dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_SERVER_URL=http://localhost:8080
+    container_name: frontend
+    env_file:
+      - frontend/.env
+    ports:
+      - "3000:3000"
+    networks:
+      - app-network
+
+volumes:
+  mysql_data:
+  rabbitmq_data:
+  postgres_data:
+
+networks:
+  app-network:
+    driver: bridge

@@ -1,0 +1,62 @@
+{"properties": [
+  {
+    "name": "spring.ai.vertex.ai.gemini.chat.enabled",
+    "type": "java.lang.String",
+    "description": "A description for 'spring.ai.vertex.ai.gemini.chat.enabled'"
+  },
+  {
+    "name": "spring.ai.vertex.ai.gemini.embedding.enabled",
+    "type": "java.lang.String",
+    "description": "A description for 'spring.ai.vertex.ai.gemini.embedding.enabled'"
+  },
+  {
+    "name": "spring.ai.vertex.ai.gemini.embedding.options.model",
+    "type": "java.lang.String",
+    "description": "A description for 'spring.ai.vertex.ai.gemini.embedding.options.model'"
+  },
+  {
+    "name": "rag.chunk-size",
+    "type": "java.lang.String",
+    "description": "A description for 'rag.chunk-size'"
+  },
+  {
+    "name": "rag.chunk-overlap",
+    "type": "java.lang.String",
+    "description": "A description for 'rag.chunk-overlap'"
+  },
+  {
+    "name": "rag.top-k",
+    "type": "java.lang.String",
+    "description": "A description for 'rag.top-k'"
+  },
+  {
+    "name": "feign.httpclient.enabled",
+    "type": "java.lang.String",
+    "description": "A description for 'feign.httpclient.enabled'"
+  },
+  {
+    "name": "feign.httpclient.max-connections",
+    "type": "java.lang.String",
+    "description": "A description for 'feign.httpclient.max-connections'"
+  },
+  {
+    "name": "feign.httpclient.max-connections-per-route",
+    "type": "java.lang.String",
+    "description": "A description for 'feign.httpclient.max-connections-per-route'"
+  },
+  {
+    "name": "feign.httpclient.time-to-live",
+    "type": "java.lang.String",
+    "description": "A description for 'feign.httpclient.time-to-live'"
+  },
+  {
+    "name": "feign.httpclient.connection-timeout",
+    "type": "java.lang.String",
+    "description": "A description for 'feign.httpclient.connection-timeout'"
+  },
+  {
+    "name": "feign.httpclient.follow-redirects",
+    "type": "java.lang.String",
+    "description": "A description for 'feign.httpclient.follow-redirects'"
+  }
+]}

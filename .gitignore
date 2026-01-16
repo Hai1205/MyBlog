@@ -1,0 +1,73 @@
+# Environment variables
+.env
+.env.*
+.env.render
+.env.local
+.env.development
+.env.production
+
+# Credentials and sensitive files
+**/credentials/*.json
+**/keys/*.pem
+**/keys/*.key
+service-account-key.json
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# Build artifacts
+**/target/
+**/build/
+*.jar
+*.war
+*.ear
+*.class
+
+# Maven
+.mvn/wrapper/maven-wrapper.jar
+
+# Node modules (client)
+**/node_modules/
+**/.next/
+**/out/
+**/.vercel/
+**/.turbo/
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.override.yml
+
+# K8s
+k8s/
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Secrets
+secrets/
+config/keys/
+
+# Documentation (optional - uncomment if you want to ignore)
+# *.md
+# README.md
+# DEPLOY_*.md

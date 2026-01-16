@@ -1,0 +1,67 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+README.md
+LICENSE
+DEPLOY_RENDER.md
+TESTCASE.md
+
+# IDE
+.idea
+.vscode
+*.iml
+*.ipr
+*.iws
+.project
+.classpath
+.settings
+
+# Build artifacts
+**/target/
+**/build/
+*.jar
+*.war
+*.ear
+*.class
+
+# Maven
+.mvn/wrapper/maven-wrapper.jar
+
+# Node modules (client)
+**/node_modules/
+**/.next/
+**/out/
+**/.vercel/
+**/.turbo/
+
+# Environment files
+**/.env
+**/.env.*
+!**/.env.example
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.yml
+**/Dockerfile
+.dockerignore
+
+# K8s
+k8s/
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
