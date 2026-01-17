@@ -130,6 +130,17 @@ input[type="password"]::-ms-clear {
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Apply cursor pointer to all buttons, links, and clickable elements */
+  button,
+  a,
+  [role="button"],
+  [type="button"],
+  [type="submit"],
+  [type="reset"],
+  .cursor-pointer {
+    cursor: pointer;
+  }
 }
 
 /* Toastify custom styles */

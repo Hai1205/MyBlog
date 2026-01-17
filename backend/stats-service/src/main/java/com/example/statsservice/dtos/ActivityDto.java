@@ -11,8 +11,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ActivityDto {
     private String id;
-    private String type;        // user_registered, cv_created, etc.
+    private String type; // user_registered, blog_created, etc.
     private String description;
-    private String timestamp;   // ISO format
+    private String timestamp; // ISO format
     private String userId;
 }

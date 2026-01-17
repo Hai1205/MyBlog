@@ -1,579 +1,411 @@
-# MyBlog Frontend - Next.js CV Builder
+# MyBlog Frontend
 
-Ứng dụng frontend MyBlog với AI-powered CV builder, cung cấp trải nghiệm tạo và cải thiện CV chuyên nghiệp với sự hỗ trợ của trí tuệ nhân tạo.
+Modern blog platform frontend built with Next.js 15, React 18, and TypeScript, featuring a beautiful UI with Tailwind CSS and shadcn/ui components.
 
-## ✨ Tính năng chính
+## ✨ Features
 
-### AI-Powered CV Features
+### 🎨 User Interface
 
-- **Smart CV Import**: Upload và tự động phân tích CV từ PDF, DOCX, TXT
-- **AI Analyze**: Phân tích CV và đưa ra suggestions cải thiện chi tiết
-- **Job Matching**: So sánh CV với job description để tối ưu hóa ứng tuyển
-- **Intelligent Suggestions**: AI-generated recommendations cho từng phần của CV
-- **Real-time Improvements**: Cải thiện CV theo thời gian thực với AI guidance
+- **Modern Design**: Clean and responsive UI with Tailwind CSS
+- **shadcn/ui Components**: 50+ pre-built, accessible components
+- **Dark/Light Mode**: Seamless theme switching with next-themes
+- **Responsive Layout**: Mobile-first design that works on all devices
+- **Smooth Animations**: Powered by Framer Motion
+- **Toast Notifications**: Real-time feedback with React Toastify
 
-### 🎨 CV Builder Interface
+### 📝 Blog Management
 
-- **Modern UI**: Giao diện đẹp với Tailwind CSS và shadcn/ui components
-- **Wizard Flow**: Quy trình tạo CV từng bước, dễ sử dụng
-- **Live Preview**: Xem trước CV real-time khi chỉnh sửa
-- **Responsive Design**: Tương thích với mọi thiết bị
-- **Dark/Light Mode**: Chế độ sáng/tối với next-themes
+- **Create & Edit Blogs**: Rich text editor for creating engaging content
+- **Category Filtering**: Filter blogs by technology, health, finance, travel, education, entertainment, and study
+- **Search Functionality**: Search blogs by title and description
+- **Pagination**: Efficient browsing with customizable page sizes
+- **Blog Preview**: Real-time preview while editing
+- **Save Blogs**: Bookmark favorite blogs for later reading
 
-### Authentication & Security
+### 👤 User Features
 
-- **JWT Authentication**: Bảo mật với JSON Web Tokens
-- **Protected Routes**: Bảo vệ các route nhạy cảm với middleware
-- **Role-based Access**: Phân quyền admin và user
-- **Token Refresh**: Tự động refresh token với TokenRefresher component
-- **Cookie Monitoring**: Theo dõi trạng thái authentication
+- **Authentication**: Secure JWT-based authentication
+- **User Profiles**: Customizable profiles with avatar, bio, and social links
+- **My Blogs**: Manage your published blogs
+- **Saved Blogs**: Access your bookmarked content
+- **Settings**: Update profile information and preferences
 
-### 📱 User Experience
+### 🔐 Admin Dashboard
 
-- **Intuitive Navigation**: Điều hướng dễ dàng với sidebar và breadcrumbs
-- **Toast Notifications**: Thông báo real-time với react-toastify
-- **Loading States**: UX mượt mà với skeleton loading
-- **Error Handling**: Xử lý lỗi graceful với user-friendly messages
-- **Mobile Responsive**: Tối ưu cho mobile với responsive design
+- **User Management**: View and manage user accounts
+- **Blog Dashboard**: Monitor all published blogs
+- **Statistics**: View platform analytics and metrics
+- **User Status Control**: Activate, suspend, or ban users
 
-## 🏗️ Kiến trúc & Tech Stack
+## 🏗️ Tech Stack
 
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Next.js 15    │    │   Zustand Store │    │   Axios Client  │
-│   App Router    │◄──►│  State Mgmt     │◄──►│   API Calls     │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-         │                        │                        │
-         ▼                        ▼                        ▼
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│  Tailwind CSS   │    │   shadcn/ui     │    │   TypeScript    │
-│   Styling       │    │   Components    │    │   Type Safety   │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-```
+### Core
 
-### Core Technologies
-
-- **Next.js 15.3.3** - React framework với App Router
-- **React 18** - UI library với concurrent features
+- **Next.js 15.3.3** - React framework with App Router
+- **React 18** - UI library
 - **TypeScript 5** - Type-safe JavaScript
 - **Tailwind CSS 4** - Utility-first CSS framework
-- **shadcn/ui** - Modern component library với Radix UI
-- **Zustand 5** - Lightweight state management
-- **Axios 1.10** - HTTP client với interceptors
-- **React Hook Form 7** - Form handling với validation
+
+### UI Components
+
+- **shadcn/ui** - Component library based on Radix UI
 - **Lucide Icons** - Beautiful icon set
 - **Framer Motion** - Animation library
 - **React Toastify** - Toast notifications
-- **Next Themes** - Theme management
-- **Puppeteer** - PDF generation
-- **Mammoth** - DOCX parsing
-- **PDF.js** - PDF processing
-- **File Saver** - File download
-- **jsPDF** - PDF creation
-- **html2canvas** - HTML to image conversion
+- **Headless UI** - Unstyled, accessible components
 
-### State Management
+### State Management & Data Fetching
 
-- **Zustand Stores**: `authStore`, `cvStore`, `userStore`, `aiStore`, `statsStore`
-- **Persistent State**: Local storage cho user preferences
-- **Real-time Updates**: Optimistic updates cho better UX
-- **Immer**: Immutable state updates
+- **Zustand 5** - Lightweight state management
+- **Axios 1.10** - HTTP client with interceptors
+- **React Hook Form 7** - Form handling with validation
+- **Zod** - Schema validation
 
-## Cách chạy
+### Utilities
+
+- **clsx** - Conditional className utility
+- **date-fns** - Date utility library
+- **class-variance-authority** - Component variant styling
+
+## 📁 Project Structure
+
+```
+frontend/
+├── app/                          # Next.js App Router
+│   ├── (routes)/                # Route groups
+│   │   ├── page.tsx            # Home page
+│   │   ├── blogs/              # Blog routes
+│   │   │   ├── page.tsx        # Blog list
+│   │   │   ├── [id]/          # Blog detail
+│   │   │   ├── new/           # Create blog
+│   │   │   ├── edit/[id]/     # Edit blog
+│   │   │   ├── my-blogs/      # User's blogs
+│   │   │   └── saved/         # Saved blogs
+│   │   ├── auth/              # Authentication routes
+│   │   │   ├── login/
+│   │   │   ├── register/
+│   │   │   ├── forgot-password/
+│   │   │   ├── reset-password/
+│   │   │   ├── verification/
+│   │   │   └── banned/
+│   │   ├── profile/[id]/      # User profile
+│   │   ├── settings/          # User settings
+│   │   └── admin/             # Admin dashboard
+│   │       ├── page.tsx       # Admin home
+│   │       ├── user-dashboard/
+│   │       └── blog-dashboard/
+│   ├── privacy-policy/         # Privacy policy page
+│   ├── terms-of-service/       # Terms of service page
+│   ├── layout.tsx             # Root layout
+│   ├── globals.css            # Global styles
+│   └── not-found.tsx          # 404 page
+│
+├── components/                 # React components
+│   ├── commons/               # Shared components
+│   │   ├── blogs/            # Blog components
+│   │   │   ├── BlogCard.tsx
+│   │   │   ├── BlogsClient.tsx
+│   │   │   └── Loading.tsx
+│   │   └── layout/           # Layout components
+│   │       ├── Header.tsx
+│   │       ├── Footer.tsx
+│   │       ├── Sidebar.tsx
+│   │       └── pagination/
+│   └── ui/                    # shadcn/ui components
+│       ├── button.tsx
+│       ├── card.tsx
+│       ├── dialog.tsx
+│       ├── input.tsx
+│       └── ...
+│
+├── stores/                     # Zustand state stores
+│   ├── authStore.ts           # Authentication state
+│   ├── blogStore.ts           # Blog state
+│   ├── userStore.ts           # User state
+│   └── statsStore.ts          # Statistics state
+│
+├── services/                   # API services
+│   ├── mockData.ts            # Mock data for development
+│   └── constants.ts           # API constants
+│
+├── lib/                        # Utilities
+│   ├── axiosInstance.ts       # Axios configuration
+│   ├── initialStore.ts        # Store initialization
+│   └── utils.ts              # Utility functions
+│
+├── hooks/                      # Custom React hooks
+│   ├── use-mobile.ts          # Mobile detection hook
+│   ├── use-pagination.ts      # Pagination hook
+│   └── use-toast.ts           # Toast notification hook
+│
+├── types/                      # TypeScript types
+│   ├── interface.ts           # Interface definitions
+│   └── enum.ts               # Enum definitions
+│
+├── styles/                     # Additional styles
+│   └── globals.css
+│
+├── middleware.ts              # Next.js middleware for auth
+├── next.config.mjs            # Next.js configuration
+├── tailwind.config.ts         # Tailwind CSS configuration
+├── components.json            # shadcn/ui configuration
+├── tsconfig.json             # TypeScript configuration
+└── package.json              # Dependencies
+
+```
+
+## 🚀 Getting Started
 
 ### Prerequisites
 
-- Node.js 18+
-- npm hoặc yarn
-- Backend server đang chạy (localhost:8080)
+- Node.js 18 or higher
+- npm or yarn
+- Backend server running (default: http://localhost:8080)
 
-### 1. Cài đặt Dependencies
+### Installation
+
+1. **Clone the repository**
 
 ```bash
-cd client
+git clone https://github.com/yourusername/MyBlog.git
+cd MyBlog/frontend
+```
+
+2. **Install dependencies**
+
+```bash
 npm install
-# hoặc
+# or
 yarn install
 ```
 
-### 2. Cấu hình Environment
+3. **Configure environment variables**
 
-Tạo file `.env.local`:
+Create a `.env.local` file in the root directory:
 
-```bash
+```env
 # API Configuration
-NEXT_PUBLIC_API_BASE_URL=http://localhost:8080
+NEXT_PUBLIC_SERVER_URL=http://localhost:8080/api/v1
 
-# App Configuration
-NEXT_PUBLIC_APP_NAME=MyBlog
-NEXT_PUBLIC_APP_VERSION=0.1.0
+# Optional: Analytics
+NEXT_PUBLIC_ANALYTICS_ID=your-analytics-id
 ```
 
-### 3. Chạy Development Server
+4. **Run the development server**
 
 ```bash
 npm run dev
-# hoặc
+# or
 yarn dev
 ```
 
-Ứng dụng sẽ chạy tại: http://localhost:3000
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-### 4. Build cho Production
+### Build for Production
 
 ```bash
 npm run build
 npm start
-# hoặc
-yarn build
-yarn start
 ```
 
-## 📁 Cấu trúc Project
+## 🎯 Available Routes
 
-```
-client/
-├── app/                          # Next.js App Router
-│   ├── globals.css              # Global styles với Tailwind
-│   ├── layout.tsx               # Root layout với providers
-│   ├── page.tsx                 # Home page
-│   ├── loading.tsx              # Loading UI
-│   ├── not-found.tsx            # 404 page
-│   ├── auth/                    # Authentication pages
-│   │   ├── login/               # Login page
-│   │   ├── register/            # Register page
-│   │   ├── forgot-password/     # Password reset
-│   │   ├── reset-password/      # Reset password
-│   │   └── verification/        # Email verification
-│   ├── cv-builder/              # CV Builder page
-│   ├── my-cvs/                  # User's CV list
-│   ├── settings/                # User settings
-│   └── admin/                   # Admin dashboard
-│       ├── cv-dashboard/        # CV management
-│       └── user-dashboard/      # User management
-├── components/                  # Reusable components
-│   ├── ui/                      # shadcn/ui components (50+ components)
-│   └── comons/                  # Custom components
-│       ├── cv-builder/          # CV building components
-│       │   ├── AIFeaturesTab.tsx
-│       │   ├── JobDescriptionImport.tsx
-│       │   ├── AISuggestionsList.tsx
-│       │   └── CVBuilderWizard.tsx
-│       ├── home/                # Home page components
-│       ├── layout/              # Layout components
-│       │   ├── ThemeProvider.tsx
-│       │   ├── TokenRefresher.tsx
-│       │   └── CookieMonitor.tsx
-│       ├── navbar/              # Navigation components
-│       ├── my-cvs/              # CV list components
-│       └── settings/            # Settings components
-├── hooks/                       # Custom React hooks
-│   ├── use-cv-parser.ts         # CV parsing logic
-│   ├── use-mobile.ts            # Mobile detection
-│   └── use-toast.ts             # Toast management
-├── lib/                         # Utilities
-│   ├── axiosInstance.ts         # Axios configuration
-│   ├── chromeFinder.ts          # Chrome detection for Puppeteer
-│   ├── cvParser.ts              # CV parsing utilities
-│   ├── cvValidator.ts           # CV validation logic
-│   ├── initialStore.ts          # Initial store state
-│   ├── suggestionApplier.ts     # AI suggestion application
-│   └── utils.ts                 # General utilities
-├── stores/                      # Zustand stores
-│   ├── authStore.ts             # Authentication state
-│   ├── cvStore.ts               # CV management state
-│   ├── userStore.ts             # User data state
-│   ├── aiStore.ts               # AI features state
-│   └── statsStore.ts            # Statistics state
-├── types/                       # TypeScript definitions
-│   ├── enum.ts                  # Enums and constants
-│   └── interface.ts             # Type interfaces
-├── services/                    # Service layer
-│   ├── constants.ts             # App constants
-│   ├── mockData.ts              # Mock data for development
-│   ├── pdfExportService.ts      # PDF export logic
-│   └── pdfExportService.ts      # PDF export utilities
-├── public/                      # Static assets
-│   ├── images/                  # Image assets
-│   └── svgs/                    # SVG icons
-└── styles/                      # Additional styles
-    ├── cv-preview.css           # CV preview styles
-    └── globals.css              # Additional global styles
+### Public Routes
+
+- `/` - Home page with featured blogs
+- `/blogs` - Browse all blogs with filters and search
+- `/blogs/[id]` - View blog details
+- `/auth/login` - User login
+- `/auth/register` - User registration
+- `/privacy-policy` - Privacy policy
+- `/terms-of-service` - Terms of service
+
+### Protected Routes (Requires Authentication)
+
+- `/blogs/new` - Create new blog
+- `/blogs/edit/[id]` - Edit blog
+- `/blogs/my-blogs` - User's published blogs
+- `/blogs/saved` - User's saved blogs
+- `/profile/[id]` - User profile
+- `/settings` - User settings
+
+### Admin Routes (Requires Admin Role)
+
+- `/admin` - Admin dashboard
+- `/admin/user-dashboard` - Manage users
+- `/admin/blog-dashboard` - Manage blogs
+
+## 🔧 Configuration
+
+### Tailwind CSS
+
+Customize theme in `tailwind.config.ts`:
+
+```typescript
+export default {
+  theme: {
+    extend: {
+      colors: {
+        // Add custom colors
+      },
+    },
+  },
+};
 ```
 
-## Key Components
+### shadcn/ui Components
 
-### CV Builder Components
+Add new components:
 
-#### `CVBuilderWizard.tsx`
-
-- Multi-step CV creation wizard
-- Form validation với React Hook Form và Zod
-- Real-time preview với live updates
-- Step navigation với progress indicator
-
-#### `AIPanel.tsx`
-
-- AI-powered features panel
-- Job description import và analysis
-- AI suggestions display và application
-- Real-time CV improvement feedback
-
-#### `AIFeaturesTab.tsx`
-
-- Tab interface cho AI features
-- Tích hợp Job Description Import
-- Quản lý AI suggestions state
-
-#### `JobDescriptionImport.tsx`
-
-- Upload/paste job description
-- Tích hợp với backend AI service
-- Hiển thị matching results và suggestions
-
-#### `AISuggestionsList.tsx`
-
-- Hiển thị AI-generated suggestions
-- Apply/dismiss functionality
-- Visual feedback cho user actions
-- Categorization của suggestions
+```bash
+npx shadcn@latest add button
+npx shadcn@latest add card
+```
 
 ### State Management
 
-#### `cvStore.ts`
+Zustand stores are located in `/stores`:
 
 ```typescript
-interface CVStore {
-  // CV data
-  currentCV: CV | null;
-  cvList: CV[];
+// Example: authStore.ts
+import { create } from "zustand";
 
-  // AI features
-  jobDescription: string;
-  aiSuggestions: AISuggestion[];
-  isAnalyzing: boolean;
+interface AuthState {
+  user: IUser | null;
+  setUser: (user: IUser) => void;
+}
 
-  // Wizard state
-  currentStep: number;
-  totalSteps: number;
+export const useAuthStore = create<AuthState>((set) => ({
+  user: null,
+  setUser: (user) => set({ user }),
+}));
+```
 
-  // Actions
-  createCV: (userId: string) => Promise<void>;
-  updateCV: (cvId: string, data: Partial<CV>) => Promise<void>;
-  analyzeCV: (cvId: string) => Promise<void>;
-  analyzeCVWithJD: (cvId: string, jd: string) => Promise<void>;
-  applySuggestion: (suggestionId: string) => Promise<void>;
-  handleSetCurrentStep: (step: number) => void;
+## 📝 Development Guidelines
+
+### Component Structure
+
+```typescript
+// components/MyComponent.tsx
+interface MyComponentProps {
+  title: string;
+  description?: string;
+}
+
+export function MyComponent({ title, description }: MyComponentProps) {
+  return (
+    <div>
+      <h1>{title}</h1>
+      {description && <p>{description}</p>}
+    </div>
+  );
 }
 ```
 
-#### `authStore.ts`
+### API Calls
+
+Use Axios instance from `/lib/axiosInstance.ts`:
 
 ```typescript
-interface AuthStore {
-  userAuth: User | null;
-  token: string | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
+import axiosInstance from "@/lib/axiosInstance";
 
-  login: (credentials: LoginData) => Promise<void>;
-  register: (userData: RegisterData) => Promise<void>;
-  logout: () => void;
-  refreshToken: () => Promise<void>;
-  checkAuth: () => Promise<void>;
-}
-```
-
-## 🔗 API Integration
-
-### Axios Configuration
-
-```typescript
-// lib/axiosInstance.ts
-const axiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
-  timeout: 10000,
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
-
-// Request interceptor cho JWT
-axiosInstance.interceptors.request.use((config) => {
-  const token = useAuthStore.getState().token;
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
-// Response interceptor cho error handling
-axiosInstance.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      // Redirect to login hoặc refresh token
-      useAuthStore.getState().logout();
-    }
-    return Promise.reject(error);
-  }
-);
-```
-
-### CV Service Integration
-
-```typescript
-// stores/cvStore.ts
-const analyzeCV = async (cvId: string) => {
-  set({ isAnalyzing: true });
-  try {
-    const response = await axiosInstance.post("/cv/analyze", {
-      cvId,
-      sections: ["experience", "skills", "education"],
-    });
-
-    const suggestions = response.data.suggestions;
-    set({ aiSuggestions: suggestions, isAnalyzing: false });
-  } catch (error) {
-    set({ isAnalyzing: false });
-    toast.error("Không thể phân tích CV");
-    throw error;
-  }
+const fetchBlogs = async () => {
+  const response = await axiosInstance.get("/blogs");
+  return response.data;
 };
 ```
 
-## 🎨 UI/UX Features
+### Form Handling
 
-### Design System
-
-- **Color Palette**: Consistent colors với CSS variables
-- **Typography**: Geist font family
-- **Spacing**: Consistent spacing scale
-- **Components**: 50+ reusable UI components từ shadcn/ui
-
-### Responsive Design
-
-- **Mobile-first**: Optimized cho mobile devices
-- **Tablet Support**: Adaptive layouts
-- **Desktop Enhancement**: Advanced features cho desktop
-
-### Accessibility
-
-- **Keyboard Navigation**: Full keyboard support
-- **Screen Reader**: ARIA labels và semantic HTML
-- **Focus Management**: Proper focus indicators
-- **Color Contrast**: WCAG compliant colors
-
-### Animations
-
-- **Framer Motion**: Smooth animations và transitions
-- **Loading States**: Skeleton loading cho better UX
-- **Hover Effects**: Interactive feedback
-- **Page Transitions**: Smooth navigation
-
-## Authentication Flow
-
-### Middleware Protection
+Use React Hook Form with Zod validation:
 
 ```typescript
-// middleware.ts
-export function middleware(request: NextRequest) {
-  // JWT token validation
-  // Role-based access control
-  // Mobile device detection
-  // Route protection logic
-}
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+
+const schema = z.object({
+  title: z.string().min(1, "Title is required"),
+});
+
+const { register, handleSubmit } = useForm({
+  resolver: zodResolver(schema),
+});
 ```
 
-### Token Management
-
-- **Automatic Refresh**: TokenRefresher component
-- **Cookie Monitoring**: CookieMonitor component
-- **Secure Storage**: HTTP-only cookies cho production
-- **Expiration Handling**: Automatic logout khi token hết hạn
-
-## Testing
-
-### Development Scripts
-
-```json
-{
-  "scripts": {
-    "dev": "next dev --turbopack -p 3000",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
-  }
-}
-```
-
-### Build Configuration
-
-```javascript
-// next.config.mjs
-const nextConfig = {
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-  images: {
-    unoptimized: true,
-  },
-};
-```
-
-### E2E Tests (có thể thêm Cypress hoặc Playwright)
+## 🧪 Testing
 
 ```bash
-npm run test:e2e
+npm run test
 ```
 
-### Linting
+## 📦 Building
 
-```bash
-npm run lint
-```
-
-## Deployment
-
-### Vercel (Recommended)
-
-1. Connect GitHub repository
-2. Configure environment variables
-3. Deploy automatically với CI/CD
-
-### Docker
-
-```dockerfile
-FROM node:18-alpine
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --only=production
-COPY . .
-RUN npm run build
-EXPOSE 3000
-CMD ["npm", "start"]
-```
-
-### Manual Build
+### Development Build
 
 ```bash
 npm run build
-npm run start
 ```
 
-## Development Features
+### Production Build with Docker
 
-### Turbopack
+```bash
+docker build -t myblog-frontend .
+docker run -p 3000:3000 myblog-frontend
+```
 
-- **Fast Refresh**: Next.js 15 với Turbopack cho development
-- **Hot Reload**: Instant updates without full reload
-- **Type Checking**: Real-time TypeScript checking
-
-### Development Tools
-
-- **ESLint**: Code quality enforcement
-- **TypeScript**: Strict type checking
-- **Tailwind CSS**: Utility-first styling
-- **shadcn/ui**: Component development
-
-## 🚨 Troubleshooting
+## 🐛 Troubleshooting
 
 ### Common Issues
 
-#### Build Errors
+**Port Already in Use**
 
-- **Module not found**: `npm install` hoặc check imports
-- **Type errors**: Check TypeScript definitions
-- **Environment variables**: Verify `.env.local` file
+```bash
+# Kill process on port 3000
+npx kill-port 3000
+```
 
-#### Runtime Errors
+**Module Not Found**
 
-- **API connection failed**: Check backend server status
-- **Authentication failed**: Verify JWT token validity
-- **CORS errors**: Configure CORS trong backend
+```bash
+# Clear cache and reinstall
+rm -rf node_modules .next
+npm install
+```
 
-#### Performance Issues
+**Type Errors**
 
-- **Slow loading**: Enable compression và caching
-- **Large bundle**: Code splitting và lazy loading
-- **Memory leaks**: Check component cleanup
+```bash
+# Regenerate TypeScript types
+npm run build
+```
 
-## 📊 Performance Optimization
+## 📚 Learn More
 
-### Code Splitting
-
-- **Dynamic imports**: Lazy load components
-- **Route-based splitting**: Automatic với Next.js App Router
-
-### Image Optimization
-
-- **Next.js Image**: Automatic optimization (disabled for custom config)
-- **WebP format**: Modern image formats
-- **Responsive images**: Different sizes cho devices
-
-### Caching Strategies
-
-- **Static generation**: ISR cho static pages
-- **API caching**: React Query hoặc Zustand persistence
-- **Browser caching**: Proper cache headers
-
-## 🔮 Future Enhancements
-
-### Planned Features
-
-- [ ] **Real-time Collaboration**: Multiple users edit CV cùng lúc
-- [ ] **CV Templates**: Pre-built templates với AI customization
-- [ ] **Analytics Dashboard**: Track CV performance và improvements
-- [ ] **Mobile App**: React Native version
-- [ ] **Offline Support**: PWA capabilities
-- [ ] **Multi-language**: Internationalization support
-- [ ] **Advanced AI**: More sophisticated AI suggestions
-- [ ] **Integration APIs**: LinkedIn, Indeed, Glassdoor integration
-
-### Technical Improvements
-
-- [ ] **Testing Coverage**: Comprehensive test suite với Jest/Playwright
-- [ ] **Performance Monitoring**: Real user monitoring
-- [ ] **Error Tracking**: Sentry integration
-- [ ] **CI/CD Pipeline**: Automated testing và deployment
-- [ ] **Micro-frontends**: Modular architecture
-- [ ] **GraphQL**: More efficient data fetching
-
-## 📖 Documentation
-
-- [Backend API Documentation](../server/README.md) - Backend services và APIs
-- [shadcn/ui Documentation](https://ui.shadcn.com) - UI component library
-- [Next.js Documentation](https://nextjs.org/docs) - Framework documentation
-- [Zustand Documentation](https://zustand-demo.pmnd.rs) - State management
+- [Next.js Documentation](https://nextjs.org/docs)
+- [React Documentation](https://react.dev)
+- [Tailwind CSS Documentation](https://tailwindcss.com/docs)
+- [shadcn/ui Documentation](https://ui.shadcn.com)
+- [Zustand Documentation](https://zustand-demo.pmnd.rs)
 
 ## 🤝 Contributing
 
-1. Fork repository
-2. Create feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open Pull Request
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-### Code Standards
+## 📄 License
 
-- **TypeScript**: Strict type checking enabled
-- **ESLint**: Airbnb config với custom rules
-- **Prettier**: Consistent code formatting
-- **Conventional Commits**: Standardized commit messages
-- **Component Structure**: Consistent component organization
+This project is licensed under the MIT License - see the [LICENSE](../LICENSE) file for details.
 
-## License
+## 💬 Support
 
-This project is licensed under the MIT License.
+For issues and questions:
 
-## 📞 Support
-
-- **Issues**: [GitHub Issues](https://github.com/Hai1205/MyBlog/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/Hai1205/MyBlog/discussions)
-- **Email**: support@MyBlog.com
+- Open an issue on [GitHub](https://github.com/yourusername/MyBlog/issues)
+- Check existing documentation in `/docs`
 
 ---
 

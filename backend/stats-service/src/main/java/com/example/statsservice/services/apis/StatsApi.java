@@ -1,6 +1,7 @@
 package com.example.statsservice.services.apis;
 
 import com.example.rediscommon.services.RedisService;
+import com.example.rediscommon.services.RateLimiterService;
 import com.example.statsservice.dtos.ActivityDto;
 import com.example.statsservice.dtos.DashboardStatsDto;
 import com.example.statsservice.services.feigns.UserFeignClient;
@@ -39,6 +40,7 @@ public class StatsApi extends BaseApi {
     private final UserFeignClient userFeignClient;
     private final BlogFeignClient blogFeignClient;
     private final RedisService redisService;
+    private final RateLimiterService rateLimiterService;
 
     @Value("${LOGO_PATH}")
     private String logoPath;
@@ -46,10 +48,12 @@ public class StatsApi extends BaseApi {
     public StatsApi(
             UserFeignClient userFeignClient,
             BlogFeignClient blogFeignClient,
-            RedisService redisService) {
+            RedisService redisService,
+            RateLimiterService rateLimiterService) {
         this.userFeignClient = userFeignClient;
         this.blogFeignClient = blogFeignClient;
         this.redisService = redisService;
+        this.rateLimiterService = rateLimiterService;
     }
 
     /**
@@ -190,7 +194,20 @@ public class StatsApi extends BaseApi {
         Response response = new Response();
 
         try {
+            long startTime = System.currentTimeMillis();
+            logger.info("Starting request at {}", startTime);
+
+            // Rate limiting: 90 req/min for GET APIs
+            if (!rateLimiterService.isAllowed("stats:getDashboardStats", 90, 60)) {
+                response.setStatusCode(429);
+                response.setMessage("Rate limit exceeded. Please try again later.");
+                return response;
+            }
+
             DashboardStatsDto stats = getDashboardStatsFromCacheOrCompute();
+
+            long endTime = System.currentTimeMillis();
+            logger.info("Completed request in {} ms", endTime - startTime);
 
             response.setStatusCode(200);
             response.setMessage("Dashboard statistics retrieved successfully");
@@ -206,7 +223,20 @@ public class StatsApi extends BaseApi {
         Response response = new Response();
 
         try {
+            long startTime = System.currentTimeMillis();
+            logger.info("Starting request at {}", startTime);
+
+            // Rate limiting: 90 req/min for GET APIs
+            if (!rateLimiterService.isAllowed("stats:getStatsReport", 90, 60)) {
+                response.setStatusCode(429);
+                response.setMessage("Rate limit exceeded. Please try again later.");
+                return response;
+            }
+
             byte[] report = handleGetStatsReport();
+
+            long endTime = System.currentTimeMillis();
+            logger.info("Completed request in {} ms", endTime - startTime);
 
             response.setStatusCode(200);
             response.setMessage("Stats report retrieved successfully");

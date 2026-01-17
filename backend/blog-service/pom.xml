@@ -73,6 +73,12 @@
             <artifactId>security-common</artifactId>
         </dependency>
 
+        <!-- Redis Common Module -->
+        <dependency>
+            <groupId>com.example</groupId>
+            <artifactId>redis-common</artifactId>
+        </dependency>
+
         <!-- Database Connector -->
         <!-- MySQL JDBC driver -->
         <dependency>

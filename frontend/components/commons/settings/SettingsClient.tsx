@@ -10,7 +10,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User, Lock, Receipt, CreditCard } from "lucide-react";
+import { User, Lock } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 import { useUserStore } from "@/stores/userStore";
 import { toast } from "react-toastify";
@@ -57,10 +57,10 @@ export default function SettingsClient() {
 
   const handleChange = (
     field: keyof ExtendedUserData,
-    value: string | string[] | boolean
+    value: string | string[] | boolean,
   ) => {
     setData((prev) =>
-      prev ? { ...prev, [field]: value } : { ...defaultUser, [field]: value }
+      prev ? { ...prev, [field]: value } : { ...defaultUser, [field]: value },
     );
   };
 
@@ -76,7 +76,7 @@ export default function SettingsClient() {
         data.status,
         data.instagram || "",
         data.facebook || "",
-        data.linkedin || ""
+        data.linkedin || "",
       );
     }
   };
@@ -117,7 +117,7 @@ export default function SettingsClient() {
       data.email,
       data.currentPassword || "",
       data.newPassword || "",
-      data.confirmPassword || ""
+      data.confirmPassword || "",
     );
 
     if (res.data?.success) {
@@ -130,7 +130,7 @@ export default function SettingsClient() {
               newPassword: "",
               confirmPassword: "",
             }
-          : null
+          : null,
       );
     }
 
@@ -149,7 +149,7 @@ export default function SettingsClient() {
     {
       value: "profile",
       icon: User,
-      title: "Thông Tin Cá Nhân",
+      title: "Profile",
       description: "Update your profile information",
       component: (
         <ProfileTab
@@ -164,7 +164,7 @@ export default function SettingsClient() {
     {
       value: "security",
       icon: Lock,
-      title: "Bảo Mật",
+      title: "Security",
       description: "Change password and security settings",
       component: (
         <SecurityTab
@@ -175,20 +175,6 @@ export default function SettingsClient() {
         />
       ),
     },
-    // {
-    //   value: "billing",
-    //   icon: Receipt,
-    //   title: "Thanh Toán",
-    //   description: "Xem lịch sử thanh toán và hóa đơn",
-    //   component: null,
-    // },
-    // {
-    //   value: "plan",
-    //   icon: CreditCard,
-    //   title: "Quản Lý Plan",
-    //   description: "Xem và nâng cấp plan của bạn",
-    //   component: null,
-    // },
   ];
 
   return (
@@ -196,7 +182,7 @@ export default function SettingsClient() {
       <div className="container max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold bg-linear-to-br from-primary to-secondary bg-clip-text text-transparent">
-            Cài Đặt
+            Settings
           </h1>
           <p className="text-muted-foreground mt-2">
             Manage your account information and settings

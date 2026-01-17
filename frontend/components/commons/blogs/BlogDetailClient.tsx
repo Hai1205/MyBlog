@@ -74,7 +74,7 @@ const BlogDetailClient = () => {
 
       await deleteComment(commentId);
     },
-    [deleteComment]
+    [deleteComment],
   );
 
   const handleDeleteBlog = useCallback(
@@ -83,7 +83,7 @@ const BlogDetailClient = () => {
 
       await deleteBlog(blogId);
     },
-    [blogId]
+    [blogId],
   );
 
   const [saved, setSaved] = useState(false);
@@ -98,12 +98,12 @@ const BlogDetailClient = () => {
 
   const handleSaveBlog = useCallback(
     async (blogId: string) => {
-      if (!blogId) return;
+      if (!blogId && !userAuth) return;
 
-      await saveBlog(blogId);
+      await saveBlog(blogId, userAuth?.id as string);
       setSaved(!saved);
     },
-    [blogId, saved]
+    [blogId, saved],
   );
 
   useEffect(() => {
@@ -165,7 +165,7 @@ const BlogDetailClient = () => {
         </CardHeader>
         <CardContent>
           <img
-            src={blog.imageUrl}
+            src={blog.thumbnailUrl}
             alt=""
             className="w-full h-64 object-cover rounded-lg mb-4"
           />

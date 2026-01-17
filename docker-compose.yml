@@ -112,6 +112,7 @@ services:
       - "8082:8082"
     depends_on:
       - user-service
+      - redis
     networks:
       - app-network
   
@@ -157,6 +158,8 @@ services:
       user-service:
         condition: service_started
       blog-service:
+        condition: service_started
+      redis:
         condition: service_started
     networks:
       - app-network

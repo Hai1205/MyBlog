@@ -8,6 +8,7 @@ import com.example.authservice.services.JwtService;
 import com.example.authservice.services.OtpService;
 import com.example.authservice.services.feigns.UserFeignClient;
 import com.example.authservice.services.rabbitmqs.producers.AuthProducer;
+import com.example.rediscommon.services.RateLimiterService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.servlet.http.Cookie;
@@ -28,6 +29,7 @@ public class AuthApi extends BaseApi {
     private AuthProducer authProducer;
     private OtpService otpService;
     private final ObjectMapper objectMapper;
+    private final RateLimiterService rateLimiterService;
     private static final int ACCESS_TOKEN_EXPIRATION_SECONDS = 5 * 60 * 60; // 5 hours
     private static final int REFRESH_TOKEN_EXPIRATION_SECONDS = 7 * 24 * 60 * 60; // 7 days
 
@@ -35,15 +37,18 @@ public class AuthApi extends BaseApi {
     private String devMode;
 
     public AuthApi(JwtService jwtService, UserFeignClient userFeignClient, AuthProducer authProducer,
-            OtpService otpService) {
+            OtpService otpService, RateLimiterService rateLimiterService) {
         this.jwtService = jwtService;
         this.userFeignClient = userFeignClient;
         this.authProducer = authProducer;
         this.otpService = otpService;
         this.objectMapper = new ObjectMapper();
+        this.rateLimiterService = rateLimiterService;
     }
 
     public Response login(String dataJson, HttpServletResponse httpServletResponse) {
+        long startTime = System.currentTimeMillis();
+        logger.info("Starting request at {}", startTime);
         logger.info("Login attempt");
         Response response = new Response();
         LoginRequest request = null;
@@ -52,6 +57,13 @@ public class AuthApi extends BaseApi {
             request = objectMapper.readValue(dataJson, LoginRequest.class);
             String identifier = request.getIdentifier();
             String password = request.getPassword();
+
+            // Rate limiting: 7 req/min for auth service
+            String rateLimitKey = "auth:login:" + identifier;
+            if (!rateLimiterService.isAllowed(rateLimitKey, 7, 60)) {
+                logger.warn("Rate limit exceeded for login attempt: {}", identifier);
+                return buildErrorResponse(429, "Rate limit exceeded. Please try again later.");
+            }
 
             if (identifier == null || identifier.trim().isEmpty()) {
                 logger.warn("Login failed: Identifier is required");
@@ -91,11 +103,15 @@ public class AuthApi extends BaseApi {
             String refreshToken = jwtService.generateRefreshToken(userId, email, username);
 
             Cookie accessTokenCookie = handleCreateCookie("access_token", accessToken, ACCESS_TOKEN_EXPIRATION_SECONDS);
-            Cookie refreshTokenCookie = handleCreateCookie("refresh_token", refreshToken, REFRESH_TOKEN_EXPIRATION_SECONDS);
+            Cookie refreshTokenCookie = handleCreateCookie("refresh_token", refreshToken,
+                    REFRESH_TOKEN_EXPIRATION_SECONDS);
             httpServletResponse.addCookie(accessTokenCookie);
             httpServletResponse.addCookie(refreshTokenCookie);
             httpServletResponse.setHeader("X-Access-Token", accessToken);
             httpServletResponse.setHeader("X-Refresh-Token", refreshToken);
+
+            long endTime = System.currentTimeMillis();
+            logger.info("Completed request in {} ms", endTime - startTime);
 
             response.setMessage("Login successful");
             response.setUser(user);
@@ -122,7 +138,7 @@ public class AuthApi extends BaseApi {
             cookie.setHttpOnly(false);
             cookie.setSecure(false);
             cookie.setAttribute("SameSite", "Lax");
-        }else{
+        } else {
             cookie.setHttpOnly(true);
             cookie.setSecure(true);
             cookie.setAttribute("SameSite", "None");
@@ -132,10 +148,19 @@ public class AuthApi extends BaseApi {
     }
 
     public Response validateToken(String token, String username) {
+        long startTime = System.currentTimeMillis();
+        logger.info("Starting request at {}", startTime);
         logger.debug("Token validation attempt for username: {}", username);
         Response response = new Response();
 
         try {
+            // Rate limiting: 7 req/min for auth service
+            String rateLimitKey = "auth:validateToken:" + username;
+            if (!rateLimiterService.isAllowed(rateLimitKey, 7, 60)) {
+                logger.warn("Rate limit exceeded for token validation: {}", username);
+                return buildErrorResponse(429, "Rate limit exceeded. Please try again later.");
+            }
+
             boolean isValid = jwtService.validateToken(token, username);
 
             Map<String, Object> additionalData = new HashMap<>();
@@ -146,6 +171,9 @@ public class AuthApi extends BaseApi {
             } else {
                 logger.warn("Token validation failed for username: {}", username);
             }
+
+            long endTime = System.currentTimeMillis();
+            logger.info("Completed request in {} ms", endTime - startTime);
 
             response.setMessage("Token validation successful");
             response.setAdditionalData(additionalData);
@@ -161,13 +189,25 @@ public class AuthApi extends BaseApi {
     }
 
     public Response register(String dataJson) {
+        long startTime = System.currentTimeMillis();
+        logger.info("Starting request at {}", startTime);
         logger.info("Registration attempt");
         Response response = new Response();
 
         try {
+            // Rate limiting: 7 req/min for auth service
+            String rateLimitKey = "auth:register";
+            if (!rateLimiterService.isAllowed(rateLimitKey, 7, 60)) {
+                logger.warn("Rate limit exceeded for registration");
+                return buildErrorResponse(429, "Rate limit exceeded. Please try again later.");
+            }
+
             // UserDto user = userFeignClient.createUser(dataJson).getUser();
             // UserCreateRequest userCreateRequest = new UserCreateRequest(dataJson);
             UserDto user = userFeignClient.registerUser(dataJson).getUser();
+
+            long endTime = System.currentTimeMillis();
+            logger.info("Completed request in {} ms", endTime - startTime);
 
             response.setMessage("Registration successful");
             response.setUser(user);
@@ -184,10 +224,19 @@ public class AuthApi extends BaseApi {
     }
 
     public Response verifyOTP(String identifier, String dataJson) {
+        long startTime = System.currentTimeMillis();
+        logger.info("Starting request at {}", startTime);
         logger.info("OTP verification attempt for identifier: {}", identifier);
         Response response = new Response();
 
         try {
+            // Rate limiting: 7 req/min for auth service
+            String rateLimitKey = "auth:verifyOTP:" + identifier;
+            if (!rateLimiterService.isAllowed(rateLimitKey, 7, 60)) {
+                logger.warn("Rate limit exceeded for OTP verification: {}", identifier);
+                return buildErrorResponse(429, "Rate limit exceeded. Please try again later.");
+            }
+
             // Validate input parameters
             if (identifier == null || identifier.trim().isEmpty()) {
                 logger.warn("OTP verification failed: Identifier is required");
@@ -228,6 +277,9 @@ public class AuthApi extends BaseApi {
                 logger.info("User account activated for email: {}", email);
             }
 
+            long endTime = System.currentTimeMillis();
+            logger.info("Completed request in {} ms", endTime - startTime);
+
             response.setMessage("Otp verified successfully!");
             logger.info("OTP verification successful for email: {}", email);
             return response;
@@ -242,10 +294,19 @@ public class AuthApi extends BaseApi {
     }
 
     public Response sendOTP(String identifier) {
+        long startTime = System.currentTimeMillis();
+        logRequestStart(startTime);
         logger.info("Sending OTP to identifier: {}", identifier);
         Response response = new Response();
 
         try {
+            // Rate limiting: 7 req/min for auth service
+            String rateLimitKey = "auth:sendOTP:" + identifier;
+            if (!rateLimiterService.isAllowed(rateLimitKey, 7, 60)) {
+                logger.warn("Rate limit exceeded for OTP send: {}", identifier);
+                return buildErrorResponse(429, "Rate limit exceeded. Please try again later.");
+            }
+
             UserDto user = userFeignClient.findUserByIdentifier(identifier).getUser();
 
             if (user == null) {
@@ -258,6 +319,8 @@ public class AuthApi extends BaseApi {
             String otp = otpService.generateOtp(email);
 
             authProducer.sendMailActivation(email, otp);
+
+            logRequestComplete(startTime);
 
             response.setMessage("OTP is sent!");
             logger.info("OTP sent successfully to email: {}", email);
@@ -273,10 +336,19 @@ public class AuthApi extends BaseApi {
     }
 
     public Response changePassword(String identifier, String dataJson) {
+        long startTime = System.currentTimeMillis();
+        logger.info("Starting request at {}", startTime);
         logger.info("Password change attempt for identifier: {}", identifier);
         Response response = new Response();
 
         try {
+            // Rate limiting: 7 req/min for auth service
+            String rateLimitKey = "auth:changePassword:" + identifier;
+            if (!rateLimiterService.isAllowed(rateLimitKey, 7, 60)) {
+                logger.warn("Rate limit exceeded for password change: {}", identifier);
+                return buildErrorResponse(429, "Rate limit exceeded. Please try again later.");
+            }
+
             ChangePasswordRequest request = objectMapper.readValue(dataJson, ChangePasswordRequest.class);
             String currentPassword = request.getCurrentPassword();
             String newPassword = request.getNewPassword();
@@ -301,13 +373,17 @@ public class AuthApi extends BaseApi {
                 throw new OurException("User not found", 404);
             }
 
-            ChangePasswordRequest changePasswordRequest = new ChangePasswordRequest(currentPassword, newPassword, confirmPassword);
+            ChangePasswordRequest changePasswordRequest = new ChangePasswordRequest(currentPassword, newPassword,
+                    confirmPassword);
             String requestJson = objectMapper.writeValueAsString(changePasswordRequest);
             UserDto updatedUser = userFeignClient.changePassword(identifier, requestJson).getUser();
             if (updatedUser == null) {
                 logger.warn("Password change failed: Invalid current password for identifier: {}", identifier);
                 throw new OurException("Invalid current password.");
             }
+
+            long endTime = System.currentTimeMillis();
+            logger.info("Completed request in {} ms", endTime - startTime);
 
             response.setMessage("Password changed successfully!");
             logger.info("Password changed successfully for identifier: {}", identifier);
@@ -323,10 +399,19 @@ public class AuthApi extends BaseApi {
     }
 
     public Response resetPassword(String email) {
+        long startTime = System.currentTimeMillis();
+        logger.info("Starting request at {}", startTime);
         logger.info("Password reset attempt for email: {}", email);
         Response response = new Response();
 
         try {
+            // Rate limiting: 7 req/min for auth service
+            String rateLimitKey = "auth:resetPassword:" + email;
+            if (!rateLimiterService.isAllowed(rateLimitKey, 7, 60)) {
+                logger.warn("Rate limit exceeded for password reset: {}", email);
+                return buildErrorResponse(429, "Rate limit exceeded. Please try again later.");
+            }
+
             // Validate input parameter
             if (email == null || email.trim().isEmpty()) {
                 logger.warn("Password reset failed: Email is required");
@@ -335,8 +420,11 @@ public class AuthApi extends BaseApi {
 
             Response resetResponse = userFeignClient.resetPassword(email);
             String newPassword = (String) resetResponse.getAdditionalData().get("newPassword");
-            
+
             authProducer.sendMailResetPassword(email, newPassword);
+
+            long endTime = System.currentTimeMillis();
+            logger.info("Completed request in {} ms", endTime - startTime);
 
             response.setMessage("Password reset email sent successfully!");
             logger.info("Password reset email sent successfully to: {}", email);
@@ -352,10 +440,19 @@ public class AuthApi extends BaseApi {
     }
 
     public Response forgotPassword(String identifier, String dataJson) {
+        long startTime = System.currentTimeMillis();
+        logger.info("Starting request at {}", startTime);
         logger.info("Forgot password attempt for identifier: {}", identifier);
         Response response = new Response();
 
         try {
+            // Rate limiting: 7 req/min for auth service
+            String rateLimitKey = "auth:forgotPassword:" + identifier;
+            if (!rateLimiterService.isAllowed(rateLimitKey, 7, 60)) {
+                logger.warn("Rate limit exceeded for forgot password: {}", identifier);
+                return buildErrorResponse(429, "Rate limit exceeded. Please try again later.");
+            }
+
             UserDto user = userFeignClient.findUserByIdentifier(identifier).getUser();
 
             if (user == null) {
@@ -377,6 +474,9 @@ public class AuthApi extends BaseApi {
             String requestJson = objectMapper.writeValueAsString(forgotPasswordRequest);
             userFeignClient.forgotPassword(email, requestJson);
 
+            long endTime = System.currentTimeMillis();
+            logger.info("Completed request in {} ms", endTime - startTime);
+
             response.setMessage("Password updated successfully!");
             logger.info("Password updated successfully via forgot password for email: {}", email);
             return response;
@@ -396,10 +496,19 @@ public class AuthApi extends BaseApi {
             HttpServletRequest httpRequest,
             HttpServletResponse httpServletResponse) {
 
+        long startTime = System.currentTimeMillis();
+        logger.info("Starting request at {}", startTime);
         logger.info("Token refresh attempt");
         Response response = new Response();
 
         try {
+            // Rate limiting: 7 req/min for auth service
+            String rateLimitKey = "auth:refreshToken";
+            if (!rateLimiterService.isAllowed(rateLimitKey, 7, 60)) {
+                logger.warn("Rate limit exceeded for token refresh");
+                return buildErrorResponse(429, "Rate limit exceeded. Please try again later.");
+            }
+
             String refreshToken = null;
             String source = "unknown";
 
@@ -463,9 +572,13 @@ public class AuthApi extends BaseApi {
                     user.getUsername());
 
             // Set new access token in cookie and header
-            Cookie accessTokenCookie = handleCreateCookie("access_token", newAccessToken, ACCESS_TOKEN_EXPIRATION_SECONDS); 
+            Cookie accessTokenCookie = handleCreateCookie("access_token", newAccessToken,
+                    ACCESS_TOKEN_EXPIRATION_SECONDS);
             httpServletResponse.addCookie(accessTokenCookie);
             httpServletResponse.setHeader("X-Access-Token", newAccessToken);
+
+            long endTime = System.currentTimeMillis();
+            logger.info("Completed request in {} ms", endTime - startTime);
 
             response.setMessage("Token refreshed successfully!");
             response.setUser(user);
@@ -483,16 +596,28 @@ public class AuthApi extends BaseApi {
     }
 
     public Response logout(HttpServletResponse httpServletResponse) {
+        long startTime = System.currentTimeMillis();
+        logger.info("Starting request at {}", startTime);
         logger.info("User logout attempt");
         Response response = new Response();
 
         try {
+            // Rate limiting: 7 req/min for auth service
+            String rateLimitKey = "auth:logout";
+            if (!rateLimiterService.isAllowed(rateLimitKey, 7, 60)) {
+                logger.warn("Rate limit exceeded for logout");
+                return buildErrorResponse(429, "Rate limit exceeded. Please try again later.");
+            }
+
             Cookie accessTokenCookie = handleCreateCookie("access_token", "", 0);
             Cookie refreshTokenCookie = handleCreateCookie("refresh_token", "", 0);
             httpServletResponse.addCookie(accessTokenCookie);
             httpServletResponse.addCookie(refreshTokenCookie);
             httpServletResponse.setHeader("X-Access-Token", "");
             httpServletResponse.setHeader("X-Refresh-Token", "");
+
+            long endTime = System.currentTimeMillis();
+            logger.info("Completed request in {} ms", endTime - startTime);
 
             response.setMessage("Logged out successfully");
             logger.info("User logged out successfully");

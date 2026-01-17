@@ -7,7 +7,6 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UpdateBlogRequest {
-    private String blogId;
     private String title;
     private String description;
     private String category;

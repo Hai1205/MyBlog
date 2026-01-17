@@ -32,7 +32,7 @@ export function RecentActivity({ activities }: RecentActivityProps) {
           <div className="space-y-4">
             {activities.map((activity) => {
               const isUserActivity = activity.type === "user_registered";
-              const isCVActivity = activity.type === "cv_created";
+              const isBlogActivity = activity.type === "blog_created";
 
               return (
                 <div
@@ -43,10 +43,10 @@ export function RecentActivity({ activities }: RecentActivityProps) {
                     {isUserActivity && (
                       <UserPlus className="h-4 w-4 text-primary" />
                     )}
-                    {isCVActivity && (
+                    {isBlogActivity && (
                       <FileText className="h-4 w-4 text-primary" />
                     )}
-                    {!isUserActivity && !isCVActivity && (
+                    {!isUserActivity && !isBlogActivity && (
                       <Clock className="h-4 w-4 text-primary" />
                     )}
                   </div>

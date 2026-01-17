@@ -160,6 +160,10 @@ export default function BlogDashboardClient() {
     router.push("/blogs/new");
   };
 
+  const handleView = async (blog: IBlog) => {
+    router.push(`/blogs/${blog.id}`);
+  };
+
   const handleDelete = (blog: IBlog) => {
     setBlogToDelete(blog);
     setDeleteDialogOpen(true);
@@ -237,6 +241,7 @@ export default function BlogDashboardClient() {
             isLoading={false}
             onUpdate={handleUpdate}
             onDelete={handleDelete}
+            onView={handleView}
             showPagination={filteredBlogs.length > 10}
             paginationData={paginationData}
             onPageChange={setPage}

@@ -18,18 +18,22 @@ export interface IBlogStore extends IBaseStore {
 	blogs: IBlog[]
 	lastFetchTimeAllBlogs: number | null
 	lastFetchTimeUserBlogs: number | null
+	lastFetchTimeSavedBlogs: number | null
 	isLoadingAllBlogs: boolean
 	isLoadingUserBlogs: boolean
+	isLoadingSavedBlogs: boolean
 
 	getAllBlogs: () => Promise<IApiResponse<IBlogDataResponse>>;
 	fetchAllBlogsInBackground: () => Promise<void>;
 	getUserBlogs: (userId: string) => Promise<IApiResponse<IBlogDataResponse>>;
 	fetchUserBlogsInBackground: (userId: string) => Promise<void>;
+	getSavedBlogs: (userId: string) => Promise<IApiResponse<IBlogDataResponse>>;
+	fetchSavedBlogsInBackground: (userId: string) => Promise<void>;
 	getBlog: (
 		blogId: string
 	) => Promise<IApiResponse<IBlogDataResponse>>;
 	createBlog: (
-		user: IUser | null,
+		userId: string,
 		title: string,
 		description: string,
 		category: string,
@@ -37,7 +41,12 @@ export interface IBlogStore extends IBaseStore {
 		content: string,
 	) => Promise<IApiResponse<IBlogDataResponse>>;
 	saveBlog: (
-		blogId: string
+		blogId: string,
+		userId: string
+	) => Promise<IApiResponse<IBlogDataResponse>>;
+	unsaveBlog: (
+		blogId: string,
+		userId: string
 	) => Promise<IApiResponse<IBlogDataResponse>>;
 	updateBlog: (
 		blogId: string,
@@ -75,7 +84,6 @@ export interface IBlogStore extends IBaseStore {
 		commentId: string
 	) => Promise<IApiResponse<void>>;
 
-	handleUpdateBlog: (blogData: Partial<IBlog>) => void;
 	handleClearBlogList: () => void;
 	handleAddBlogToUserBlogs: (blog: IBlog) => void;
 	handleRemoveBlogFromUserBlogs: (blogId: string) => void;
@@ -87,10 +95,13 @@ const initialState = {
 	blogList: [],
 	userBlogs: [],
 	blogsTable: [],
+	savedBlogs: [],
 	lastFetchTimeAllBlogs: null as number | null,
 	lastFetchTimeUserBlogs: null as number | null,
+	lastFetchTimeSavedBlogs: null as number | null,
 	isLoadingAllBlogs: false,
 	isLoadingUserBlogs: false,
+	isLoadingSavedBlogs: false,
 };
 
 // Cache expiration time: 3 minutes
@@ -133,7 +144,7 @@ export const useBlogStore = createStore<IBlogStore>(
 			if (state.blogsTable.length > 0 && state.lastFetchTimeAllBlogs) {
 				const cacheAge = now - state.lastFetchTimeAllBlogs;
 				if (cacheAge < CACHE_DURATION) {
-					console.log("All CVs cache is still valid, skipping fetch");
+					console.log("All Blogs cache is still valid, skipping fetch");
 					return;
 				}
 			}
@@ -193,6 +204,53 @@ export const useBlogStore = createStore<IBlogStore>(
 			get().getUserBlogs(userId);
 		},
 
+		getSavedBlogs: async (userId: string): Promise<IApiResponse<IBlogDataResponse>> => {
+			return await get().handleRequest(async () => {
+				// Set loading state before API call
+				set({ isLoadingSavedBlogs: true });
+
+				try {
+					const res = await handleRequest<IBlogDataResponse>(EHttpType.GET, `/blogs/users/${userId}/saved`);
+
+					if (res.data && res.data.success && res.data.blogs) {
+						set({
+							savedBlogs: res.data.blogs,
+							lastFetchTimeSavedBlogs: Date.now(),
+							isLoadingSavedBlogs: false
+						});
+					} else {
+						set({ isLoadingSavedBlogs: false });
+					}
+
+					return res;
+				} catch (error) {
+					set({ isLoadingSavedBlogs: false });
+					throw error;
+				}
+			});
+		},
+
+		fetchSavedBlogsInBackground: async (userId: string): Promise<void> => {
+			const state = get();
+			const now = Date.now();
+
+			// Check if cache is still valid
+			if (state.savedBlogs.length > 0 && state.lastFetchTimeSavedBlogs) {
+				const cacheAge = now - state.lastFetchTimeSavedBlogs;
+				if (cacheAge < CACHE_DURATION) {
+					console.log("Saved Blogs cache is still valid, skipping fetch");
+					return;
+				}
+			}
+
+			// Check if already loading
+			if (state.isLoadingSavedBlogs) {
+				return;
+			}
+
+			get().getSavedBlogs(userId);
+		},
+
 		getBlog: async (blogId: string): Promise<IApiResponse<IBlogDataResponse>> => {
 			return await get().handleRequest(async () => {
 				return await handleRequest(EHttpType.GET, `/blogs/${blogId}`);
@@ -244,6 +302,25 @@ export const useBlogStore = createStore<IBlogStore>(
 			});
 		},
 
+		unsaveBlog: async (
+			blogId: string,
+			userId: string
+		): Promise<IApiResponse<IBlogDataResponse>> => {
+			// Remove from saved blogs immediately for optimistic UI
+			const currentSavedBlogs = get().savedBlogs;
+			set({ savedBlogs: currentSavedBlogs.filter(blog => blog.id !== blogId) });
+
+			// Call API in background
+			get().handleRequest(async () => {
+				const res = await handleRequest<IBlogDataResponse>(EHttpType.DELETE, `/blogs/${blogId}/users/${userId}/unsave`);
+				console.log("Unsave Blog response:", res);
+				return res;
+			});
+
+			// Return success immediately
+			return { data: { success: true } } as IApiResponse<IBlogDataResponse>;
+		},
+
 		updateBlog: async (
 			blogId: string,
 			title: string,
@@ -287,7 +364,7 @@ export const useBlogStore = createStore<IBlogStore>(
 		getAITitleResponse: async (title: string): Promise<IApiResponse<IBlogDataResponse>> => {
 			const formData = new FormData();
 			formData.append("data", JSON.stringify({ title }));
-			
+
 			return await get().handleRequest(async () => {
 				return await handleRequest(EHttpType.POST, `/ai/title`, formData);
 			});
@@ -296,7 +373,7 @@ export const useBlogStore = createStore<IBlogStore>(
 		getAIDescriptionResponse: async (title: string, description: string): Promise<IApiResponse<IBlogDataResponse>> => {
 			const formData = new FormData();
 			formData.append("data", JSON.stringify({ title, description }));
-			
+
 			return await get().handleRequest(async () => {
 				return await handleRequest(EHttpType.POST, `/ai/description`, formData);
 			});
@@ -305,7 +382,7 @@ export const useBlogStore = createStore<IBlogStore>(
 		getAIContentResponse: async (content: string): Promise<IApiResponse<IBlogDataResponse>> => {
 			const formData = new FormData();
 			formData.append("data", JSON.stringify({ content }));
-			
+
 			return await get().handleRequest(async () => {
 				return await handleRequest(EHttpType.POST, `/ai/content`, formData);
 			});
@@ -360,13 +437,6 @@ export const useBlogStore = createStore<IBlogStore>(
 			});
 
 			return { data: { success: true } } as IApiResponse;
-		},
-
-		handleUpdateBlog: (blogData: Partial<IBlog>) => {
-			const currentState = get();
-			// set({
-			// 	currentBlog: currentState.currentBlog ? { ...currentState.currentBlog, ...blogData, updatedAt: new Date().toISOString() } : null,
-			// } as Partial<IBlogStore>);
 		},
 
 		handleClearBlogList: (): void => {

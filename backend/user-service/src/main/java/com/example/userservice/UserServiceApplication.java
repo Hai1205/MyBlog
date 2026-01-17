@@ -6,11 +6,12 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 
+import com.example.rediscommon.configs.RedisConfig;
 import com.example.securitycommon.configs.SecurityConfig;
 
 @SpringBootApplication
-@ComponentScan(basePackages = { "com.example.userservice", "com.example.cloudinarycommon" })
-@Import(SecurityConfig.class)
+@ComponentScan(basePackages = { "com.example.userservice", "com.example.cloudinarycommon", "com.example.rediscommon" })
+@Import({ SecurityConfig.class, RedisConfig.class })
 @EnableJpaAuditing
 public class UserServiceApplication {
 

@@ -13,6 +13,8 @@ import com.example.userservice.exceptions.OurException;
 import com.example.userservice.mappers.UserMapper;
 import com.example.userservice.repositories.*;
 import com.example.cloudinarycommon.CloudinaryService;
+import com.example.rediscommon.services.RedisService;
+import com.example.rediscommon.services.RateLimiterService;
 import com.example.securitycommon.utils.SecurityUtils;
 import com.example.securitycommon.models.AuthenticatedUser;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -28,6 +30,7 @@ import java.security.SecureRandom;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
@@ -41,6 +44,8 @@ public class UserApi extends BaseApi {
     private final CloudinaryService cloudinaryService;
     private final SecureRandom random = new SecureRandom();
     private final ObjectMapper objectMapper;
+    private final RedisService redisService;
+    private final RateLimiterService rateLimiterService;
 
     @Value("${PRIVATE_CHARS}")
     private String privateChars;
@@ -54,7 +59,9 @@ public class UserApi extends BaseApi {
             UserCommandRepository userCommandRepository,
             PasswordEncoder passwordEncoder,
             UserMapper userMapper,
-            CloudinaryService cloudinaryService) {
+            CloudinaryService cloudinaryService,
+            RedisService redisService,
+            RateLimiterService rateLimiterService) {
         // this.simpleUserRepository = simpleUserRepository;
         this.userQueryRepository = userQueryRepository;
         this.userCommandRepository = userCommandRepository;
@@ -62,6 +69,8 @@ public class UserApi extends BaseApi {
         this.userMapper = userMapper;
         this.cloudinaryService = cloudinaryService;
         this.objectMapper = new ObjectMapper();
+        this.redisService = redisService;
+        this.rateLimiterService = rateLimiterService;
     }
 
     public UserDto handleCreateUser(String username,
@@ -332,10 +341,18 @@ public class UserApi extends BaseApi {
     }
 
     public Response createUser(String dataJson) {
+        long startTime = System.currentTimeMillis();
+        logger.info("Starting request at {}", startTime);
         logger.info("Creating new user");
         Response response = new Response();
 
         try {
+            // Rate limiting: 45 req/min for Create/Update APIs
+            if (!rateLimiterService.isAllowed("user:createUser", 45, 60)) {
+                logger.warn("Rate limit exceeded for createUser");
+                return buildErrorResponse(429, "Rate limit exceeded. Please try again later.");
+            }
+
             CreateUserRequest request = objectMapper.readValue(dataJson, CreateUserRequest.class);
             String username = request.getUsername();
             String email = request.getEmail();
@@ -354,6 +371,9 @@ public class UserApi extends BaseApi {
             UserDto savedUserDto = handleCreateUser(username, email, password, fullname, location, birth,
                     summary, role, status, instagram, linkedin, facebook, avatar);
 
+            long endTime = System.currentTimeMillis();
+            logger.info("Completed request in {} ms", endTime - startTime);
+
             response.setStatusCode(201);
             response.setMessage("User created successfully");
             response.setUser(savedUserDto);
@@ -371,9 +391,24 @@ public class UserApi extends BaseApi {
 
     public List<UserDto> handleGetAllUsers() {
         try {
-            return userQueryRepository.findAllUsers(Pageable.unpaged()).stream()
+            String cacheKey = "user:handleGetAllUsers:all";
+
+            // Check cache first
+            Object cached = redisService.get(cacheKey);
+            if (cached != null) {
+                logger.debug("Cache hit for key: {}", cacheKey);
+                return (List<UserDto>) cached;
+            }
+
+            List<UserDto> users = userQueryRepository.findAllUsers(Pageable.unpaged()).stream()
                     .map(userMapper::toDto)
                     .collect(Collectors.toList());
+
+            // Store in cache with 10 minutes TTL
+            redisService.set(cacheKey, users, 10, TimeUnit.MINUTES);
+            logger.debug("Cached result for key: {}", cacheKey);
+
+            return users;
         } catch (Exception e) {
             logger.error("Error in handleGetAllUsers: {}", e.getMessage(), e);
             throw new OurException("Failed to retrieve users", 500);
@@ -384,7 +419,19 @@ public class UserApi extends BaseApi {
         Response response = new Response();
 
         try {
+            long startTime = System.currentTimeMillis();
+            logger.info("Starting request at {}", startTime);
+
+            // Rate limiting: 90 req/min for GET APIs
+            if (!rateLimiterService.isAllowed("user:getAllUsers", 90, 60)) {
+                logger.warn("Rate limit exceeded for getAllUsers");
+                return buildErrorResponse(429, "Rate limit exceeded. Please try again later.");
+            }
+
             List<UserDto> userDtos = handleGetAllUsers();
+
+            long endTime = System.currentTimeMillis();
+            logger.info("Completed request in {} ms", endTime - startTime);
 
             response.setMessage("Users retrieved successfully");
             response.setUsers(userDtos);
@@ -399,9 +446,24 @@ public class UserApi extends BaseApi {
 
     public UserDto handleGetUserById(UUID userId) {
         try {
+            String cacheKey = "user:handleGetUserById:" + userId.toString();
+
+            // Check cache first
+            Object cached = redisService.get(cacheKey);
+            if (cached != null) {
+                logger.debug("Cache hit for key: {}", cacheKey);
+                return (UserDto) cached;
+            }
+
             User user = userQueryRepository.findUserById(userId)
                     .orElseThrow(() -> new OurException("User not found", 404));
-            return userMapper.toDto(user);
+            UserDto userDto = userMapper.toDto(user);
+
+            // Store in cache with 10 minutes TTL
+            redisService.set(cacheKey, userDto, 10, TimeUnit.MINUTES);
+            logger.debug("Cached result for key: {}", cacheKey);
+
+            return userDto;
         } catch (OurException e) {
             logger.error("Error in handleGetUserById: {}", e.getMessage(), e);
             throw e;
@@ -415,7 +477,19 @@ public class UserApi extends BaseApi {
         Response response = new Response();
 
         try {
+            long startTime = System.currentTimeMillis();
+            logger.info("Starting request at {}", startTime);
+
+            // Rate limiting: 90 req/min for GET APIs
+            if (!rateLimiterService.isAllowed("user:getUserById:" + userId, 90, 60)) {
+                logger.warn("Rate limit exceeded for getUserById: {}", userId);
+                return buildErrorResponse(429, "Rate limit exceeded. Please try again later.");
+            }
+
             UserDto userDto = handleGetUserById(userId);
+
+            long endTime = System.currentTimeMillis();
+            logger.info("Completed request in {} ms", endTime - startTime);
 
             response.setMessage("User retrieved successfully");
             response.setUser(userDto);
@@ -533,10 +607,18 @@ public class UserApi extends BaseApi {
     }
 
     public Response updateUser(UUID userId, String dataJson, MultipartFile avatar) {
+        long startTime = System.currentTimeMillis();
+        logger.info("Starting request at {}", startTime);
         logger.info("Updating user: {}", userId);
         Response response = new Response();
 
         try {
+            // Rate limiting: 45 req/min for Create/Update APIs
+            if (!rateLimiterService.isAllowed("user:updateUser", 45, 60)) {
+                logger.warn("Rate limit exceeded for updateUser");
+                return buildErrorResponse(429, "Rate limit exceeded. Please try again later.");
+            }
+
             UpdateUserRequest request = objectMapper.readValue(dataJson, UpdateUserRequest.class);
             String fullname = request.getFullname();
             String location = request.getLocation();
@@ -550,6 +632,9 @@ public class UserApi extends BaseApi {
 
             UserDto updatedUserDto = handleUpdateUser(userId, fullname, location, birth, summary, role, status,
                     instagram, linkedin, facebook, avatar);
+
+            long endTime = System.currentTimeMillis();
+            logger.info("Completed request in {} ms", endTime - startTime);
 
             response.setMessage("User updated successfully");
             response.setUser(updatedUserDto);
@@ -589,11 +674,22 @@ public class UserApi extends BaseApi {
     }
 
     public Response deleteUser(UUID userId) {
+        long startTime = System.currentTimeMillis();
+        logger.info("Starting request at {}", startTime);
         logger.info("Deleting user: {}", userId);
         Response response = new Response();
 
         try {
+            // Rate limiting: 20 req/min for Delete APIs
+            if (!rateLimiterService.isAllowed("user:deleteUser", 20, 60)) {
+                logger.warn("Rate limit exceeded for deleteUser");
+                return buildErrorResponse(429, "Rate limit exceeded. Please try again later.");
+            }
+
             handleDeleteUser(userId);
+
+            long endTime = System.currentTimeMillis();
+            logger.info("Completed request in {} ms", endTime - startTime);
 
             response.setMessage("User deleted successfully");
             logger.info("User deletion completed successfully: {}", userId);
@@ -721,11 +817,22 @@ public class UserApi extends BaseApi {
     }
 
     public Response getUserStats() {
+        long startTime = System.currentTimeMillis();
+        logger.info("Starting request at {}", startTime);
         try {
+            // Rate limiting: 90 req/min for GET APIs
+            if (!rateLimiterService.isAllowed("user:getUserStats", 90, 60)) {
+                logger.warn("Rate limit exceeded for getUserStats");
+                return buildErrorResponse(429, "Rate limit exceeded. Please try again later.");
+            }
+
             long totalUsers = handleGetTotalUsers();
             long activeUsers = handleGetUsersByStatus("active");
             long pendingUsers = handleGetUsersByStatus("pending");
             long bannedUsers = handleGetUsersByStatus("banned");
+
+            long endTime = System.currentTimeMillis();
+            logger.info("Completed request in {} ms", endTime - startTime);
 
             Response response = new Response(200, "User statistics retrieved successfully");
             response.setAdditionalData(Map.of(
@@ -741,8 +848,20 @@ public class UserApi extends BaseApi {
     }
 
     public Response getUsersByStatus(String status) {
+        long startTime = System.currentTimeMillis();
+        logger.info("Starting request at {}", startTime);
         try {
+            // Rate limiting: 90 req/min for GET APIs
+            if (!rateLimiterService.isAllowed("user:getUsersByStatus", 90, 60)) {
+                logger.warn("Rate limit exceeded for getUsersByStatus");
+                return buildErrorResponse(429, "Rate limit exceeded. Please try again later.");
+            }
+
             long count = handleGetUsersByStatus(status);
+
+            long endTime = System.currentTimeMillis();
+            logger.info("Completed request in {} ms", endTime - startTime);
+
             Response response = new Response(200, "Users by status retrieved successfully");
             response.setAdditionalData(Map.of("count", count));
             return response;
@@ -766,8 +885,20 @@ public class UserApi extends BaseApi {
     // }
 
     public Response getRecentUsers(int limit) {
+        long startTime = System.currentTimeMillis();
+        logger.info("Starting request at {}", startTime);
         try {
+            // Rate limiting: 90 req/min for GET APIs
+            if (!rateLimiterService.isAllowed("user:getRecentUsers", 90, 60)) {
+                logger.warn("Rate limit exceeded for getRecentUsers");
+                return buildErrorResponse(429, "Rate limit exceeded. Please try again later.");
+            }
+
             List<UserDto> recentUsers = handleGetRecentUsers(limit);
+
+            long endTime = System.currentTimeMillis();
+            logger.info("Completed request in {} ms", endTime - startTime);
+
             Response response = new Response(200, "Recent users retrieved successfully");
             response.setUsers(recentUsers);
             return response;
@@ -778,11 +909,22 @@ public class UserApi extends BaseApi {
     }
 
     public Response authenticateUser(String identifier, String password) {
+        long startTime = System.currentTimeMillis();
+        logger.info("Starting request at {}", startTime);
         logger.info("Authenticating user");
         Response response = new Response();
 
         try {
+            // Rate limiting: 7 req/min for authentication (similar to auth service)
+            if (!rateLimiterService.isAllowed("user:authenticateUser:" + identifier, 7, 60)) {
+                logger.warn("Rate limit exceeded for authenticateUser: {}", identifier);
+                return buildErrorResponse(429, "Rate limit exceeded. Please try again later.");
+            }
+
             UserDto userDto = handleAuthenticateUser(identifier, password);
+
+            long endTime = System.currentTimeMillis();
+            logger.info("Completed request in {} ms", endTime - startTime);
 
             response.setStatusCode(200);
             response.setMessage("User authenticated successfully");
@@ -800,15 +942,26 @@ public class UserApi extends BaseApi {
     }
 
     public Response findUserByIdentifier(String identifier) {
+        long startTime = System.currentTimeMillis();
+        logger.info("Starting request at {}", startTime);
         logger.info("Finding user by identifier: {}", identifier);
         Response response = new Response();
 
         try {
+            // Rate limiting: 90 req/min for GET APIs
+            if (!rateLimiterService.isAllowed("user:findUserByIdentifier", 90, 60)) {
+                logger.warn("Rate limit exceeded for findUserByIdentifier");
+                return buildErrorResponse(429, "Rate limit exceeded. Please try again later.");
+            }
+
             UserDto userDto = handleFindByIdentifier(identifier);
 
             if (userDto == null) {
                 return buildErrorResponse(404, "User not found");
             }
+
+            long endTime = System.currentTimeMillis();
+            logger.info("Completed request in {} ms", endTime - startTime);
 
             response.setStatusCode(200);
             response.setMessage("User found successfully");
@@ -826,11 +979,22 @@ public class UserApi extends BaseApi {
     }
 
     public Response activateUser(String email) {
+        long startTime = System.currentTimeMillis();
+        logger.info("Starting request at {}", startTime);
         logger.info("Activating user: {}", email);
         Response response = new Response();
 
         try {
+            // Rate limiting: 45 req/min for Update APIs
+            if (!rateLimiterService.isAllowed("user:activateUser:" + email, 45, 60)) {
+                logger.warn("Rate limit exceeded for activateUser: {}", email);
+                return buildErrorResponse(429, "Rate limit exceeded. Please try again later.");
+            }
+
             UserDto userDto = handleActivateUser(email);
+
+            long endTime = System.currentTimeMillis();
+            logger.info("Completed request in {} ms", endTime - startTime);
 
             response.setStatusCode(200);
             response.setMessage("User activated successfully");
@@ -848,15 +1012,26 @@ public class UserApi extends BaseApi {
     }
 
     public Response changePassword(String identifier, String dataJson) {
+        long startTime = System.currentTimeMillis();
+        logger.info("Starting request at {}", startTime);
         logger.info("Changing password for identifier: {}", identifier);
         Response response = new Response();
 
         try {
+            // Rate limiting: 7 req/min for password operations (similar to auth service)
+            if (!rateLimiterService.isAllowed("user:changePassword:" + identifier, 7, 60)) {
+                logger.warn("Rate limit exceeded for changePassword: {}", identifier);
+                return buildErrorResponse(429, "Rate limit exceeded. Please try again later.");
+            }
+
             ChangePasswordRequest request = objectMapper.readValue(dataJson, ChangePasswordRequest.class);
             String currentPassword = request.getCurrentPassword();
             String newPassword = request.getNewPassword();
 
             UserDto userDto = handleChangePasswordUser(identifier, currentPassword, newPassword);
+
+            long endTime = System.currentTimeMillis();
+            logger.info("Completed request in {} ms", endTime - startTime);
 
             response.setStatusCode(200);
             response.setMessage("Password changed successfully");
@@ -874,11 +1049,22 @@ public class UserApi extends BaseApi {
     }
 
     public Response resetPassword(String email) {
+        long startTime = System.currentTimeMillis();
+        logger.info("Starting request at {}", startTime);
         logger.info("Resetting password for email: {}", email);
         Response response = new Response();
 
         try {
+            // Rate limiting: 7 req/min for password operations
+            if (!rateLimiterService.isAllowed("user:resetPassword:" + email, 7, 60)) {
+                logger.warn("Rate limit exceeded for resetPassword: {}", email);
+                return buildErrorResponse(429, "Rate limit exceeded. Please try again later.");
+            }
+
             String newPassword = handleResetPasswordUser(email);
+
+            long endTime = System.currentTimeMillis();
+            logger.info("Completed request in {} ms", endTime - startTime);
 
             response.setStatusCode(200);
             response.setMessage("Password reset successfully");
@@ -896,14 +1082,25 @@ public class UserApi extends BaseApi {
     }
 
     public Response forgotPassword(String email, String dataJson) {
+        long startTime = System.currentTimeMillis();
+        logger.info("Starting request at {}", startTime);
         logger.info("Forgot password for email: {}", email);
         Response response = new Response();
 
         try {
+            // Rate limiting: 7 req/min for password operations
+            if (!rateLimiterService.isAllowed("user:forgotPassword:" + email, 7, 60)) {
+                logger.warn("Rate limit exceeded for forgotPassword: {}", email);
+                return buildErrorResponse(429, "Rate limit exceeded. Please try again later.");
+            }
+
             ForgotPasswordRequest request = objectMapper.readValue(dataJson, ForgotPasswordRequest.class);
             String newPassword = request.getPassword();
 
             UserDto userDto = handleForgotPasswordUser(email, newPassword);
+
+            long endTime = System.currentTimeMillis();
+            logger.info("Completed request in {} ms", endTime - startTime);
 
             response.setStatusCode(200);
             response.setMessage("Password updated successfully");
@@ -921,15 +1118,26 @@ public class UserApi extends BaseApi {
     }
 
     public Response findUserByEmail(String email) {
+        long startTime = System.currentTimeMillis();
+        logger.info("Starting request at {}", startTime);
         logger.info("Finding user by email: {}", email);
         Response response = new Response();
 
         try {
+            // Rate limiting: 90 req/min for GET APIs
+            if (!rateLimiterService.isAllowed("user:findUserByEmail", 90, 60)) {
+                logger.warn("Rate limit exceeded for findUserByEmail");
+                return buildErrorResponse(429, "Rate limit exceeded. Please try again later.");
+            }
+
             UserDto userDto = handleFindByEmail(email);
 
             if (userDto == null) {
                 return buildErrorResponse(404, "User not found");
             }
+
+            long endTime = System.currentTimeMillis();
+            logger.info("Completed request in {} ms", endTime - startTime);
 
             response.setStatusCode(200);
             response.setMessage("User found successfully");

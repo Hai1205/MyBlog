@@ -38,68 +38,14 @@ public class RAGConfig {
         return new GeminiChatModel(geminiService);
     }
 
-    /**
-     * ChatClient Bean - Sử dụng cho RAG Generation
-     */
-    // @Bean
-    // public ChatClient chatClient(ChatModel chatModel) {
-    //     log.info("Creating ChatClient bean with Gemini ChatModel");
-    //     return ChatClient.builder(chatModel)
-    //             .defaultSystem("""
-    //                     You are an expert CV reviewer and career coach.
-    //                     Provide detailed, actionable feedback based on best practices.
-    //                     Always use specific examples and metrics when possible.
-    //                     """)
-    //             .build();
-    // }
     @Bean
     public ChatClient chatClient(ChatModel chatModel) {
         log.info("Creating ChatClient bean with Gemini ChatModel");
         return ChatClient.builder(chatModel)
-                .defaultSystem("You are a CV expert. Provide concise, actionable feedback.")
+                .defaultSystem("You are a Blog expert. Provide concise, actionable feedback.")
                 .build();
     }
 
-    /**
-     * VectorStore Bean - PGVector với Gemini Embeddings (Cập nhật 1.0+)
-     */
-    // @Bean
-    // public VectorStore vectorStore(
-    //         JdbcTemplate jdbcTemplate,
-    //         EmbeddingModel embeddingModel,
-    //         @Value("${PGVECTOR_DIMENSION}") int dimensions,
-    //         @Value("${PGVECTOR_DISTANCE_TYPE}") String distanceTypeStr,
-    //         @Value("${PGVECTOR_INDEX_TYPE}") String indexTypeStr,
-    //         @Value("${PGVECTOR_REMOVE_EXISTING}") boolean removeExisting,
-    //         @Value("${PGVECTOR_INITIALIZE_SCHEMA}") boolean initializeSchema) {
-
-    //     log.info("Creating PgVectorStore (Spring AI 1.0.3+) - Dimensions: {}", dimensions);
-
-    //     PgDistanceType distanceType = switch (distanceTypeStr.toUpperCase()) {
-    //         case "COSINE_DISTANCE", "COSINE" -> PgDistanceType.COSINE_DISTANCE;
-    //         case "EUCLIDEAN_DISTANCE", "L2", "L2_DISTANCE" -> PgDistanceType.EUCLIDEAN_DISTANCE;
-    //         case "NEGATIVE_INNER_PRODUCT", "NIP", "INNER_PRODUCT", "IP" -> PgDistanceType.NEGATIVE_INNER_PRODUCT; // SỬA:
-    //                                                                                                               // Map
-    //                                                                                                               // alias
-    //                                                                                                               // sang
-    //                                                                                                               // NEGATIVE_INNER_PRODUCT
-    //         default -> PgDistanceType.COSINE_DISTANCE;
-    //     };
-
-    //     PgIndexType indexType = switch (indexTypeStr.toUpperCase()) {
-    //         case "HNSW" -> PgIndexType.HNSW;
-    //         case "IVFFLAT", "IVF" -> PgIndexType.IVFFLAT;
-    //         default -> PgIndexType.HNSW;
-    //     };
-
-    //     return PgVectorStore.builder(jdbcTemplate, embeddingModel)
-    //             .dimensions(dimensions)
-    //             .distanceType(distanceType)
-    //             .indexType(indexType)
-    //             .initializeSchema(initializeSchema)
-    //             .removeExistingVectorStoreTable(removeExisting)
-    //             .build();
-    // }
     @Bean
     public VectorStore vectorStore(
             JdbcTemplate jdbcTemplate,

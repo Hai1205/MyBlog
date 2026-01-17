@@ -11,7 +11,7 @@ interface Props {
   userBlogs: IBlog[];
   onCreateNew: () => void;
   onUpdate: (blog: IBlog) => void;
-  onDelete: (cvId: string) => void;
+  onDelete: (blogId: string) => void;
   isLoading?: boolean;
   paginationData?: PaginationData;
   onPageChange?: (page: number) => void;
@@ -52,8 +52,8 @@ export default function UserBlogsSection({
               <BlogCard
                 key={blog.id}
                 blog={blog}
-                // onUpdate={onUpdate}
-                // onDelete={onDelete}
+                onUpdate={onUpdate}
+                onDelete={onDelete}
               />
             ))}
           </div>

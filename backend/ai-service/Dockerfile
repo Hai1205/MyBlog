@@ -1,5 +1,5 @@
 # multi-stage Dockerfile for Spring Boot (Maven + OpenJDK 21)
-# Place this Dockerfile in each service folder (discovery, gateway, auth, cv)
+# Place this Dockerfile in each service folder (discovery, gateway, auth, blog)
 
 # -------- build stage --------
 FROM maven:3.9.4-eclipse-temurin-21 as build

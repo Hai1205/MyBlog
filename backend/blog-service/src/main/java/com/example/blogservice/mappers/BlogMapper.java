@@ -22,7 +22,7 @@ public class BlogMapper {
                 .category(blog.getCategory() != null ? blog.getCategory().name() : null)
                 .description(blog.getDescription())
                 .content(blog.getContent())
-                .imageUrl(blog.getImageUrl())
+                .thumbnailUrl(blog.getImageUrl())
                 .imagePublicId(blog.getImagePublicId())
                 .createdAt(blog.getCreatedAt())
                 .updatedAt(blog.getUpdatedAt())

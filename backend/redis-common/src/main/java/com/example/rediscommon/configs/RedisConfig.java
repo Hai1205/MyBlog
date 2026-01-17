@@ -39,15 +39,29 @@ public class RedisConfig {
 
             RedisStandaloneConfiguration config = new RedisStandaloneConfiguration(host, port);
 
-            // Parse username and password from userInfo (format: username:password)
+            // Parse username and password from userInfo (format: username:password or
+            // :password)
             if (userInfo != null && !userInfo.isEmpty()) {
-                String[] credentials = userInfo.split(":", 2);
-                if (credentials.length == 2) {
-                    config.setUsername(credentials[0]);
-                    config.setPassword(credentials[1]);
+                // Handle format ":password" when username is empty (e.g.,
+                // redis://:pass@host:port)
+                if (userInfo.startsWith(":")) {
+                    String password = userInfo.substring(1);
+                    if (!password.isEmpty()) {
+                        config.setPassword(password);
+                    }
                 } else {
-                    // Only password provided
-                    config.setPassword(userInfo);
+                    String[] credentials = userInfo.split(":", 2);
+                    if (credentials.length == 2) {
+                        if (!credentials[0].isEmpty()) {
+                            config.setUsername(credentials[0]);
+                        }
+                        if (!credentials[1].isEmpty()) {
+                            config.setPassword(credentials[1]);
+                        }
+                    } else if (!credentials[0].isEmpty()) {
+                        // Only password provided without colon
+                        config.setPassword(credentials[0]);
+                    }
                 }
             }
 

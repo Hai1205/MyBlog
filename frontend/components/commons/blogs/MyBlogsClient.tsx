@@ -8,25 +8,20 @@ import { toast } from "react-toastify";
 import { useBlogStore } from "@/stores/blogStore";
 import UserBlogsSection from "./UserBlogsSection";
 import PageHeader from "./PageHeader";
-import UserBlogsSkeleton from "./UserBlogsSkeleton";
+import BlogsSkeleton from "./BlogsSkeleton";
 
 export default function MyBlogsClient() {
   const { userAuth } = useAuthStore();
   const {
     deleteBlog,
     fetchUserBlogsInBackground,
-    fetchAllBlogsInBackground,
     userBlogs,
     isLoadingUserBlogs,
   } = useBlogStore();
 
   const router = useRouter();
-  const [templateBlogs, setTemplateBlogs] = useState<IBlog[]>([]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [cvToDelete, setCvToDelete] = useState<string | null>(null);
-  const [isDraggingOnPage, setIsDraggingOnPage] = useState(false);
-  const [importDialogOpen, setImportDialogOpen] = useState(false);
-  const [droppedFile, setDroppedFile] = useState<File | null>(null);
+  const [blogToDelete, setCvToDelete] = useState<string | null>(null);
 
   // Pagination for user Blogs
   const [userBlogsPage, setUserBlogsPage] = useState(1);
@@ -48,42 +43,10 @@ export default function MyBlogsClient() {
     setPage: setUserBlogsPage,
   };
 
-  // Pagination for template Blogs
-  const [templateBlogsPage, setTemplateBlogsPage] = useState(1);
-  const templateBlogsPageSize = 12;
-  const templateBlogsTotalPages = Math.ceil(
-    templateBlogs.length / templateBlogsPageSize
-  );
-  const templateBlogsStartIndex =
-    (templateBlogsPage - 1) * templateBlogsPageSize;
-  const templateBlogsEndIndex = templateBlogsStartIndex + templateBlogsPageSize;
-
-  const templateBlogsPagination = {
-    paginationState: {
-      page: templateBlogsPage,
-      pageSize: templateBlogsPageSize,
-    },
-    paginationData: {
-      totalElements: templateBlogs.length,
-      totalPages: templateBlogsTotalPages,
-      currentPage: templateBlogsPage,
-      pageSize: templateBlogsPageSize,
-      hasNext: templateBlogsPage < templateBlogsTotalPages,
-      hasPrevious: templateBlogsPage > 1,
-    },
-    setPage: setTemplateBlogsPage,
-  };
-
   // Paginate user Blogs in memory
   const paginatedUserBlogs = userBlogs.slice(
     userBlogsStartIndex,
-    userBlogsEndIndex
-  );
-
-  // Paginate template Blogs in memory
-  const paginatedTemplateBlogs = templateBlogs.slice(
-    templateBlogsStartIndex,
-    templateBlogsEndIndex
+    userBlogsEndIndex,
   );
 
   useEffect(() => {
@@ -91,13 +54,7 @@ export default function MyBlogsClient() {
       fetchUserBlogsInBackground(userAuth.id);
       console.log("Fetching user Blogs for user:", userAuth.id);
     }
-    fetchAllBlogsInBackground();
   }, [userAuth]);
-
-  // useEffect(() => {
-  //   const publicCvs = BlogsTable.filter((blog) => blog.isVisibility === true);
-  //   setTemplateBlogs(publicCvs);
-  // }, [BlogsTable]);
 
   const handleCreate = async () => {
     router.push("/blogs/new");
@@ -113,10 +70,10 @@ export default function MyBlogsClient() {
   };
 
   const handleDeleteConfirm = async () => {
-    if (!cvToDelete) return;
+    if (!blogToDelete) return;
 
     toast.success("Blog deleted successfully!");
-    await deleteBlog(cvToDelete);
+    await deleteBlog(blogToDelete);
     setDeleteDialogOpen(false);
     setCvToDelete(null);
   };
@@ -129,7 +86,7 @@ export default function MyBlogsClient() {
 
   // Show loading only when there's no cached data
   if (isLoadingUserBlogs) {
-    return <UserBlogsSkeleton />;
+    return <BlogsSkeleton />;
   }
 
   return (

@@ -6,10 +6,12 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Import;
 
+import com.example.rediscommon.configs.RedisConfig;
 import com.example.securitycommon.configs.SecurityConfig;
+
 @SpringBootApplication
 @ComponentScan(basePackages = { "com.example.statsservice", "com.example.rediscommon" })
-@Import({ SecurityConfig.class })
+@Import({ SecurityConfig.class, RedisConfig.class })
 @EnableFeignClients
 public class StatsServiceApplication {
     public static void main(String[] args) {

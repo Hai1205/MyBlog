@@ -1,6 +1,5 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DataTable } from "../adminTable/DataTable";
-import { Pencil, Key, Trash2 } from "lucide-react";
+import { Pencil, Key, Trash2, Eye } from "lucide-react";
 import { PaginationData } from "@/components/commons/layout/pagination/PaginationControls";
 
 interface BlogTableProps {
@@ -8,6 +7,7 @@ interface BlogTableProps {
   isLoading: boolean;
   onUpdate?: (blog: IBlog) => void;
   onDelete?: (blog: IBlog) => void;
+  onView?: (blog: IBlog) => void;
   paginationData?: PaginationData;
   onPageChange?: (page: number) => void;
   showPagination?: boolean;
@@ -39,6 +39,7 @@ export const BlogTable = ({
   isLoading,
   onUpdate,
   onDelete,
+  onView,
   paginationData,
   onPageChange,
   showPagination = false,
@@ -98,6 +99,14 @@ export const BlogTable = ({
       onClick: onDelete,
       icon: Trash2,
       className: "hover:bg-destructive/10 hover:text-destructive",
+    });
+  }
+
+  if (onView) {
+    actions.push({
+      label: "View",
+      onClick: onView,
+      icon: Eye,
     });
   }
 

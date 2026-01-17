@@ -27,6 +27,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import DraggingOnPage from "../layout/Dragging/DraggingOnPage";
 import { useToast } from "@/hooks/use-toast";
+import { useAuthStore } from "@/stores/authStore";
 
 const JoditEditor = dynamic(() => import("jodit-react"), { ssr: false });
 
@@ -39,10 +40,12 @@ const EditBlogClient = ({ isCreate }: EditBlogClientProps) => {
     isLoading,
     getBlog,
     updateBlog,
+    createBlog,
     getAITitleResponse,
     getAIDescriptionResponse,
     getAIContentResponse,
   } = useBlogStore();
+  const {userAuth} = useAuthStore();
 
   const { toast } = useToast();
   const [AIContentLoading, setAIContentLoading] = useState(false);
@@ -183,6 +186,51 @@ const EditBlogClient = ({ isCreate }: EditBlogClientProps) => {
       showCharsCounter: true,
       showWordsCounter: true,
       showXPathInStatusbar: false,
+      uploader: {
+        insertImageAsBase64URI: true,
+        imagesExtensions: ["jpg", "png", "jpeg", "gif", "svg", "webp"],
+      },
+      filebrowser: {
+        ajax: {
+          url: "/api/upload",
+        },
+      },
+      buttons: [
+        "source",
+        "|",
+        "bold",
+        "italic",
+        "underline",
+        "strikethrough",
+        "|",
+        "ul",
+        "ol",
+        "|",
+        "outdent",
+        "indent",
+        "|",
+        "font",
+        "fontsize",
+        "brush",
+        "paragraph",
+        "|",
+        "image",
+        "video",
+        "table",
+        "link",
+        "|",
+        "align",
+        "undo",
+        "redo",
+        "|",
+        "hr",
+        "eraser",
+        "copyformat",
+        "|",
+        "symbol",
+        "fullsize",
+        "print",
+      ],
     }),
     []
   );
@@ -215,15 +263,26 @@ const EditBlogClient = ({ isCreate }: EditBlogClientProps) => {
   const handleSubmit = async (e: any) => {
     e.preventDefault();
 
-    if (!id) return;
-    await updateBlog(
-      id as string,
-      formData.title,
-      formData.description,
-      formData.category,
-      formData.thumbnail,
-      formData.content
-    );
+    if (isCreate && userAuth) {
+      console.log("hello")
+      await createBlog(
+        userAuth?.id,
+        formData.title,
+        formData.description,
+        formData.category,
+        formData.thumbnail,
+        formData.content
+      );
+    } else if (id) {
+      await updateBlog(
+        id as string,
+        formData.title,
+        formData.description,
+        formData.category,
+        formData.thumbnail,
+        formData.content
+      );
+    }
   };
 
   const handleAITitleResponse = async () => {
@@ -429,8 +488,8 @@ const EditBlogClient = ({ isCreate }: EditBlogClientProps) => {
                           isDraggingOnThumbnail
                             ? "border-primary bg-primary/10 scale-[1.02]"
                             : previewImage || existingImage
-                            ? "border-border hover:border-primary/50"
-                            : "border-dashed border-border hover:border-primary hover:bg-primary/5"
+                              ? "border-border hover:border-primary/50"
+                              : "border-dashed border-border hover:border-primary hover:bg-primary/5"
                         }
                       `}
                         >
@@ -522,8 +581,8 @@ const EditBlogClient = ({ isCreate }: EditBlogClientProps) => {
                       ? "Creating..."
                       : "Updating..."
                     : isCreate
-                    ? "Create Blog"
-                    : "Update Blog"}
+                      ? "Create Blog"
+                      : "Update Blog"}
                 </Button>
               </div>
             )}
@@ -614,8 +673,8 @@ const EditBlogClient = ({ isCreate }: EditBlogClientProps) => {
                     ? "Creating..."
                     : "Updating..."
                   : isCreate
-                  ? "Create Blog"
-                  : "Update Blog"}
+                    ? "Create Blog"
+                    : "Update Blog"}
               </Button>
             </div>
           )}

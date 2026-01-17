@@ -7,11 +7,12 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Import;
 import org.springframework.scheduling.annotation.EnableAsync;
 
+import com.example.rediscommon.configs.RedisConfig;
 import com.example.securitycommon.configs.SecurityConfig;
 
 @SpringBootApplication
-@ComponentScan(basePackages = {"com.example.blogservice", "com.example.cloudinarycommon"})
-@Import({ SecurityConfig.class })
+@ComponentScan(basePackages = { "com.example.blogservice", "com.example.cloudinarycommon", "com.example.rediscommon" })
+@Import({ SecurityConfig.class, RedisConfig.class })
 @EnableFeignClients
 @EnableAsync
 public class BlogServiceApplication {

@@ -36,7 +36,7 @@
         <spring-boot.version>3.3.0</spring-boot.version>
         <spring-cloud.version>2023.0.1</spring-cloud.version>
         <mysql.version>8.2.0</mysql.version>
-        <jjwt.version>0.12.3</jjwt.version>
+        <jjwt.version>0.12.6</jjwt.version>
         <cloudinary.version>1.38.0</cloudinary.version>
         <pdfbox.version>3.0.1</pdfbox.version>
         <poi.version>5.4.1</poi.version>

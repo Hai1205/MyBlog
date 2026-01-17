@@ -63,6 +63,12 @@
             <artifactId>security-common</artifactId>
         </dependency>
 
+        <!-- Redis Common Module - provides Redis configuration and services -->
+        <dependency>
+            <groupId>com.example</groupId>
+            <artifactId>redis-common</artifactId>
+        </dependency>
+
         <!-- Testing Tools -->
         <!-- Spring Boot testing framework -->
         <dependency>

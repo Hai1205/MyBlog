@@ -25,7 +25,7 @@ interface ProfileTabProps {
   data: ExtendedUserData | null;
   onChange: (
     field: keyof ExtendedUserData,
-    value: string | string[] | boolean
+    value: string | string[] | boolean,
   ) => void;
   onUpdate: () => void;
   previewAvatar: string;
@@ -53,7 +53,7 @@ export default function ProfileTab({
     const isValid = validatePhoneNumber(phone);
     if (!isValid) {
       setPhoneError(
-        "Invalid phone number. Please enter a Vietnamese phone number (10 digits, starting with 03, 05, 07, 08, 09)"
+        "Invalid phone number. Please enter a Vietnamese phone number (10 digits, starting with 03, 05, 07, 08, 09)",
       );
       return false;
     }
@@ -97,7 +97,7 @@ export default function ProfileTab({
             Click on image to change
           </p>
           <p className="text-xs text-muted-foreground mt-1">
-            JPG, PNG hoặc GIF (tối đa 5MB)
+            JPG, PNG or GIF (max 5MB)
           </p>
         </div>
       </div>
@@ -180,7 +180,7 @@ export default function ProfileTab({
 
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <Label htmlFor="summary">Giới thiệu bản thân</Label>
+          <Label htmlFor="summary">About Me</Label>
           <span className="text-xs text-muted-foreground">
             {data?.summary?.length || 0}/2000
           </span>
@@ -197,7 +197,7 @@ export default function ProfileTab({
                   : e.target.value;
               onChange("summary", truncatedValue);
             }}
-            placeholder="Viết vài dòng giới thiệu về bản thân..."
+            placeholder="Write a few lines about yourself..."
             className="w-full min-h-32 px-3 py-2 text-sm bg-transparent focus:outline-none transition-colors resize-none border-0 overflow-hidden"
             style={{ height: "auto" }}
             onInput={(e) => {
@@ -208,7 +208,7 @@ export default function ProfileTab({
           />
         </ScrollArea>
         <p className="text-xs text-muted-foreground">
-          Viết vài dòng giới thiệu về bản thân và mục tiêu nghề nghiệp của bạn
+          Write a few lines about yourself and your career goals
         </p>
       </div>
 
