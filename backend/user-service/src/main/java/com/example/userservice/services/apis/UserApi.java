@@ -25,7 +25,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.security.SecureRandom;
 import java.util.List;
 import java.util.Map;
@@ -342,7 +344,6 @@ public class UserApi extends BaseApi {
 
     public Response createUser(String dataJson) {
         long startTime = System.currentTimeMillis();
-        logger.info("Starting request at {}", startTime);
         logger.info("Creating new user");
         Response response = new Response();
 
@@ -420,7 +421,6 @@ public class UserApi extends BaseApi {
 
         try {
             long startTime = System.currentTimeMillis();
-            logger.info("Starting request at {}", startTime);
 
             // Rate limiting: 90 req/min for GET APIs
             if (!rateLimiterService.isAllowed("user:getAllUsers", 90, 60)) {
@@ -478,7 +478,6 @@ public class UserApi extends BaseApi {
 
         try {
             long startTime = System.currentTimeMillis();
-            logger.info("Starting request at {}", startTime);
 
             // Rate limiting: 90 req/min for GET APIs
             if (!rateLimiterService.isAllowed("user:getUserById:" + userId, 90, 60)) {
@@ -608,7 +607,6 @@ public class UserApi extends BaseApi {
 
     public Response updateUser(UUID userId, String dataJson, MultipartFile avatar) {
         long startTime = System.currentTimeMillis();
-        logger.info("Starting request at {}", startTime);
         logger.info("Updating user: {}", userId);
         Response response = new Response();
 
@@ -675,7 +673,6 @@ public class UserApi extends BaseApi {
 
     public Response deleteUser(UUID userId) {
         long startTime = System.currentTimeMillis();
-        logger.info("Starting request at {}", startTime);
         logger.info("Deleting user: {}", userId);
         Response response = new Response();
 
@@ -785,19 +782,17 @@ public class UserApi extends BaseApi {
     /**
      * Get users created in date range
      */
-    // public long handleGetUsersCreatedInRange(String startDate, String endDate) {
-    // try {
-    // // Note: User entity doesn't have createdAt field in current implementation
-    // // This is a placeholder implementation
-    // // TODO: Add createdAt field to User entity for proper tracking
-    // logger.warn("handleGetUsersCreatedInRange called but User entity doesn't have
-    // createdAt field");
-    // return 0;
-    // } catch (Exception e) {
-    // logger.error("Error in handleGetUsersCreatedInRange: {}", e.getMessage(), e);
-    // throw new OurException("Failed to get users created in range", 500);
-    // }
-    // }
+    public long handleGetUsersCreatedInRange(String startDate, String endDate) {
+        try {
+            // Parse ISO 8601 format with timezone (e.g., "2026-01-01T00:00:00Z")
+            LocalDateTime start = Instant.parse(startDate).atZone(ZoneOffset.UTC).toLocalDateTime();
+            LocalDateTime end = Instant.parse(endDate).atZone(ZoneOffset.UTC).toLocalDateTime();
+            return userQueryRepository.countUsersCreatedBetween(start, end);
+        } catch (Exception e) {
+            logger.error("Error in handleGetUsersCreatedInRange: {}", e.getMessage(), e);
+            throw new OurException("Failed to get users created in range", 500);
+        }
+    }
 
     /**
      * Get recent users
@@ -818,7 +813,6 @@ public class UserApi extends BaseApi {
 
     public Response getUserStats() {
         long startTime = System.currentTimeMillis();
-        logger.info("Starting request at {}", startTime);
         try {
             // Rate limiting: 90 req/min for GET APIs
             if (!rateLimiterService.isAllowed("user:getUserStats", 90, 60)) {
@@ -849,7 +843,6 @@ public class UserApi extends BaseApi {
 
     public Response getUsersByStatus(String status) {
         long startTime = System.currentTimeMillis();
-        logger.info("Starting request at {}", startTime);
         try {
             // Rate limiting: 90 req/min for GET APIs
             if (!rateLimiterService.isAllowed("user:getUsersByStatus", 90, 60)) {
@@ -871,22 +864,31 @@ public class UserApi extends BaseApi {
         }
     }
 
-    // public Response getUsersCreatedInRange(String startDate, String endDate) {
-    // try {
-    // long count = handleGetUsersCreatedInRange(startDate, endDate);
-    // Response response = new Response(200, "Users created in range retrieved
-    // successfully");
-    // response.setAdditionalData(Map.of("count", count));
-    // return response;
-    // } catch (Exception e) {
-    // logger.error("Error in getUsersCreatedInRange: {}", e.getMessage(), e);
-    // return new Response(500, "Failed to get users created in range");
-    // }
-    // }
+    public Response getUsersCreatedInRange(String startDate, String endDate) {
+        long startTime = System.currentTimeMillis();
+        try {
+            // Rate limiting: 90 req/min for GET APIs
+            if (!rateLimiterService.isAllowed("user:getUsersCreatedInRange", 90, 60)) {
+                logger.warn("Rate limit exceeded for getUsersCreatedInRange");
+                return buildErrorResponse(429, "Rate limit exceeded. Please try again later.");
+            }
+
+            long count = handleGetUsersCreatedInRange(startDate, endDate);
+
+            long endTime = System.currentTimeMillis();
+            logger.info("Completed request in {} ms", endTime - startTime);
+
+            Response response = new Response(200, "Users created in range retrieved successfully");
+            response.setAdditionalData(Map.of("count", count));
+            return response;
+        } catch (Exception e) {
+            logger.error("Error in getUsersCreatedInRange: {}", e.getMessage(), e);
+            return new Response(500, "Failed to get users created in range");
+        }
+    }
 
     public Response getRecentUsers(int limit) {
         long startTime = System.currentTimeMillis();
-        logger.info("Starting request at {}", startTime);
         try {
             // Rate limiting: 90 req/min for GET APIs
             if (!rateLimiterService.isAllowed("user:getRecentUsers", 90, 60)) {
@@ -910,7 +912,6 @@ public class UserApi extends BaseApi {
 
     public Response authenticateUser(String identifier, String password) {
         long startTime = System.currentTimeMillis();
-        logger.info("Starting request at {}", startTime);
         logger.info("Authenticating user");
         Response response = new Response();
 
@@ -943,7 +944,6 @@ public class UserApi extends BaseApi {
 
     public Response findUserByIdentifier(String identifier) {
         long startTime = System.currentTimeMillis();
-        logger.info("Starting request at {}", startTime);
         logger.info("Finding user by identifier: {}", identifier);
         Response response = new Response();
 
@@ -980,7 +980,6 @@ public class UserApi extends BaseApi {
 
     public Response activateUser(String email) {
         long startTime = System.currentTimeMillis();
-        logger.info("Starting request at {}", startTime);
         logger.info("Activating user: {}", email);
         Response response = new Response();
 
@@ -1013,7 +1012,6 @@ public class UserApi extends BaseApi {
 
     public Response changePassword(String identifier, String dataJson) {
         long startTime = System.currentTimeMillis();
-        logger.info("Starting request at {}", startTime);
         logger.info("Changing password for identifier: {}", identifier);
         Response response = new Response();
 
@@ -1050,7 +1048,6 @@ public class UserApi extends BaseApi {
 
     public Response resetPassword(String email) {
         long startTime = System.currentTimeMillis();
-        logger.info("Starting request at {}", startTime);
         logger.info("Resetting password for email: {}", email);
         Response response = new Response();
 
@@ -1083,7 +1080,6 @@ public class UserApi extends BaseApi {
 
     public Response forgotPassword(String email, String dataJson) {
         long startTime = System.currentTimeMillis();
-        logger.info("Starting request at {}", startTime);
         logger.info("Forgot password for email: {}", email);
         Response response = new Response();
 
@@ -1119,7 +1115,6 @@ public class UserApi extends BaseApi {
 
     public Response findUserByEmail(String email) {
         long startTime = System.currentTimeMillis();
-        logger.info("Starting request at {}", startTime);
         logger.info("Finding user by email: {}", email);
         Response response = new Response();
 

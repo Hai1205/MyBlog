@@ -22,7 +22,6 @@ public class MailApi {
     public void sendMailActivation(String email, String otp) {
         try {
             long startTime = System.currentTimeMillis();
-            logger.info("Starting request at {}", startTime);
             logger.info("Sending OTP to email: {}", email);
 
             String subject = "Account Activation";
@@ -49,7 +48,6 @@ public class MailApi {
     public void sendMailResetPassword(String email, String newPassword) {
         try {
             long startTime = System.currentTimeMillis();
-            logger.info("Starting request at {}", startTime);
             logger.info("Password reset attempt for email: {}", email);
 
             String subject = "Reset Password";

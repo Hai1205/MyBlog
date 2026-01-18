@@ -1,6 +1,6 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DataTable } from "../adminTable/DataTable";
-import { Pencil, Key, Trash2 } from "lucide-react";
+import { Pencil, Key, Trash2, Eye } from "lucide-react";
 import { PaginationData } from "@/components/commons/layout/pagination/PaginationControls";
 
 interface UserTableProps {
@@ -9,6 +9,7 @@ interface UserTableProps {
   onUpdate?: (user: IUser) => void;
   onResetPassword?: (user: IUser) => void;
   onDelete?: (user: IUser) => void;
+  onView?: (user: IUser) => void;
   paginationData?: PaginationData;
   onPageChange?: (page: number) => void;
   showPagination?: boolean;
@@ -38,23 +39,13 @@ const getRoleColor = (role: string) => {
   }
 };
 
-const getPlanColor = (role: string) => {
-  switch (role) {
-    case "ultra":
-      return "bg-blue-500";
-    case "pro":
-      return "bg-yellow-500";
-    default:
-      return "bg-gray-500";
-  }
-};
-
 export const UserTable = ({
   users,
   isLoading,
   onUpdate,
   onDelete,
   onResetPassword,
+  onView,
   paginationData,
   onPageChange,
   showPagination = false,
@@ -136,7 +127,7 @@ export const UserTable = ({
 
   if (onUpdate) {
     actions.push({
-      label: "Sửa",
+      label: "Update",
       onClick: onUpdate,
       icon: Pencil,
     });
@@ -144,7 +135,7 @@ export const UserTable = ({
 
   if (onResetPassword) {
     actions.push({
-      label: "Đặt lại mật khẩu",
+      label: "Reset password",
       onClick: onResetPassword,
       icon: Key,
     });
@@ -152,9 +143,18 @@ export const UserTable = ({
 
   if (onDelete) {
     actions.push({
-      label: "Xoá",
+      label: "Delete",
       onClick: onDelete,
       icon: Trash2,
+      className: "hover:bg-destructive/10 hover:text-destructive",
+    });
+  }
+
+  if (onView) {
+    actions.push({
+      label: "View",
+      onClick: onView,
+      icon: Eye,
       className: "hover:bg-destructive/10 hover:text-destructive",
     });
   }

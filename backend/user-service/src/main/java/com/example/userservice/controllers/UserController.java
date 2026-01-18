@@ -94,15 +94,15 @@ public class UserController {
         return ResponseEntity.status(response.getStatusCode()).body(response);
     }
 
-    // @GetMapping("/stats/created-range")
+    @GetMapping("/stats/created-range")
     // @PreAuthorize("hasAuthority('admin')")
-    // public ResponseEntity<Response> getUsersCreatedInRange(
-    //         @RequestParam("startDate") String startDate,
-    //         @RequestParam("endDate") String endDate) {
-    //     Response response = userApi.getUsersCreatedInRange(startDate, endDate);
+    public ResponseEntity<Response> getUsersCreatedInRange(
+            @RequestParam("startDate") String startDate,
+            @RequestParam("endDate") String endDate) {
+        Response response = userApi.getUsersCreatedInRange(startDate, endDate);
 
-    //     return ResponseEntity.status(response.getStatusCode()).body(response);
-    // }
+        return ResponseEntity.status(response.getStatusCode()).body(response);
+    }
 
     @GetMapping("/recent")
     // @PreAuthorize("hasAuthority('admin')")

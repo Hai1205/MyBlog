@@ -39,6 +39,7 @@ export interface IBlogStore extends IBaseStore {
 		category: string,
 		thumbnail: File | null,
 		content: string,
+		isVisibility: boolean
 	) => Promise<IApiResponse<IBlogDataResponse>>;
 	saveBlog: (
 		blogId: string,
@@ -55,18 +56,19 @@ export interface IBlogStore extends IBaseStore {
 		category: string,
 		thumbnail: File | null,
 		content: string,
+		isVisibility: boolean
 	) => Promise<IApiResponse<IBlogDataResponse>>;
 	deleteBlog: (
 		blogId: string
 	) => Promise<IApiResponse<void>>;
-	getAITitleResponse: (
+	analyzeTitle: (
 		title: string
 	) => Promise<IApiResponse<IBlogDataResponse>>;
-	getAIDescriptionResponse: (
+	analyzeDescription: (
 		title: string,
 		description: string
 	) => Promise<IApiResponse<IBlogDataResponse>>;
-	getAIContentResponse: (
+	analyzeContent: (
 		content: string
 	) => Promise<IApiResponse<IBlogDataResponse>>;
 	getBlogComments: (
@@ -264,6 +266,7 @@ export const useBlogStore = createStore<IBlogStore>(
 			category: string,
 			thumbnail: File | null,
 			content: string,
+			isVisibility: boolean
 		): Promise<IApiResponse<IBlogDataResponse>> => {
 			const formData = new FormData();
 			formData.append("data", JSON.stringify({
@@ -271,6 +274,7 @@ export const useBlogStore = createStore<IBlogStore>(
 				description,
 				category,
 				content,
+				isVisibility,
 			}));
 			if (thumbnail) formData.append("thumbnail", thumbnail);
 
@@ -328,6 +332,7 @@ export const useBlogStore = createStore<IBlogStore>(
 			category: string,
 			thumbnail: File | null,
 			content: string,
+			isVisibility: boolean
 		): Promise<IApiResponse<IBlogDataResponse>> => {
 			const formData = new FormData();
 			formData.append("data", JSON.stringify({
@@ -335,6 +340,7 @@ export const useBlogStore = createStore<IBlogStore>(
 				description,
 				category,
 				content,
+				isVisibility,
 			}));
 			if (thumbnail) formData.append("thumbnail", thumbnail);
 
@@ -361,7 +367,7 @@ export const useBlogStore = createStore<IBlogStore>(
 			return { data: { success: true } } as IApiResponse;
 		},
 
-		getAITitleResponse: async (title: string): Promise<IApiResponse<IBlogDataResponse>> => {
+		analyzeTitle: async (title: string): Promise<IApiResponse<IBlogDataResponse>> => {
 			const formData = new FormData();
 			formData.append("data", JSON.stringify({ title }));
 
@@ -370,7 +376,7 @@ export const useBlogStore = createStore<IBlogStore>(
 			});
 		},
 
-		getAIDescriptionResponse: async (title: string, description: string): Promise<IApiResponse<IBlogDataResponse>> => {
+		analyzeDescription: async (title: string, description: string): Promise<IApiResponse<IBlogDataResponse>> => {
 			const formData = new FormData();
 			formData.append("data", JSON.stringify({ title, description }));
 
@@ -379,7 +385,7 @@ export const useBlogStore = createStore<IBlogStore>(
 			});
 		},
 
-		getAIContentResponse: async (content: string): Promise<IApiResponse<IBlogDataResponse>> => {
+		analyzeContent: async (content: string): Promise<IApiResponse<IBlogDataResponse>> => {
 			const formData = new FormData();
 			formData.append("data", JSON.stringify({ content }));
 

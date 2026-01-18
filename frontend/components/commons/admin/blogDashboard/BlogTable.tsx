@@ -1,5 +1,5 @@
 import { DataTable } from "../adminTable/DataTable";
-import { Pencil, Key, Trash2, Eye } from "lucide-react";
+import { Pencil, Trash2, Eye } from "lucide-react";
 import { PaginationData } from "@/components/commons/layout/pagination/PaginationControls";
 
 interface BlogTableProps {
@@ -32,6 +32,10 @@ const getCategoryColor = (category: string) => {
     default:
       return "bg-gray-500";
   }
+};
+
+const getPrivacyColor = (isVisibility: boolean) => {
+  return isVisibility ? "bg-green-500" : "bg-red-500";
 };
 
 export const BlogTable = ({
@@ -67,6 +71,21 @@ export const BlogTable = ({
       accessor: (blog: IBlog) => (
         <div className="inline-flex items-center justify-center gap-2">
           <span className="capitalize">{blog.description}</span>
+        </div>
+      ),
+    },
+    {
+      header: "Visibility",
+      accessor: (blog: IBlog) => (
+        <div className="inline-flex items-center justify-center gap-2">
+          <span
+            className={`h-2 w-2 rounded-full ${getPrivacyColor(
+              blog.isVisibility,
+            )}`}
+          />
+          <span className="capitalize">
+            {blog.isVisibility ? "Public" : "Private"}
+          </span>
         </div>
       ),
     },

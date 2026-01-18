@@ -14,27 +14,25 @@ import TableDashboardSkeleton from "../adminTable/TableDashboardSkeleton";
 import { BlogFilter } from "./BlogFilter";
 import { BlogTable } from "./BlogTable";
 
-export type BlogFilterType = "category";
+export type BlogFilterType = "category" | "visibility";
 export interface IBlogFilter {
   category: string[];
+  visibility: string[];
   [key: string]: string[];
 }
 
 const blogInitialFilters: IBlogFilter = {
   category: [],
+  visibility: [],
 };
 
 export default function BlogDashboardClient() {
+  const { blogsTable, fetchAllBlogsInBackground, deleteBlog, getAllBlogs } =
+    useBlogStore();
+
   const router = useRouter();
-  const {
-    blogsTable,
-    fetchAllBlogsInBackground,
-    deleteBlog,
-    getAllBlogs,
-  } = useBlogStore();
 
   const [searchQuery, setSearchQuery] = useState("");
-
   const [activeFilters, setActiveFilters] =
     useState<IBlogFilter>(blogInitialFilters);
   const [filteredBlogs, setFilteredBlogs] = useState<IBlog[]>([]);
@@ -66,7 +64,7 @@ export default function BlogDashboardClient() {
   }, []);
 
   const filterData = useCallback(
-    (query: string, filters: { category: string[] }) => {
+    (query: string, filters: IBlogFilter) => {
       let results = [...blogsTable];
 
       if (query.trim()) {
@@ -74,19 +72,30 @@ export default function BlogDashboardClient() {
         results = results.filter(
           (blog) =>
             blog.title.toLowerCase().includes(searchTerms) ||
-            blog.description.toLowerCase().includes(searchTerms)
+            blog.description.toLowerCase().includes(searchTerms),
         );
       }
 
       if (filters.category.length > 0) {
         results = results.filter((blog) =>
-          filters.category.includes(blog.category || "")
+          filters.category.includes(blog.category || ""),
         );
+      }
+
+      if (filters.visibility && filters.visibility.length > 0) {
+        results = results.filter((blog) => {
+          const isVisibility = blog.isVisibility;
+          return filters.visibility!.some((filterValue) => {
+            if (filterValue === "true") return isVisibility === true;
+            if (filterValue === "false") return isVisibility === false;
+            return false;
+          });
+        });
       }
 
       setFilteredBlogs(results);
     },
-    [blogsTable]
+    [blogsTable],
   );
 
   useEffect(() => {
@@ -97,14 +106,14 @@ export default function BlogDashboardClient() {
   useEffect(() => {
     paginationData.totalElements = filteredBlogs.length;
     paginationData.totalPages = Math.ceil(
-      filteredBlogs.length / paginationState.pageSize
+      filteredBlogs.length / paginationState.pageSize,
     );
   }, [filteredBlogs.length, paginationState.pageSize]);
 
   // Paginate filtered blogsTable
   const paginatedBlogs = filteredBlogs.slice(
     (paginationState.page - 1) * paginationState.pageSize,
-    paginationState.page * paginationState.pageSize
+    paginationState.page * paginationState.pageSize,
   );
 
   const handleSearch = useCallback(
@@ -113,7 +122,7 @@ export default function BlogDashboardClient() {
 
       filterData(searchQuery, activeFilters);
     },
-    [searchQuery, activeFilters, filterData]
+    [searchQuery, activeFilters, filterData],
   );
 
   const toggleFilter = (value: string, type: BlogFilterType) => {

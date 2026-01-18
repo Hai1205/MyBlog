@@ -22,8 +22,10 @@ public class BlogDto {
     @Column(columnDefinition = "TEXT")
     private String content;
 
-    private String imageUrl;
-    private String imagePublicId;
+    private String thumbnailUrl;
+    private String thumbnailPublicId;
+
+    private Boolean isVisibility;
 
     private Instant createdAt;
     private Instant updatedAt;

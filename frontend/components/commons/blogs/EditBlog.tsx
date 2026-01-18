@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useParams } from "next/navigation";
@@ -41,11 +42,11 @@ const EditBlogClient = ({ isCreate }: EditBlogClientProps) => {
     getBlog,
     updateBlog,
     createBlog,
-    getAITitleResponse,
-    getAIDescriptionResponse,
-    getAIContentResponse,
+    analyzeTitle,
+    analyzeDescription,
+    analyzeContent,
   } = useBlogStore();
-  const {userAuth} = useAuthStore();
+  const { userAuth } = useAuthStore();
 
   const { toast } = useToast();
   const [AIContentLoading, setAIContentLoading] = useState(false);
@@ -67,12 +68,14 @@ const EditBlogClient = ({ isCreate }: EditBlogClientProps) => {
     category: string;
     thumbnail: File | null;
     content: string;
+    isVisibility: boolean;
   }>({
     title: "",
     description: "",
     category: "",
     thumbnail: null,
     content: "",
+    isVisibility: true,
   });
 
   const handleInputChange = (e: any) => {
@@ -232,7 +235,7 @@ const EditBlogClient = ({ isCreate }: EditBlogClientProps) => {
         "print",
       ],
     }),
-    []
+    [],
   );
 
   const [existingImage, setExistingImage] = useState<string | null>(null);
@@ -250,6 +253,7 @@ const EditBlogClient = ({ isCreate }: EditBlogClientProps) => {
       category: blogData.category,
       thumbnail: null,
       content: blogData.content,
+      isVisibility: blogData.isVisibility,
     });
 
     setContent(blogData.content || "");
@@ -264,14 +268,15 @@ const EditBlogClient = ({ isCreate }: EditBlogClientProps) => {
     e.preventDefault();
 
     if (isCreate && userAuth) {
-      console.log("hello")
+      console.log("hello");
       await createBlog(
         userAuth?.id,
         formData.title,
         formData.description,
         formData.category,
         formData.thumbnail,
-        formData.content
+        formData.content,
+        formData.isVisibility,
       );
     } else if (id) {
       await updateBlog(
@@ -280,31 +285,29 @@ const EditBlogClient = ({ isCreate }: EditBlogClientProps) => {
         formData.description,
         formData.category,
         formData.thumbnail,
-        formData.content
+        formData.content,
+        formData.isVisibility,
       );
     }
   };
 
   const handleAITitleResponse = async () => {
     setAITitleLoading(true);
-    const res = await getAITitleResponse(formData.title);
+    const res = await analyzeTitle(formData.title);
     setFormData({ ...formData, title: res?.data?.title || "" });
     setAITitleLoading(false);
   };
 
   const handleAIDescriptionResponse = async () => {
     setAIDescriptionLoading(true);
-    const res = await getAIDescriptionResponse(
-      formData.title,
-      formData.description
-    );
+    const res = await analyzeDescription(formData.title, formData.description);
     setFormData({ ...formData, description: res?.data?.description || "" });
     setAIDescriptionLoading(false);
   };
 
   const handleAIBlogResponse = async () => {
     setAIContentLoading(true);
-    const res = await getAIContentResponse(formData.content);
+    const res = await analyzeContent(formData.content);
     setContent(res?.data?.content || "");
     setFormData({ ...formData, content: res?.data?.content || "" });
     setAIContentLoading(false);
@@ -469,6 +472,25 @@ const EditBlogClient = ({ isCreate }: EditBlogClientProps) => {
                             ))}
                           </SelectContent>
                         </Select>
+                      </div>
+
+                      {/* Visibility Toggle */}
+                      <div className="flex items-center justify-between rounded-lg border border-border p-4">
+                        <div className="space-y-0.5">
+                          <Label
+                            htmlFor="visibility-toggle"
+                            className="text-base"
+                          >
+                            Visibility Mode
+                          </Label>
+                        </div>
+                        <Switch
+                          id="visibility-toggle"
+                          checked={formData.isVisibility || false}
+                          onCheckedChange={(checked) =>
+                            setFormData({ ...formData, isVisibility: checked })
+                          }
+                        />
                       </div>
 
                       {/* Thumbnail */}

@@ -48,7 +48,6 @@ public class AuthApi extends BaseApi {
 
     public Response login(String dataJson, HttpServletResponse httpServletResponse) {
         long startTime = System.currentTimeMillis();
-        logger.info("Starting request at {}", startTime);
         logger.info("Login attempt");
         Response response = new Response();
         LoginRequest request = null;
@@ -149,7 +148,6 @@ public class AuthApi extends BaseApi {
 
     public Response validateToken(String token, String username) {
         long startTime = System.currentTimeMillis();
-        logger.info("Starting request at {}", startTime);
         logger.debug("Token validation attempt for username: {}", username);
         Response response = new Response();
 
@@ -190,7 +188,6 @@ public class AuthApi extends BaseApi {
 
     public Response register(String dataJson) {
         long startTime = System.currentTimeMillis();
-        logger.info("Starting request at {}", startTime);
         logger.info("Registration attempt");
         Response response = new Response();
 
@@ -225,7 +222,6 @@ public class AuthApi extends BaseApi {
 
     public Response verifyOTP(String identifier, String dataJson) {
         long startTime = System.currentTimeMillis();
-        logger.info("Starting request at {}", startTime);
         logger.info("OTP verification attempt for identifier: {}", identifier);
         Response response = new Response();
 
@@ -337,7 +333,6 @@ public class AuthApi extends BaseApi {
 
     public Response changePassword(String identifier, String dataJson) {
         long startTime = System.currentTimeMillis();
-        logger.info("Starting request at {}", startTime);
         logger.info("Password change attempt for identifier: {}", identifier);
         Response response = new Response();
 
@@ -400,7 +395,6 @@ public class AuthApi extends BaseApi {
 
     public Response resetPassword(String email) {
         long startTime = System.currentTimeMillis();
-        logger.info("Starting request at {}", startTime);
         logger.info("Password reset attempt for email: {}", email);
         Response response = new Response();
 
@@ -441,7 +435,6 @@ public class AuthApi extends BaseApi {
 
     public Response forgotPassword(String identifier, String dataJson) {
         long startTime = System.currentTimeMillis();
-        logger.info("Starting request at {}", startTime);
         logger.info("Forgot password attempt for identifier: {}", identifier);
         Response response = new Response();
 
@@ -497,7 +490,6 @@ public class AuthApi extends BaseApi {
             HttpServletResponse httpServletResponse) {
 
         long startTime = System.currentTimeMillis();
-        logger.info("Starting request at {}", startTime);
         logger.info("Token refresh attempt");
         Response response = new Response();
 
@@ -597,7 +589,6 @@ public class AuthApi extends BaseApi {
 
     public Response logout(HttpServletResponse httpServletResponse) {
         long startTime = System.currentTimeMillis();
-        logger.info("Starting request at {}", startTime);
         logger.info("User logout attempt");
         Response response = new Response();
 

@@ -27,7 +27,9 @@ export function StatsCard({
         </div>
       </CardHeader>
       <CardContent>
-        <div className="text-3xl font-bold">{value.toLocaleString()}</div>
+        <div className="text-3xl font-bold">
+          {(value ?? 0).toLocaleString()}
+        </div>
         <p className="text-xs opacity-90 mt-1">{subtitle}</p>
       </CardContent>
     </Card>

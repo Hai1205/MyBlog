@@ -8,7 +8,7 @@ import { useParams } from "next/navigation";
 import { useUserStore } from "@/stores/userStore";
 import Loading from "../layout/Loading";
 
-const UserProfilePage = () => {
+const ProfileClient = () => {
   const { getUser } = useUserStore();
 
   const [user, setUser] = useState<IUser | null>(null);
@@ -88,4 +88,4 @@ const UserProfilePage = () => {
   );
 };
 
-export default UserProfilePage;
+export default ProfileClient;

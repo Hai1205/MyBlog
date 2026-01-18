@@ -89,6 +89,7 @@ public class BlogApi extends BaseApi {
             String description,
             String category,
             String content,
+            Boolean isVisibility,
             MultipartFile thumbnail) {
         try {
             logger.info("Creating blog for userId={} title='{}'", userId, title);
@@ -98,16 +99,16 @@ public class BlogApi extends BaseApi {
             UUID blogId = UUID.randomUUID();
             Instant now = Instant.now();
 
-            String imageUrl = null;
-            String imagePublicId = null;
+            String thumbnailUrl = null;
+            String thumbnailPublicId = null;
 
             if (thumbnail != null && !thumbnail.isEmpty()) {
                 Map<String, Object> uploadResult = cloudinaryService.uploadImage(thumbnail);
                 if (uploadResult.containsKey("error")) {
                     throw new OurException("Failed to upload thumbnail: " + uploadResult.get("error"), 500);
                 }
-                imageUrl = (String) uploadResult.get("url");
-                imagePublicId = (String) uploadResult.get("publicId");
+                thumbnailUrl = (String) uploadResult.get("url");
+                thumbnailPublicId = (String) uploadResult.get("publicId");
             }
 
             blogCommandRepository.insertBlog(
@@ -116,9 +117,10 @@ public class BlogApi extends BaseApi {
                     title,
                     description,
                     category,
-                    imageUrl,
-                    imagePublicId,
+                    thumbnailUrl,
+                    thumbnailPublicId,
                     content,
+                    isVisibility,
                     now,
                     now);
 
@@ -239,6 +241,7 @@ public class BlogApi extends BaseApi {
             String description,
             String category,
             String content,
+            Boolean isVisibility,
             MultipartFile thumbnail) {
         try {
             logger.info("Updating blog id={}", blogId);
@@ -248,22 +251,22 @@ public class BlogApi extends BaseApi {
 
             Instant now = Instant.now();
 
-            String imageUrl = existingBlog.getImageUrl();
-            String imagePublicId = existingBlog.getImagePublicId();
+            String thumbnailUrl = existingBlog.getThumbnailUrl();
+            String thumbnailPublicId = existingBlog.getThumbnailPublicId();
 
             if (thumbnail != null && !thumbnail.isEmpty()) {
-                // Delete old image if exists
-                if (imagePublicId != null && !imagePublicId.isEmpty()) {
-                    cloudinaryService.deleteImage(imagePublicId);
+                // Delete old thumbnail if exists
+                if (thumbnailPublicId != null && !thumbnailPublicId.isEmpty()) {
+                    cloudinaryService.deleteImage(thumbnailPublicId);
                 }
 
-                // Upload new image
+                // Upload new thumbnail
                 Map<String, Object> uploadResult = cloudinaryService.uploadImage(thumbnail);
                 if (uploadResult.containsKey("error")) {
                     throw new OurException("Failed to upload thumbnail: " + uploadResult.get("error"), 500);
                 }
-                imageUrl = (String) uploadResult.get("url");
-                imagePublicId = (String) uploadResult.get("publicId");
+                thumbnailUrl = (String) uploadResult.get("url");
+                thumbnailPublicId = (String) uploadResult.get("publicId");
             }
 
             blogCommandRepository.updateBlog(
@@ -272,8 +275,9 @@ public class BlogApi extends BaseApi {
                     description != null ? description : existingBlog.getDescription(),
                     category != null ? category : existingBlog.getCategory().name(),
                     content != null ? content : existingBlog.getContent(),
-                    imageUrl,
-                    imagePublicId,
+                    thumbnailUrl,
+                    thumbnailPublicId,
+                    isVisibility != null ? isVisibility : existingBlog.getIsVisibility(),
                     now);
 
             Blog updatedBlog = blogQueryRepository.findBlogById(blogId)
@@ -297,9 +301,9 @@ public class BlogApi extends BaseApi {
             Blog blog = blogQueryRepository.findBlogById(blogId)
                     .orElseThrow(() -> new OurException("Blog not found", 404));
 
-            // Delete image from Cloudinary if exists
-            if (blog.getImagePublicId() != null && !blog.getImagePublicId().isEmpty()) {
-                cloudinaryService.deleteImage(blog.getImagePublicId());
+            // Delete thumbnail from Cloudinary if exists
+            if (blog.getThumbnailPublicId() != null && !blog.getThumbnailPublicId().isEmpty()) {
+                cloudinaryService.deleteImage(blog.getThumbnailPublicId());
             }
 
             blogCommandRepository.deleteBlogById(blogId);
@@ -529,7 +533,6 @@ public class BlogApi extends BaseApi {
 
         try {
             long startTime = System.currentTimeMillis();
-            logger.info("Starting request at {}", startTime);
 
             // Rate limiting: 45 req/min for Create APIs
             String rateLimitKey = "blog:createBlog:" + userId.toString();
@@ -548,6 +551,7 @@ public class BlogApi extends BaseApi {
                     request.getDescription(),
                     request.getCategory(),
                     request.getContent(),
+                    request.getIsVisibility(),
                     thumbnail);
 
             long endTime = System.currentTimeMillis();
@@ -574,7 +578,6 @@ public class BlogApi extends BaseApi {
 
         try {
             long startTime = System.currentTimeMillis();
-            logger.info("Starting request at {}", startTime);
 
             // Rate limiting: 90 req/min for GET APIs
             String rateLimitKey = "blog:getAllBlogs:all";
@@ -611,7 +614,6 @@ public class BlogApi extends BaseApi {
 
         try {
             long startTime = System.currentTimeMillis();
-            logger.info("Starting request at {}", startTime);
 
             // Rate limiting: 90 req/min for GET APIs
             String rateLimitKey = "blog:getBlog:" + blogId.toString();
@@ -648,7 +650,6 @@ public class BlogApi extends BaseApi {
 
         try {
             long startTime = System.currentTimeMillis();
-            logger.info("Starting request at {}", startTime);
 
             // Rate limiting: 90 req/min for GET APIs
             String rateLimitKey = "blog:getUserBlogs:" + userId.toString();
@@ -685,7 +686,6 @@ public class BlogApi extends BaseApi {
 
         try {
             long startTime = System.currentTimeMillis();
-            logger.info("Starting request at {}", startTime);
 
             // Rate limiting: 45 req/min for Update APIs
             String rateLimitKey = "blog:updateBlog:" + blogId.toString();
@@ -704,6 +704,7 @@ public class BlogApi extends BaseApi {
                     request.getDescription(),
                     request.getCategory(),
                     request.getContent(),
+                    request.getIsVisibility(),
                     thumbnail);
 
             long endTime = System.currentTimeMillis();
@@ -730,7 +731,6 @@ public class BlogApi extends BaseApi {
 
         try {
             long startTime = System.currentTimeMillis();
-            logger.info("Starting request at {}", startTime);
 
             // Rate limiting: 20 req/min for Delete APIs
             String rateLimitKey = "blog:deleteBlog:" + blogId.toString();
@@ -766,7 +766,6 @@ public class BlogApi extends BaseApi {
 
         try {
             long startTime = System.currentTimeMillis();
-            logger.info("Starting request at {}", startTime);
 
             // Rate limiting: 45 req/min for Create APIs
             String rateLimitKey = "blog:saveBlog:" + userId.toString();
@@ -803,7 +802,6 @@ public class BlogApi extends BaseApi {
 
         try {
             long startTime = System.currentTimeMillis();
-            logger.info("Starting request at {}", startTime);
 
             // Rate limiting: 45 req/min for Delete APIs
             String rateLimitKey = "blog:unsaveBlog:" + userId.toString();
@@ -839,7 +837,6 @@ public class BlogApi extends BaseApi {
 
         try {
             long startTime = System.currentTimeMillis();
-            logger.info("Starting request at {}", startTime);
 
             // Rate limiting: 90 req/min for GET APIs
             String rateLimitKey = "blog:getUserSavedBlogs:" + userId.toString();
@@ -876,7 +873,6 @@ public class BlogApi extends BaseApi {
 
         try {
             long startTime = System.currentTimeMillis();
-            logger.info("Starting request at {}", startTime);
 
             // Rate limiting: 90 req/min for GET APIs
             String rateLimitKey = "blog:getTotalBlogs:all";
@@ -904,12 +900,43 @@ public class BlogApi extends BaseApi {
         }
     }
 
+    public Response getBlogsByVisibility(boolean isVisibility) {
+        Response response = new Response();
+
+        try {
+            long startTime = System.currentTimeMillis();
+
+            // Rate limiting: 90 req/min for GET APIs
+            String rateLimitKey = "blog:getBlogsByVisibility:" + isVisibility;
+            if (!rateLimiterService.isAllowed(rateLimitKey, 90, 60)) {
+                logger.warn("Rate limit exceeded for getBlogsByVisibility");
+                response.setStatusCode(429);
+                response.setMessage("Rate limit exceeded. Please try again later.");
+                return response;
+            }
+
+            long count = blogQueryRepository.countByVisibility(isVisibility);
+
+            long endTime = System.currentTimeMillis();
+            logger.info("Completed request in {} ms", endTime - startTime);
+
+            response.setStatusCode(200);
+            response.setMessage("get Blogs count by visibility retrieved successfully");
+            response.setAdditionalData(Map.of("count", count));
+            return response;
+        } catch (Exception e) {
+            logger.error("Error in getBlogsCreatedInRange: {}", e.getMessage(), e);
+            response.setStatusCode(500);
+            response.setMessage("Failed to get blogs in range");
+            return response;
+        }
+    }
+
     public Response getBlogsCreatedInRange(String startDate, String endDate) {
         Response response = new Response();
 
         try {
             long startTime = System.currentTimeMillis();
-            logger.info("Starting request at {}", startTime);
 
             // Rate limiting: 90 req/min for GET APIs
             String rateLimitKey = "blog:getBlogsCreatedInRange:" + startDate + ":" + endDate;
@@ -944,7 +971,6 @@ public class BlogApi extends BaseApi {
 
         try {
             long startTime = System.currentTimeMillis();
-            logger.info("Starting request at {}", startTime);
 
             // Rate limiting: 90 req/min for GET APIs
             String rateLimitKey = "blog:getRecentBlogs:" + limit;

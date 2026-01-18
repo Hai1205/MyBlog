@@ -195,7 +195,6 @@ public class StatsApi extends BaseApi {
 
         try {
             long startTime = System.currentTimeMillis();
-            logger.info("Starting request at {}", startTime);
 
             // Rate limiting: 90 req/min for GET APIs
             if (!rateLimiterService.isAllowed("stats:getDashboardStats", 90, 60)) {
@@ -224,7 +223,6 @@ public class StatsApi extends BaseApi {
 
         try {
             long startTime = System.currentTimeMillis();
-            logger.info("Starting request at {}", startTime);
 
             // Rate limiting: 90 req/min for GET APIs
             if (!rateLimiterService.isAllowed("stats:getStatsReport", 90, 60)) {

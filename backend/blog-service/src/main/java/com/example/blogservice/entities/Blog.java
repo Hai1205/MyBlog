@@ -22,15 +22,18 @@ public class Blog {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "LONGTEXT")
     private String content;
 
-    private String imageUrl;
-    private String imagePublicId;
+    private String thumbnailUrl;
+    private String thumbnailPublicId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Category category = Category.technology;
+
+    @Column(nullable = false)
+    private Boolean isVisibility = false;
 
     private Instant createdAt;
     private Instant updatedAt;

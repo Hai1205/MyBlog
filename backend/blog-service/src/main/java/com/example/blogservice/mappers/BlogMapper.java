@@ -17,13 +17,14 @@ public class BlogMapper {
         
         return BlogDto.builder()
                 .id(blog.getId())
-                .author(null) // TODO: Fetch author info from user service
+                .author(null)
                 .title(blog.getTitle())
                 .category(blog.getCategory() != null ? blog.getCategory().name() : null)
                 .description(blog.getDescription())
                 .content(blog.getContent())
-                .thumbnailUrl(blog.getImageUrl())
-                .imagePublicId(blog.getImagePublicId())
+                .thumbnailUrl(blog.getThumbnailUrl())
+                .thumbnailPublicId(blog.getThumbnailPublicId())
+                .isVisibility(blog.getIsVisibility())
                 .createdAt(blog.getCreatedAt())
                 .updatedAt(blog.getUpdatedAt())
                 .build();
@@ -43,8 +44,9 @@ public class BlogMapper {
         blog.setCategory(dto.getCategory() != null ? Blog.Category.valueOf(dto.getCategory()) : null);
         blog.setDescription(dto.getDescription());
         blog.setContent(dto.getContent());
-        blog.setImageUrl(dto.getImageUrl());
-        blog.setImagePublicId(dto.getImagePublicId());
+        blog.setThumbnailUrl(dto.getThumbnailUrl());
+        blog.setThumbnailPublicId(dto.getThumbnailPublicId());
+        blog.setIsVisibility(dto.getIsVisibility());
         blog.setCreatedAt(dto.getCreatedAt());
         blog.setUpdatedAt(dto.getUpdatedAt());
         

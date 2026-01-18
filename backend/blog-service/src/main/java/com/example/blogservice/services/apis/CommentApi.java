@@ -320,7 +320,6 @@ public class CommentApi extends BaseApi {
 
         try {
             long startTime = System.currentTimeMillis();
-            logger.info("Starting request at {}", startTime);
 
             // Rate limiting: 45 req/min for Create APIs
             String rateLimitKey = "comment:addComment:" + userId.toString();
@@ -358,7 +357,6 @@ public class CommentApi extends BaseApi {
 
         try {
             long startTime = System.currentTimeMillis();
-            logger.info("Starting request at {}", startTime);
 
             // Rate limiting: 90 req/min for GET APIs
             String rateLimitKey = "comment:getBlogComments:" + blogId.toString();
@@ -396,7 +394,6 @@ public class CommentApi extends BaseApi {
 
         try {
             long startTime = System.currentTimeMillis();
-            logger.info("Starting request at {}", startTime);
 
             // Rate limiting: 90 req/min for GET APIs
             String rateLimitKey = "comment:getCommentById:" + commentId.toString();
@@ -434,7 +431,6 @@ public class CommentApi extends BaseApi {
 
         try {
             long startTime = System.currentTimeMillis();
-            logger.info("Starting request at {}", startTime);
 
             // Rate limiting: 45 req/min for Update APIs
             String rateLimitKey = "comment:updateComment:" + commentId.toString();
@@ -472,7 +468,6 @@ public class CommentApi extends BaseApi {
 
         try {
             long startTime = System.currentTimeMillis();
-            logger.info("Starting request at {}", startTime);
 
             // Rate limiting: 20 req/min for Delete APIs
             String rateLimitKey = "comment:deleteComment:" + commentId.toString();
@@ -514,7 +509,6 @@ public class CommentApi extends BaseApi {
 
         try {
             long startTime = System.currentTimeMillis();
-            logger.info("Starting request at {}", startTime);
 
             // Rate limiting: 90 req/min for GET APIs
             String rateLimitKey = "comment:getAllComments:all";
@@ -547,7 +541,6 @@ public class CommentApi extends BaseApi {
 
         try {
             long startTime = System.currentTimeMillis();
-            logger.info("Starting request at {}", startTime);
 
             // Rate limiting: 90 req/min for GET APIs
             String rateLimitKey = "comment:getTotalComments:all";
@@ -580,7 +573,6 @@ public class CommentApi extends BaseApi {
 
         try {
             long startTime = System.currentTimeMillis();
-            logger.info("Starting request at {}", startTime);
 
             // Rate limiting: 90 req/min for GET APIs
             String rateLimitKey = "comment:getCommentsCreatedInRange:" + startDate + ":" + endDate;
@@ -618,7 +610,6 @@ public class CommentApi extends BaseApi {
 
         try {
             long startTime = System.currentTimeMillis();
-            logger.info("Starting request at {}", startTime);
 
             // Rate limiting: 90 req/min for GET APIs
             String rateLimitKey = "comment:getRecentComments:" + limit;

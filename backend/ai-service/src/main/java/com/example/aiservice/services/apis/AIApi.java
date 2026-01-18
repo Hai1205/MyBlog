@@ -3,9 +3,7 @@ package com.example.aiservice.services.apis;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Service;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.ai.document.Document;
-import org.springframework.cache.annotation.Cacheable;
 
 import com.example.aiservice.dtos.requests.*;
 import com.example.aiservice.dtos.responses.Response;
@@ -17,7 +15,6 @@ import com.fasterxml.jackson.databind.*;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import java.util.stream.Collectors;
 
 /**
@@ -65,12 +62,11 @@ public class AIApi extends BaseApi {
     // PUBLIC API METHODS
     // ========================================
 
-    public Response getAITitleResponse(String dataJson) {
+    public Response analyzeTitle(String dataJson) {
         Response response = new Response();
 
         try {
             long startTime = System.currentTimeMillis();
-            logger.info("Starting request at {}", startTime);
 
             // Rate limiting: API Create/Update - 30-60 req/min
             if (!rateLimiterService.isAllowed("ai:title", 45, 60)) {
@@ -80,7 +76,7 @@ public class AIApi extends BaseApi {
             }
 
             AIRequest request = objectMapper.readValue(dataJson, AIRequest.class);
-            String aiTitle = handleGetAITitleResponse(request.getTitle());
+            String aiTitle = handleanalyzeTitle(request.getTitle());
 
             long endTime = System.currentTimeMillis();
             logger.info("Completed request in {} ms", endTime - startTime);
@@ -94,19 +90,18 @@ public class AIApi extends BaseApi {
             response.setMessage(e.getMessage());
             return response;
         } catch (Exception e) {
-            logger.error("Error in getAITitleResponse: {}", e.getMessage(), e);
+            logger.error("Error in analyzeTitle: {}", e.getMessage(), e);
             response.setStatusCode(500);
             response.setMessage("Error generating AI title: " + e.getMessage());
             return response;
         }
     }
 
-    public Response getAIDescriptionResponse(String dataJson) {
+    public Response analyzeDescription(String dataJson) {
         Response response = new Response();
 
         try {
             long startTime = System.currentTimeMillis();
-            logger.info("Starting request at {}", startTime);
 
             // Rate limiting: API Create/Update - 30-60 req/min
             if (!rateLimiterService.isAllowed("ai:description", 45, 60)) {
@@ -116,7 +111,7 @@ public class AIApi extends BaseApi {
             }
 
             AIRequest request = objectMapper.readValue(dataJson, AIRequest.class);
-            String aiDescription = handleGetAIDescriptionResponse(request.getTitle(), request.getDescription());
+            String aiDescription = handleanalyzeDescription(request.getTitle(), request.getDescription());
 
             long endTime = System.currentTimeMillis();
             logger.info("Completed request in {} ms", endTime - startTime);
@@ -130,19 +125,18 @@ public class AIApi extends BaseApi {
             response.setMessage(e.getMessage());
             return response;
         } catch (Exception e) {
-            logger.error("Error in getAIDescriptionResponse: {}", e.getMessage(), e);
+            logger.error("Error in analyzeDescription: {}", e.getMessage(), e);
             response.setStatusCode(500);
             response.setMessage("Error generating AI description: " + e.getMessage());
             return response;
         }
     }
 
-    public Response getAIContentResponse(String dataJson) {
+    public Response analyzeContent(String dataJson) {
         Response response = new Response();
 
         try {
             long startTime = System.currentTimeMillis();
-            logger.info("Starting request at {}", startTime);
 
             // Rate limiting: API Create/Update - 30-60 req/min
             if (!rateLimiterService.isAllowed("ai:content", 45, 60)) {
@@ -152,7 +146,7 @@ public class AIApi extends BaseApi {
             }
 
             AIRequest request = objectMapper.readValue(dataJson, AIRequest.class);
-            String aiContent = handleGetAIContentResponse(request.getContent());
+            String aiContent = handleanalyzeContent(request.getContent());
 
             long endTime = System.currentTimeMillis();
             logger.info("Completed request in {} ms", endTime - startTime);
@@ -166,14 +160,14 @@ public class AIApi extends BaseApi {
             response.setMessage(e.getMessage());
             return response;
         } catch (Exception e) {
-            logger.error("Error in getAIContentResponse: {}", e.getMessage(), e);
+            logger.error("Error in analyzeContent: {}", e.getMessage(), e);
             response.setStatusCode(500);
             response.setMessage("Error generating AI content: " + e.getMessage());
             return response;
         }
     }
 
-    public String handleGetAITitleResponse(String title) {
+    public String handleanalyzeTitle(String title) {
         try {
             String cacheKey = "ai:title:" + title.hashCode();
 
@@ -217,7 +211,7 @@ public class AIApi extends BaseApi {
         }
     }
 
-    public String handleGetAIDescriptionResponse(String title, String description) {
+    public String handleanalyzeDescription(String title, String description) {
         try {
             String cacheKey = "ai:description:" + (title + description).hashCode();
 
@@ -261,7 +255,7 @@ public class AIApi extends BaseApi {
         }
     }
 
-    public String handleGetAIContentResponse(String content) {
+    public String handleanalyzeContent(String content) {
         try {
             String cacheKey = "ai:content:" + content.hashCode();
 

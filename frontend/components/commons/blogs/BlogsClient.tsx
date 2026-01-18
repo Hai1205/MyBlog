@@ -4,7 +4,6 @@ import { useState, useMemo } from "react";
 import Loading from "../layout/Loading";
 import { useBlogStore } from "@/stores/blogStore";
 import BlogCard from "./BlogCard";
-import { ECategory } from "@/types/enum";
 import { Search } from "lucide-react";
 import { usePagination } from "@/hooks/use-pagination";
 import { PaginationControls } from "@/components/commons/layout/pagination/PaginationControls";

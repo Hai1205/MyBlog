@@ -105,9 +105,8 @@ public class BlogController {
     }
 
     @GetMapping("/stats/visibility/{visibility}")
-    public ResponseEntity<Response> getBlogsByVisibility(@PathVariable("visibility") boolean visibility) {
-        // For now, return all blogs count as visibility is not implemented
-        Response response = blogApi.getTotalBlogs();
+    public ResponseEntity<Response> getBlogsByVisibility(@PathVariable("visibility") boolean isVisibility) {
+        Response response = blogApi.getBlogsByVisibility(isVisibility);
         return ResponseEntity.status(response.getStatusCode()).body(response);
     }
 

@@ -148,11 +148,11 @@ export default function ProfileTab({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="birth">Instagram</Label>
+          <Label htmlFor="instagram">Instagram</Label>
           <Input
             id="instagram"
             value={data?.instagram || ""}
-            onChange={(e) => onChange("birth", e.target.value)}
+            onChange={(e) => onChange("instagram", e.target.value)}
             className="border-border/50 focus:border-primary/50 focus:ring-primary/20"
           />
         </div>

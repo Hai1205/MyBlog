@@ -17,27 +17,27 @@ public class AIController {
 
     @Autowired
     private AIApi aiService;
-    
+
     @PostMapping("/content")
-    public ResponseEntity<Response> getAIContentResponse(
+    public ResponseEntity<Response> analyzeContent(
             @RequestPart("data") String dataJson) {
-        Response response = aiService.getAIContentResponse(dataJson);
+        Response response = aiService.analyzeContent(dataJson);
 
         return ResponseEntity.status(response.getStatusCode()).body(response);
     }
 
     @PostMapping("/description")
-    public ResponseEntity<Response> getAIDescriptionResponse(
+    public ResponseEntity<Response> analyzeDescription(
             @RequestPart("data") String dataJson) {
-        Response response = aiService.getAIDescriptionResponse(dataJson);
+        Response response = aiService.analyzeDescription(dataJson);
 
         return ResponseEntity.status(response.getStatusCode()).body(response);
     }
 
     @PostMapping("/title")
-    public ResponseEntity<Response> getAITitleResponse(
+    public ResponseEntity<Response> analyzeTitle(
             @RequestPart("data") String dataJson) {
-        Response response = aiService.getAITitleResponse(dataJson);
+        Response response = aiService.analyzeTitle(dataJson);
 
         return ResponseEntity.status(response.getStatusCode()).body(response);
     }

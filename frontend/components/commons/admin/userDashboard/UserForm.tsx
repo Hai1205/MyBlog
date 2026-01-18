@@ -204,6 +204,51 @@ const UserForm: React.FC<UserFormProps> = ({
         </ScrollArea>
       </div>
 
+      {/* Instagram */}
+      <div className="space-y-2">
+        <Label htmlFor="form-instagram" className="text-sm font-medium">
+          Instagram
+        </Label>
+        <Input
+          id="form-instagram"
+          type="text"
+          value={data?.instagram || ""}
+          onChange={(e) => onChange("instagram", e.target.value)}
+          className="bg-background/50 border-border/50 focus:border-primary transition-colors"
+          placeholder="Nhập Instagram"
+        />
+      </div>
+
+      {/* Facebook */}
+      <div className="space-y-2">
+        <Label htmlFor="form-facebook" className="text-sm font-medium">
+          Facebook
+        </Label>
+        <Input
+          id="form-facebook"
+          type="text"
+          value={data?.facebook || ""}
+          onChange={(e) => onChange("facebook", e.target.value)}
+          className="bg-background/50 border-border/50 focus:border-primary transition-colors"
+          placeholder="Nhập Facebook"
+        />
+      </div>
+
+      {/* LinkedIn */}
+      <div className="space-y-2">
+        <Label htmlFor="form-linkedin" className="text-sm font-medium">
+          LinkedIn
+        </Label>
+        <Input
+          id="form-linkedin"
+          type="text"
+          value={data?.linkedin || ""}
+          onChange={(e) => onChange("linkedin", e.target.value)}
+          className="bg-background/50 border-border/50 focus:border-primary transition-colors"
+          placeholder="Nhập LinkedIn"
+        />
+      </div>
+      
       {/* Status and Role */}
       <div className="flex gap-4">
         <div className="flex-1 space-y-2">
@@ -253,51 +298,6 @@ const UserForm: React.FC<UserFormProps> = ({
             </SelectContent>
           </Select>
         </div>
-      </div>
-
-      {/* Instagram */}
-      <div className="space-y-2">
-        <Label htmlFor="form-instagram" className="text-sm font-medium">
-          Instagram
-        </Label>
-        <Input
-          id="form-instagram"
-          type="text"
-          value={data?.instagram || ""}
-          onChange={(e) => onChange("instagram", e.target.value)}
-          className="bg-background/50 border-border/50 focus:border-primary transition-colors"
-          placeholder="Nhập Instagram"
-        />
-      </div>
-
-      {/* Facebook */}
-      <div className="space-y-2">
-        <Label htmlFor="form-facebook" className="text-sm font-medium">
-          Facebook
-        </Label>
-        <Input
-          id="form-facebook"
-          type="text"
-          value={data?.facebook || ""}
-          onChange={(e) => onChange("facebook", e.target.value)}
-          className="bg-background/50 border-border/50 focus:border-primary transition-colors"
-          placeholder="Nhập Facebook"
-        />
-      </div>
-
-      {/* LinkedIn */}
-      <div className="space-y-2">
-        <Label htmlFor="form-linkedin" className="text-sm font-medium">
-          LinkedIn
-        </Label>
-        <Input
-          id="form-linkedin"
-          type="text"
-          value={data?.linkedin || ""}
-          onChange={(e) => onChange("linkedin", e.target.value)}
-          className="bg-background/50 border-border/50 focus:border-primary transition-colors"
-          placeholder="Nhập LinkedIn"
-        />
       </div>
     </div>
   );

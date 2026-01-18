@@ -45,6 +45,7 @@ declare global {
         thumbnailUrl: string;
         category: ECategory;
         author: IUser;
+        isVisibility: boolean
         createdAt: string;
         updatedAt: string;
     }
@@ -76,33 +77,6 @@ declare global {
         privateBlogs: number;
         blogsCreatedThisMonth: number;
         recentActivities: IActivityInfo[];
-        revenueStats: IRevenueStats | null;
-    }
-
-    export interface IRevenueStats {
-        totalRevenue: number;
-        thisMonthRevenue: number;
-        lastMonthRevenue: number;
-        growthRate: number;
-        successfulTransactions: number;
-        failedTransactions: number;
-        pendingTransactions: number;
-        revenueByPaymentMethod: Record<string, number>;
-        revenueByPlan: Record<string, number>;
-        dailyRevenue: IDailyRevenue[];
-        monthlyRevenue: IMonthlyRevenue[];
-    }
-
-    export interface IDailyRevenue {
-        date: string;
-        revenue: number;
-        transactions: number;
-    }
-
-    export interface IMonthlyRevenue {
-        month: string;
-        revenue: number;
-        transactions: number;
     }
 
     export interface IActivityInfo {

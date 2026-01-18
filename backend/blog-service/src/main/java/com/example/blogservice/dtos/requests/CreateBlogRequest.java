@@ -12,4 +12,5 @@ public class CreateBlogRequest {
     private String category;
     private String content;
     private MultipartFile thumbnail;
+    private Boolean isVisibility;    
 }

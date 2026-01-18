@@ -34,24 +34,25 @@ public interface BlogCommandRepository extends JpaRepository<Blog, UUID> {
 
        @Modifying
        @Transactional
-       @Query(value = "INSERT INTO blogs (id, author_id, title, description, category, image_url, image_public_id, content, created_at, updated_at) "
+       @Query(value = "INSERT INTO blogs (id, author_id, title, description, category, thumbnail_url, thumbnail_public_id, content, is_visibility, created_at, updated_at) "
                      +
-                     "VALUES (:id, :authorId, :title, :description, :category, :thumbnailUrl, :imagePublicId, :content, :createdAt, :updatedAt)", nativeQuery = true)
+                     "VALUES (:id, :authorId, :title, :description, :category, :thumbnailUrl, :thumbnailPublicId, :content, :isVisibility, :createdAt, :updatedAt)", nativeQuery = true)
        int insertBlog(@Param("id") UUID id,
                      @Param("authorId") UUID authorId,
                      @Param("title") String title,
                      @Param("description") String description,
                      @Param("category") String category,
                      @Param("thumbnailUrl") String thumbnailUrl,
-                     @Param("imagePublicId") String imagePublicId,
+                     @Param("thumbnailPublicId") String thumbnailPublicId,
                      @Param("content") String content,
+                     @Param("isVisibility") Boolean isVisibility,
                      @Param("createdAt") Instant createdAt,
                      @Param("updatedAt") Instant updatedAt);
 
        @Modifying
        @Transactional
        @Query("UPDATE Blog b SET b.title = :title, b.description = :description, b.category = :category, " +
-                     "b.content = :content, b.thumbnailUrl = :thumbnailUrl, b.imagePublicId = :imagePublicId, b.updatedAt = :updatedAt "
+                     "b.content = :content, b.thumbnailUrl = :thumbnailUrl, b.thumbnailPublicId = :thumbnailPublicId, b.isVisibility = :isVisibility, b.updatedAt = :updatedAt "
                      +
                      "WHERE b.id = :blogId")
        int updateBlog(@Param("blogId") UUID blogId,
@@ -60,6 +61,7 @@ public interface BlogCommandRepository extends JpaRepository<Blog, UUID> {
                      @Param("category") String category,
                      @Param("content") String content,
                      @Param("thumbnailUrl") String thumbnailUrl,
-                     @Param("imagePublicId") String imagePublicId,
+                     @Param("thumbnailPublicId") String thumbnailPublicId,
+                     @Param("isVisibility") Boolean isVisibility,
                      @Param("updatedAt") Instant updatedAt);
 }

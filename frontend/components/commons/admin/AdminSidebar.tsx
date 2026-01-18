@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, Users, FileText, Menu, X, LogOut, Receipt } from "lucide-react";
+import { Home, Users, FileText, Menu, X, LogOut } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -39,11 +39,6 @@ export default function AdminSidebar({
     { icon: Home, label: "Dashboard", href: "/admin" },
     { icon: FileText, label: "Blog Dashboard", href: "/admin/blog-dashboard" },
     { icon: Users, label: "User Dashboard", href: "/admin/user-dashboard" },
-    {
-      icon: Receipt,
-      label: "Invoice Dashboard",
-      href: "/admin/invoice-dashboard",
-    },
   ];
 
   return (

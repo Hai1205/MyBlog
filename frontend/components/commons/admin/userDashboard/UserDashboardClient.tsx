@@ -17,6 +17,7 @@ import { UserTable } from "@/components/commons/admin/userDashboard/UserTable";
 import { ExtendedUserData } from "@/components/commons/admin/userDashboard/constant";
 import ConfirmationDialog from "@/components/commons/layout/ConfirmationDialog";
 import TableDashboardSkeleton from "../adminTable/TableDashboardSkeleton";
+import { useRouter } from "next/navigation";
 
 export type UserFilterType = "status" | "role" | "plan";
 export interface IUserFilter {
@@ -43,6 +44,8 @@ export default function UserDashboardClient() {
   } = useUserStore();
   const { resetPassword } = useAuthStore();
 
+  const router = useRouter();
+
   const [searchQuery, setSearchQuery] = useState("");
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [previewAvatar, setPreviewAvatar] = useState<string>("");
@@ -57,8 +60,8 @@ export default function UserDashboardClient() {
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 10;
   const totalPages = Math.ceil(filteredUsers.length / pageSize);
-  const startIndex = (currentPage - 1) * pageSize;
-  const endIndex = startIndex + pageSize;
+  // const startIndex = (currentPage - 1) * pageSize;
+  // const endIndex = startIndex + pageSize;
 
   const paginationState = { page: currentPage, pageSize: pageSize };
   const paginationData = {
@@ -89,25 +92,25 @@ export default function UserDashboardClient() {
           (user) =>
             user.fullname.toLowerCase().includes(searchTerms) ||
             user.email.toLowerCase().includes(searchTerms) ||
-            user.username.toLowerCase().includes(searchTerms)
+            user.username.toLowerCase().includes(searchTerms),
         );
       }
 
       if (filters.status.length > 0) {
         results = results.filter((user) =>
-          filters.status.includes(user.status || "")
+          filters.status.includes(user.status || ""),
         );
       }
 
       if (filters.role.length > 0) {
         results = results.filter((user) =>
-          filters.role.includes(user.role || "")
+          filters.role.includes(user.role || ""),
         );
       }
 
       setFilteredUsers(results);
     },
-    [usersTable]
+    [usersTable],
   );
 
   useEffect(() => {
@@ -118,14 +121,14 @@ export default function UserDashboardClient() {
   useEffect(() => {
     paginationData.totalElements = filteredUsers.length;
     paginationData.totalPages = Math.ceil(
-      filteredUsers.length / paginationState.pageSize
+      filteredUsers.length / paginationState.pageSize,
     );
   }, [filteredUsers.length, paginationState.pageSize]);
 
   // Paginate filtered usersTable
   const paginatedUsers = filteredUsers.slice(
     (paginationState.page - 1) * paginationState.pageSize,
-    paginationState.page * paginationState.pageSize
+    paginationState.page * paginationState.pageSize,
   );
 
   const handleSearch = useCallback(
@@ -134,7 +137,7 @@ export default function UserDashboardClient() {
 
       filterData(searchQuery, activeFilters);
     },
-    [searchQuery, activeFilters, filterData]
+    [searchQuery, activeFilters, filterData],
   );
 
   const toggleFilter = (value: string, type: UserFilterType) => {
@@ -179,7 +182,7 @@ export default function UserDashboardClient() {
 
   const [resetPasswordDialogOpen, setResetPasswordDialogOpen] = useState(false);
   const [userToResetPassword, setUserToResetPassword] = useState<IUser | null>(
-    null
+    null,
   );
 
   // Combined dialog state
@@ -203,7 +206,7 @@ export default function UserDashboardClient() {
 
   const handleChange = (
     field: keyof ExtendedUserData,
-    value: string | string[] | boolean
+    value: string | string[] | boolean,
   ) => {
     setData((prev) => {
       if (!prev) {
@@ -237,7 +240,7 @@ export default function UserDashboardClient() {
       data.status,
       data.instagram || "",
       data.facebook || "",
-      data.linkedin || ""
+      data.linkedin || "",
     );
 
     if (res?.data?.success) {
@@ -266,7 +269,7 @@ export default function UserDashboardClient() {
       data.status,
       data.instagram || "",
       data.facebook || "",
-      data.linkedin || ""
+      data.linkedin || "",
     );
 
     if (res?.data?.success) {
@@ -286,6 +289,10 @@ export default function UserDashboardClient() {
   const onResetPassword = async (user: IUser) => {
     setUserToResetPassword(user);
     setResetPasswordDialogOpen(true);
+  };
+
+  const onView = async (user: IUser) => {
+    router.push(`/profile/${user.id}`);
   };
 
   const handleDialogClose = (open: boolean) => {
@@ -411,6 +418,7 @@ export default function UserDashboardClient() {
             onUpdate={onUpdate}
             onDelete={onDelete}
             onResetPassword={onResetPassword}
+            onView={onView}
             showPagination={filteredUsers.length > 10}
             paginationData={paginationData}
             onPageChange={setPage}

@@ -39,6 +39,14 @@ export const BlogFilter = ({
         value: status,
       })),
     },
+    {
+      key: "visibility",
+      label: "Chế độ hiển thị",
+      options: [
+        { label: "Công khai", value: "true" },
+        { label: "Riêng tư", value: "false" },
+      ],
+    },
   ];
 
   return (
