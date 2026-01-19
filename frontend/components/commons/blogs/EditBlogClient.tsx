@@ -15,7 +15,6 @@ import { Switch } from "@/components/ui/switch";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useParams, useRouter } from "next/navigation";
-import { useBlogStore } from "@/stores/blogStore";
 import { blogCategories } from "../admin/blogDashboard/constant";
 import {
   RefreshCw,
@@ -26,9 +25,17 @@ import {
   ChevronUp,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import DraggingOnPage from "../layout/Dragging/DraggingOnPage";
+import { DraggingOnPage } from "../layout/Dragging/DraggingOnPage";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthStore } from "@/stores/authStore";
+import { useBlogQuery } from "@/hooks/api/queries/useBlogQueries";
+import {
+  useCreateBlogMutation,
+  useUpdateBlogMutation,
+  useAnalyzeTitleMutation,
+  useAnalyzeDescriptionMutation,
+  useAnalyzeContentMutation,
+} from "@/hooks/api/mutations/useBlogMutations";
 
 const JoditEditor = dynamic(() => import("jodit-react"), { ssr: false });
 
@@ -37,32 +44,34 @@ interface EditBlogClientProps {
 }
 
 const EditBlogClient = ({ isCreate }: EditBlogClientProps) => {
-  const {
-    isLoading,
-    getBlog,
-    updateBlog,
-    createBlog,
-    analyzeTitle,
-    analyzeDescription,
-    analyzeContent,
-  } = useBlogStore();
   const { userAuth } = useAuthStore();
-
   const { toast } = useToast();
   const router = useRouter();
+  const { id } = useParams();
 
-  const [AIContentLoading, setAIContentLoading] = useState(false);
+  // ✅ TanStack Query hooks
+  const { data: blogResponse } = useBlogQuery(id as string, {
+    enabled: !isCreate && !!id,
+  });
+  const { mutate: createBlog, isPending: isCreating } = useCreateBlogMutation();
+  const { mutate: updateBlog, isPending: isUpdating } = useUpdateBlogMutation();
+  const { mutate: analyzeTitleMutation, isPending: AITitleLoading } =
+    useAnalyzeTitleMutation();
+  const {
+    mutate: analyzeDescriptionMutation,
+    isPending: AIDescriptionLoading,
+  } = useAnalyzeDescriptionMutation();
+  const { mutate: analyzeContentMutation, isPending: AIContentLoading } =
+    useAnalyzeContentMutation();
+
+  const isLoading = isCreating || isUpdating;
+
   const editor = useRef(null);
   const [content, setContent] = useState("");
-  const [AITitleLoading, setAITitleLoading] = useState(false);
-  const [AIDescriptionLoading, setAIDescriptionLoading] = useState(false);
   const [isDraggingOnThumbnail, setIsDraggingOnThumbnail] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(true);
-  //   const router = useRouter();
-
-  const { id } = useParams();
 
   const [formData, setFormData] = useState<{
     title: string;
@@ -242,86 +251,111 @@ const EditBlogClient = ({ isCreate }: EditBlogClientProps) => {
 
   const [existingImage, setExistingImage] = useState<string | null>(null);
 
-  const handleGetBlog = useCallback(async () => {
-    if (!id) return;
-
-    const res = await getBlog(id as string);
-    const blogData = res?.data?.blog;
-    if (!blogData) return;
-
-    setFormData({
-      title: blogData.title,
-      description: blogData.description,
-      category: blogData.category,
-      thumbnail: null,
-      content: blogData.content,
-      isVisibility: blogData.isVisibility,
-    });
-
-    setContent(blogData.content || "");
-    setExistingImage(blogData.thumbnailUrl || null);
-  }, [id]);
-
   useEffect(() => {
-    handleGetBlog();
-  }, [id]);
+    if (!isCreate && blogResponse?.data?.blog) {
+      const blogData = blogResponse.data.blog;
+      setFormData({
+        title: blogData.title,
+        description: blogData.description,
+        category: blogData.category,
+        thumbnail: null,
+        content: blogData.content,
+        isVisibility: blogData.isVisibility,
+      });
+      setContent(blogData.content || "");
+      setExistingImage(blogData.thumbnailUrl || null);
+    }
+  }, [blogResponse, isCreate]);
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
 
     if (isCreate && userAuth) {
-      const res = await createBlog(
-        userAuth?.id,
-        formData.title,
-        formData.description,
-        formData.category,
-        formData.thumbnail,
-        formData.content,
-        formData.isVisibility,
+      createBlog(
+        {
+          userId: userAuth.id,
+          title: formData.title,
+          description: formData.description,
+          category: formData.category,
+          thumbnail: formData.thumbnail,
+          content: formData.content,
+          isVisibility: formData.isVisibility,
+        },
+        {
+          onSuccess: (response) => {
+            if (response?.data?.blog?.id) {
+              router.push(`/blogs/${response.data.blog.id}`);
+            }
+          },
+        },
       );
-
-      if (res?.data?.success && res?.data?.blog) {
-        router.push(`/blogs/${res.data.blog.id}`);
-      }
     } else if (id) {
-      await updateBlog(
-        id as string,
-        formData.title,
-        formData.description,
-        formData.category,
-        formData.thumbnail,
-        formData.content,
-        formData.isVisibility,
+      updateBlog(
+        {
+          blogId: id as string,
+          data: {
+            title: formData.title,
+            description: formData.description,
+            category: formData.category,
+            thumbnail: formData.thumbnail,
+            content: formData.content,
+            isVisibility: formData.isVisibility,
+          },
+        },
+        {
+          onSuccess: () => {
+            toast({
+              title: "Success",
+              description: "Blog updated successfully",
+            });
+            router.push(`/blogs/${id}`);
+          },
+        },
       );
-
-      toast({
-        title: "Success",
-        description: "Blog updated successfully",
-      });
-      router.push(`/blogs/${id}`);
     }
   };
 
   const handleAITitleResponse = async () => {
-    setAITitleLoading(true);
-    const res = await analyzeTitle(formData.title);
-    setFormData({ ...formData, title: res?.data?.title || "" });
-    setAITitleLoading(false);
+    analyzeTitleMutation(
+      { title: formData.title },
+      {
+        onSuccess: (response) => {
+          if (response?.data?.title) {
+            setFormData({ ...formData, title: response.data.title });
+          }
+        },
+      },
+    );
   };
 
   const handleAIDescriptionResponse = async () => {
-    setAIDescriptionLoading(true);
-    const res = await analyzeDescription(formData.title, formData.description);
-    setFormData({ ...formData, description: res?.data?.description || "" });
-    setAIDescriptionLoading(false);
+    analyzeDescriptionMutation(
+      { title: formData.title, description: formData.description },
+      {
+        onSuccess: (response) => {
+          if (response?.data?.description) {
+            setFormData({
+              ...formData,
+              description: response.data.description,
+            });
+          }
+        },
+      },
+    );
   };
 
   const handleAIBlogResponse = async () => {
-    setAIContentLoading(true);
-    const res = await analyzeContent(formData.content);
-    setContent(res?.data?.content || "");
-    setFormData({ ...formData, content: res?.data?.content || "" });
-    setAIContentLoading(false);
+    analyzeContentMutation(
+      { content: formData.content },
+      {
+        onSuccess: (response) => {
+          if (response?.data?.content) {
+            setContent(response.data.content);
+            setFormData({ ...formData, content: response.data.content });
+          }
+        },
+      },
+    );
   };
 
   return (

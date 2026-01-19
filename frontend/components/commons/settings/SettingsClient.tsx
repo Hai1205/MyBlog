@@ -12,20 +12,23 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { User, Lock } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
-import { useUserStore } from "@/stores/userStore";
 import { toast } from "react-toastify";
 import { EUserRole, EUserStatus } from "@/types/enum";
-import ProfileTab from "@/components/commons/settings/ProfileTab";
-import SecurityTab from "@/components/commons/settings/SecurityTab";
+import { ProfileTab } from "@/components/commons/settings/ProfileTab";
+import { SecurityTab } from "@/components/commons/settings/SecurityTab";
+import { useUpdateUserMutation } from "@/hooks/api/mutations/useUserMutations";
+import { useChangePasswordMutation } from "@/hooks/api/mutations/useAuthMutations";
 
 export default function SettingsClient() {
-  const { userAuth, changePassword } = useAuthStore();
-  const { updateUser } = useUserStore();
+  const { userAuth } = useAuthStore();
+
+  const { mutate: updateUser } = useUpdateUserMutation();
+  const { mutate: changePassword, isPending: isChangingPassword } =
+    useChangePasswordMutation();
 
   const router = useRouter();
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [previewAvatar, setPreviewAvatar] = useState<string>("");
-  const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   type ExtendedUserData = Omit<IUser, "status"> & {
     status: EUserStatus;
@@ -65,17 +68,19 @@ export default function SettingsClient() {
 
   const handleUpdate = async () => {
     if (data) {
-      await updateUser(
-        data.id,
-        data.birth || "",
-        data.summary || "",
-        avatarFile || null,
-        data.role,
-        data.status,
-        data.instagram || "",
-        data.facebook || "",
-        data.linkedin || "",
-      );
+      updateUser({
+        userId: data.id,
+        data: {
+          birth: data.birth || "",
+          summary: data.summary || "",
+          avatar: avatarFile,
+          role: data.role,
+          status: data.status,
+          instagram: data.instagram || "",
+          facebook: data.facebook || "",
+          linkedin: data.linkedin || "",
+        },
+      });
     }
   };
 
@@ -100,39 +105,39 @@ export default function SettingsClient() {
     }
 
     if (
-      !data?.email &&
-      !data?.currentPassword &&
-      !data?.newPassword &&
+      !data?.email ||
+      !data?.currentPassword ||
+      !data?.newPassword ||
       !data?.confirmPassword
     ) {
       toast.error("Please fill in all password fields!");
       return;
     }
 
-    setIsChangingPassword(true);
-
-    const res = await changePassword(
-      data.email,
-      data.currentPassword || "",
-      data.newPassword || "",
-      data.confirmPassword || "",
+    changePassword(
+      {
+        identifier: data.email,
+        data: {
+          currentPassword: data.currentPassword,
+          newPassword: data.newPassword,
+          confirmPassword: data.confirmPassword,
+        },
+      },
+      {
+        onSuccess: () => {
+          setData((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  currentPassword: "",
+                  newPassword: "",
+                  confirmPassword: "",
+                }
+              : null,
+          );
+        },
+      },
     );
-
-    if (res.data?.success) {
-      toast.success("Password changed successfully!");
-      setData((prev) =>
-        prev
-          ? {
-              ...prev,
-              currentPassword: "",
-              newPassword: "",
-              confirmPassword: "",
-            }
-          : null,
-      );
-    }
-
-    setIsChangingPassword(false);
   };
 
   useEffect(() => {

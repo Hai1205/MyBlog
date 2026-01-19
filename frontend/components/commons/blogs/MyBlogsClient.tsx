@@ -1,39 +1,43 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/authStore";
-import ConfirmationDialog from "../layout/ConfirmationDialog";
-import { toast } from "react-toastify";
-import { useBlogStore } from "@/stores/blogStore";
-import UserBlogsSection from "./UserBlogsSection";
-import PageHeader from "./PageHeader";
-import BlogsSkeleton from "./BlogsSkeleton";
+import { ConfirmationDialog } from "../layout/ConfirmationDialog";
+import { UserBlogsSection } from "./UserBlogsSection";
+import { PageHeader } from "./PageHeader";
+import { BlogsSkeleton } from "./BlogsSkeleton";
+import { useUserBlogsQuery } from "@/hooks/api/queries/useBlogQueries";
+import { useDeleteBlogMutation } from "@/hooks/api/mutations/useBlogMutations";
 
 export default function MyBlogsClient() {
   const { userAuth } = useAuthStore();
-  const {
-    deleteBlog,
-    fetchUserBlogsInBackground,
-    userBlogs,
-    isLoadingUserBlogs,
-  } = useBlogStore();
+
+  const { mutate: deleteBlog } = useDeleteBlogMutation();
+  const { data: userBlogsResponse, isLoading } = useUserBlogsQuery(
+    userAuth?.id || "",
+  );
 
   const router = useRouter();
+
+  const userBlogs = userBlogsResponse?.data?.blogs || [];
+
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [blogToDelete, setCvToDelete] = useState<string | null>(null);
+  const [blogToDelete, setBlogToDelete] = useState<string | null>(null);
 
   // Pagination for user Blogs
   const [userBlogsPage, setUserBlogsPage] = useState(1);
   const userBlogsPageSize = 12;
-  const userBlogsTotalPages = Math.ceil(userBlogs.length / userBlogsPageSize);
+  const userBlogsTotalPages = Math.ceil(
+    (userBlogs.length || 0) / userBlogsPageSize,
+  );
   const userBlogsStartIndex = (userBlogsPage - 1) * userBlogsPageSize;
   const userBlogsEndIndex = userBlogsStartIndex + userBlogsPageSize;
 
   const userBlogsPagination = {
     paginationState: { page: userBlogsPage, pageSize: userBlogsPageSize },
     paginationData: {
-      totalElements: userBlogs.length,
+      totalElements: userBlogs.length || 0,
       totalPages: userBlogsTotalPages,
       currentPage: userBlogsPage,
       pageSize: userBlogsPageSize,
@@ -44,17 +48,9 @@ export default function MyBlogsClient() {
   };
 
   // Paginate user Blogs in memory
-  const paginatedUserBlogs = userBlogs.slice(
-    userBlogsStartIndex,
-    userBlogsEndIndex,
-  );
-
-  useEffect(() => {
-    if (userAuth) {
-      fetchUserBlogsInBackground(userAuth.id);
-      console.log("Fetching user Blogs for user:", userAuth.id);
-    }
-  }, [userAuth]);
+  const paginatedUserBlogs = useMemo(() => {
+    return (userBlogs || []).slice(userBlogsStartIndex, userBlogsEndIndex);
+  }, [userBlogs, userBlogsStartIndex, userBlogsEndIndex]);
 
   const handleCreate = async () => {
     router.push("/blogs/new");
@@ -65,27 +61,26 @@ export default function MyBlogsClient() {
   };
 
   const handleDelete = (blogId: string) => {
-    setCvToDelete(blogId);
+    setBlogToDelete(blogId);
     setDeleteDialogOpen(true);
   };
 
   const handleDeleteConfirm = async () => {
     if (!blogToDelete) return;
 
-    toast.success("Blog deleted successfully!");
-    await deleteBlog(blogToDelete);
+    deleteBlog({ blogId: blogToDelete });
     setDeleteDialogOpen(false);
-    setCvToDelete(null);
+    setBlogToDelete(null);
   };
 
   useEffect(() => {
     if (!userAuth) {
       router.push("/auth/login");
     }
-  }, [userAuth]);
+  }, [userAuth, router]);
 
   // Show loading only when there's no cached data
-  if (isLoadingUserBlogs) {
+  if (isLoading) {
     return <BlogsSkeleton />;
   }
 
@@ -100,8 +95,8 @@ export default function MyBlogsClient() {
             onCreateNew={handleCreate}
             onUpdate={handleEdit}
             onDelete={handleDelete}
-            isLoading={isLoadingUserBlogs}
-            showPagination={userBlogs.length > 12}
+            isLoading={isLoading}
+            showPagination={(userBlogs.length || 0) > 12}
             paginationData={userBlogsPagination.paginationData}
             onPageChange={(page) => {
               userBlogsPagination.setPage(page);

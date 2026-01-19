@@ -7,7 +7,10 @@ import type React from "react";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
-import { useAuthStore } from "@/stores/authStore";
+import {
+  useVerifyOTPMutation,
+  useSendOTPMutation,
+} from "@/hooks/api/mutations/useAuthMutations";
 import Link from "next/link";
 import { Loader2, ArrowLeft, Shield, Clock } from "lucide-react";
 
@@ -17,18 +20,20 @@ interface VerificationClientProps {
 }
 
 const VerificationClient: React.FC<VerificationClientProps> = ({
-  identifier: initialIdentifier,
-  isActivation: initialIsActivation,
+  identifier,
+  isActivation,
 }) => {
-  const { isLoading, verifyOTP, sendOTP } = useAuthStore();
+  const verifyOTPMutation = useVerifyOTPMutation();
+  const sendOTPMutation = useSendOTPMutation();
+
   const router = useRouter();
-  const [identifier, setIdentifier] = useState(initialIdentifier || "");
-  const [isActivation, setIsActivation] = useState(initialIsActivation);
   const [otp, setOtp] = useState<string[]>(Array(6).fill(""));
 
   const [isExpired, setIsExpired] = useState(false);
   const [timeLeft, setTimeLeft] = useState(300);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  const isLoading = verifyOTPMutation.isPending || sendOTPMutation.isPending;
 
   useEffect(() => {
     if (timeLeft <= 0) {
@@ -68,7 +73,7 @@ const VerificationClient: React.FC<VerificationClientProps> = ({
 
   const handleKeyDown = (
     index: number,
-    e: React.KeyboardEvent<HTMLInputElement>
+    e: React.KeyboardEvent<HTMLInputElement>,
   ) => {
     if (e.key === "Backspace") {
       if (otp[index] === "" && index > 0) {
@@ -109,44 +114,56 @@ const VerificationClient: React.FC<VerificationClientProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!validate()) {
+    if (!validate() || !identifier) {
       return;
     }
 
-    const res = await verifyOTP(identifier, otp.join(""), isActivation);
+    try {
+      const res = await verifyOTPMutation.mutateAsync({
+        identifier,
+        data: {
+          otp: otp.join(""),
+          isActivation,
+        },
+      });
 
-    if (!res) {
+      if (isExpired) {
+        setOtp(Array(6).fill(""));
+        return;
+      }
+
+      if (res?.status && res.status !== 200) {
+        return;
+      }
+
+      if (!isActivation) {
+        router.push(
+          `/auth/reset-password/?identifier=${encodeURIComponent(identifier)}`,
+        );
+      } else {
+        toast.success("Account verified successfully");
+        router.push("/auth/login");
+      }
+    } catch (error) {
+      console.error("OTP verification failed:", error);
       setOtp(Array(6).fill(""));
-      return;
-    }
-
-    if (isExpired) {
-      setOtp(Array(6).fill(""));
-      return;
-    }
-
-    if (res?.status && res.status !== 200) {
-      return;
-    }
-
-    if (!isActivation) {
-      router.push(
-        `/auth/reset-password/?identifier=${encodeURIComponent(identifier)}`
-      );
-    } else {
-      toast.success("Account verified successfully");
-      router.push("/auth/login");
     }
   };
 
   const handleResend = async () => {
-    const result = await sendOTP(identifier);
+    if (!identifier) return;
 
-    if (result) {
-      toast.success("OTP code has been resent");
-      setOtp(Array(6).fill(""));
-      setTimeLeft(300);
-      setIsExpired(false);
+    try {
+      const result = await sendOTPMutation.mutateAsync(identifier);
+
+      if (result) {
+        toast.success("OTP code has been resent");
+        setOtp(Array(6).fill(""));
+        setTimeLeft(300);
+        setIsExpired(false);
+      }
+    } catch (error) {
+      console.error("Failed to resend OTP:", error);
     }
   };
 
@@ -164,14 +181,16 @@ const VerificationClient: React.FC<VerificationClientProps> = ({
             <Shield className="h-6 w-6 text-primary" />
           </div>
         </div>
-        <h1 className="text-2xl font-bold tracking-tight">Nhập mã xác thực</h1>
+        <h1 className="text-2xl font-bold tracking-tight">
+          Enter verification code
+        </h1>
         <p className="text-muted-foreground">
-          Chúng tôi đã gửi mã OTP gồm 6 chữ số về tài khoản{" "}
+          We have sent a 6-digit OTP code to your account{" "}
           <strong>{identifier}</strong>
         </p>
         <p className="text-sm text-muted-foreground">
-          Vui lòng nhập mã để{" "}
-          {isActivation ? "xác thực tài khoản" : "đặt lại mật khẩu"}
+          Please enter the code to{" "}
+          {isActivation ? "verify your account" : "reset your password"}
         </p>
       </div>
 
@@ -179,7 +198,7 @@ const VerificationClient: React.FC<VerificationClientProps> = ({
         <div className="flex items-center justify-center gap-2 p-3 bg-primary/5 rounded-lg border">
           <Clock className="h-4 w-4 text-primary" />
           <span className="text-sm font-medium">
-            Mã hết hạn trong: {formatTime(timeLeft)}
+            Code expires in: {formatTime(timeLeft)}
           </span>
         </div>
       )}
@@ -222,17 +241,17 @@ const VerificationClient: React.FC<VerificationClientProps> = ({
           {isLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Đang xác thực...
+              Verifying...
             </>
           ) : (
-            "Xác thực"
+            "Verify"
           )}
         </Button>
       </form>
 
       <div className="space-y-4 text-center">
         <p className="text-sm text-muted-foreground">
-          Không nhận được mã?{" "}
+          Didn't receive the code?{" "}
           <button
             onClick={handleResend}
             className="text-primary hover:underline font-medium"

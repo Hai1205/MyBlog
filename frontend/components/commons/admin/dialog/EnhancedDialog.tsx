@@ -3,7 +3,7 @@ import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { X, LucideIcon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import DialogFooter from "./DialogFooter";
+import { DialogFooter } from "./DialogFooter";
 
 interface EnhancedDialogProps {
   isOpen: boolean;
@@ -37,7 +37,7 @@ const EnhancedDialog = React.forwardRef<
       onResolveContact,
       isDisabled,
     },
-    ref
+    ref,
   ) => {
     return (
       <DialogPrimitive.Root open={isOpen} onOpenChange={onOpenChange}>
@@ -50,7 +50,7 @@ const EnhancedDialog = React.forwardRef<
                 ref={ref}
                 className={cn(
                   "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border border-border bg-background p-6 shadow-lg duration-200 sm:rounded-xl",
-                  className
+                  className,
                 )}
                 asChild
               >
@@ -103,7 +103,7 @@ const EnhancedDialog = React.forwardRef<
         </DialogPrimitive.Portal>
       </DialogPrimitive.Root>
     );
-  }
+  },
 );
 
 EnhancedDialog.displayName = "EnhancedDialog";

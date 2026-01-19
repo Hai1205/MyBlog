@@ -1,8 +1,6 @@
-"use client";
-
 import { FileText } from "lucide-react";
 
-export default function Footer() {
+export const Footer = () => {
   return (
     <footer className="border-t border-border bg-card/50 backdrop-blur-sm py-8 mt-auto">
       <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -32,4 +30,4 @@ export default function Footer() {
       </div>
     </footer>
   );
-}
+};

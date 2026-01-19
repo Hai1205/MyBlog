@@ -1,0 +1,119 @@
+import { EHttpType, handleRequest, IApiResponse } from "@/lib/axiosInstance";
+
+// DTO interfaces
+export interface CreateUserDTO {
+    email: string;
+    password: string;
+    username: string;
+    birth: string;
+    summary: string;
+    avatar: File | null;
+    role: string;
+    status: string;
+    instagram: string;
+    facebook: string;
+    linkedin: string;
+}
+
+export interface UpdateUserDTO {
+    birth: string;
+    summary: string;
+    avatar: File | null;
+    role: string;
+    status: string;
+    instagram: string;
+    facebook: string;
+    linkedin: string;
+}
+
+// Response interfaces
+export interface IUserDataResponse {
+    user: IUser;
+    users: IUser[];
+    isActive: boolean;
+}
+
+/**
+ * User Service - Pure API calls without state management
+ */
+export const userService = {
+    /**
+     * Get all users
+     */
+    getAllUsers: async (): Promise<IApiResponse<IUserDataResponse>> => {
+        return await handleRequest<IUserDataResponse>(EHttpType.GET, `/users`);
+    },
+
+    /**
+     * Get single user by ID
+     */
+    getUser: async (userId: string): Promise<IApiResponse<IUserDataResponse>> => {
+        return await handleRequest<IUserDataResponse>(
+            EHttpType.GET,
+            `/users/${userId}`
+        );
+    },
+
+    /**
+     * Create new user
+     */
+    createUser: async (data: CreateUserDTO): Promise<IApiResponse<IUserDataResponse>> => {
+        const formData = new FormData();
+        formData.append("data", JSON.stringify({
+            email: data.email,
+            password: data.password,
+            username: data.username,
+            instagram: data.instagram,
+            facebook: data.facebook,
+            linkedin: data.linkedin,
+            birth: data.birth,
+            summary: data.summary,
+            role: data.role,
+            status: data.status,
+        }));
+        if (data.avatar) {
+            formData.append("avatar", data.avatar);
+        }
+
+        return await handleRequest<IUserDataResponse>(
+            EHttpType.POST,
+            `/users`,
+            formData
+        );
+    },
+
+    /**
+     * Update user
+     */
+    updateUser: async (
+        userId: string,
+        data: UpdateUserDTO
+    ): Promise<IApiResponse<IUserDataResponse>> => {
+        const formData = new FormData();
+        formData.append("data", JSON.stringify({
+            instagram: data.instagram,
+            facebook: data.facebook,
+            linkedin: data.linkedin,
+            birth: data.birth,
+            summary: data.summary,
+            role: data.role,
+            status: data.status,
+        }));
+        if (data.avatar) {
+            formData.append("avatar", data.avatar);
+        }
+
+        return await handleRequest<IUserDataResponse>(
+            EHttpType.PATCH,
+            `/users/${userId}`,
+            formData
+        );
+    },
+
+    /**
+     * Delete user
+     */
+    deleteUser: async (userId: string): Promise<IApiResponse> => {
+        return await handleRequest(EHttpType.DELETE, `/users/${userId}`);
+    },
+};

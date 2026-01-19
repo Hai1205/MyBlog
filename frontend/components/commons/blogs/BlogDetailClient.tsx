@@ -15,110 +15,82 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { formatDateAgo } from "@/lib/utils";
 import { useAuthStore } from "@/stores/authStore";
-import { useBlogStore } from "@/stores/blogStore";
-import Loading from "../layout/Loading";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useBlogQuery } from "@/hooks/api/queries/useBlogQueries";
+import {
+  useAddCommentMutation,
+  useDeleteCommentMutation,
+  useDeleteBlogMutation,
+  useSaveBlogMutation,
+  useUnsaveBlogMutation,
+} from "@/hooks/api/mutations/useBlogMutations";
 
 const BlogDetailClient = () => {
   const { userAuth } = useAuthStore();
-  const {
-    addComment,
-    deleteComment,
-    getBlog,
-    deleteBlog,
-    saveBlog,
-    unsaveBlog,
-  } = useBlogStore();
 
   const router = useRouter();
   const { id } = useParams();
-  const [blog, setBlog] = useState<IBlog | null>(null);
+
+  const { data: blogResponse, isLoading } = useBlogQuery(id as string);
+  const blog = blogResponse?.data?.blog;
+
+  const { mutate: addCommentMutation } = useAddCommentMutation();
+  const { mutate: deleteCommentMutation } = useDeleteCommentMutation();
+  const { mutate: deleteBlogMutation } = useDeleteBlogMutation();
+  const { mutate: saveBlogMutation } = useSaveBlogMutation();
+  const { mutate: unsaveBlogMutation } = useUnsaveBlogMutation();
+
   const [content, setContent] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-
-  // Fetch blog with author and comments in one call
-  useEffect(() => {
-    const fetchBlog = async () => {
-      setIsLoading(true);
-      if (!id) return;
-      const res = await getBlog(id as string);
-      console.log("Fetched blog data:", res);
-      const blogData = res?.data?.blog;
-
-      if (blogData) {
-        setBlog(blogData);
-      }
-
-      setIsLoading(false);
-    };
-    fetchBlog();
-  }, [id, getBlog]);
+  const [saved, setSaved] = useState(false);
 
   const handleAddComment = async () => {
-    if (!id || !content.trim()) return;
+    if (!id || !content.trim() || !userAuth?.id) return;
 
-    const res = await addComment(id as string, userAuth?.id as string, content);
+    addCommentMutation({
+      blogId: id as string,
+      userId: userAuth.id,
+      content,
+    });
 
     setContent("");
-
-    const newComment = res?.data?.comment;
-
-    if (!newComment) return;
-
-    // Add new comment to the list
-    setBlog((prev) =>
-      prev
-        ? {
-            ...prev,
-            comments: [...(prev.comments || []), newComment],
-          }
-        : null,
-    );
   };
 
   const handleDeleteComment = async (commentId: string) => {
-    if (!commentId) return;
-
-    setBlog((prev) =>
-      prev
-        ? {
-            ...prev,
-            comments: prev.comments?.filter((c) => c.id !== commentId) || [],
-          }
-        : null,
-    );
-
-    await deleteComment(commentId);
+    if (!commentId || !id) return;
+    deleteCommentMutation({ commentId, blogId: id as string });
   };
 
   const handleDeleteBlog = async (blogId: string) => {
     if (!blogId) return;
-    await deleteBlog(blogId);
-    router.push("/blogs");
+    deleteBlogMutation(
+      { blogId },
+      {
+        onSuccess: () => {
+          router.push("/blogs");
+        },
+      },
+    );
   };
-
-  const [saved, setSaved] = useState(false);
 
   const handleSaveBlog = async (blogId: string) => {
     if (!blogId || !userAuth) return;
 
     if (!saved) {
       setSaved(true);
-      await saveBlog(blogId, userAuth.id);
+      saveBlogMutation({ blogId, userId: userAuth.id });
     } else {
       setSaved(false);
-      await unsaveBlog(blogId, userAuth.id);
+      unsaveBlogMutation({ blogId, userId: userAuth.id });
     }
   };
 
   if (isLoading) {
-    return <Loading />;
+    return <BlogDetailSkeleton />;
   }
-
-  console.log("Blog data:", blog);
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
@@ -265,6 +237,83 @@ const BlogDetailClient = () => {
           ) : (
             <p>No Comments Yet</p>
           )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+const BlogDetailSkeleton = () => {
+  return (
+    <div className="max-w-4xl mx-auto p-6 space-y-6">
+      {/* Main Blog Card Skeleton */}
+      <Card>
+        <CardHeader>
+          {/* Title Skeleton */}
+          <Skeleton className="h-10 w-3/4 mb-4" />
+
+          {/* Author Section Skeleton */}
+          <div className="flex items-center gap-2 mt-2">
+            <Skeleton className="w-8 h-8 rounded-full" />
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-10 w-10 rounded-md ml-3" />
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Thumbnail Skeleton */}
+          <Skeleton className="w-full h-64 rounded-lg" />
+
+          {/* Description Skeleton */}
+          <div className="space-y-2">
+            <Skeleton className="h-5 w-full" />
+            <Skeleton className="h-5 w-5/6" />
+          </div>
+
+          {/* Content Skeleton */}
+          <div className="space-y-3 mt-4">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-4/5" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-5/6" />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Comment Input Card Skeleton */}
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-6 w-48" />
+        </CardHeader>
+        <CardContent>
+          <Skeleton className="h-4 w-32 mb-2" />
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-10 flex-1 rounded-md" />
+            <Skeleton className="h-10 w-10 rounded-md shrink-0" />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Comments List Card Skeleton */}
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-6 w-40" />
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="border-b py-2 flex items-center gap-3">
+              <div className="flex-1 space-y-2">
+                <div className="flex items-center gap-2">
+                  <Skeleton className="w-8 h-8 rounded-full" />
+                  <Skeleton className="h-4 w-24" />
+                </div>
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-3 w-20" />
+              </div>
+            </div>
+          ))}
         </CardContent>
       </Card>
     </div>

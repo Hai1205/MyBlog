@@ -8,15 +8,18 @@ import type React from "react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
-import { useAuthStore } from "@/stores/authStore";
+import { useSendOTPMutation } from "@/hooks/api/mutations/useAuthMutations";
 import Link from "next/link";
 import { Loader2, Mail, ArrowLeft, Send } from "lucide-react";
 
 const ForgotPasswordClient: React.FC = () => {
+  const sendOTPMutation = useSendOTPMutation();
+  
   const router = useRouter();
-  const { isLoading, sendOTP } = useAuthStore();
   const [identifier, setIdentifier] = useState("");
   const [error, setError] = useState("");
+
+  const isLoading = sendOTPMutation.isPending;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setIdentifier(e.target.value);
@@ -26,19 +29,21 @@ const ForgotPasswordClient: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const res = await sendOTP(identifier);
+    try {
+      const res = await sendOTPMutation.mutateAsync(identifier);
 
-    if (!res) {
-      return;
+      if (res) {
+        toast.success("OTP code has been sent to your email");
+
+        router.push(
+          `/auth/verification?identifier=${encodeURIComponent(
+            identifier,
+          )}&isActivation=false`,
+        );
+      }
+    } catch (error) {
+      console.error("Failed to send OTP:", error);
     }
-
-    toast.success("OTP code has been sent to your email");
-
-    router.push(
-      `/auth/verification?identifier=${encodeURIComponent(
-        identifier
-      )}&isActivation=false`
-    );
   };
 
   return (

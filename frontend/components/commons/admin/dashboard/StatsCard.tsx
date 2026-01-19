@@ -1,5 +1,4 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, UserPlus } from "lucide-react";
 
 interface StatsCardProps {
   title: string;

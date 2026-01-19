@@ -8,7 +8,7 @@ interface EmptyStateProps {
   onCreateNew: () => void;
 }
 
-export default function EmptyState({ onCreateNew }: EmptyStateProps) {
+export const EmptyState = ({ onCreateNew }: EmptyStateProps) => {
   return (
     <Card className="p-12 text-center border-border/50 shadow-lg bg-linear-to-br from-card to-card/80 backdrop-blur-sm">
       <div className="flex flex-col items-center gap-4">
@@ -32,4 +32,4 @@ export default function EmptyState({ onCreateNew }: EmptyStateProps) {
       </div>
     </Card>
   );
-}
+};

@@ -1,11 +1,11 @@
 "use client";
 
-import EmptyState from "@/components/commons/blogs/EmptyState";
+import { EmptyState } from "@/components/commons/blogs/EmptyState";
 import {
   GridPagination,
   PaginationData,
 } from "@/components/commons/layout/pagination/GridPagination";
-import BlogCard from "./BlogCard";
+import { BlogCard } from "./BlogCard";
 
 interface Props {
   userBlogs: IBlog[];
@@ -19,7 +19,7 @@ interface Props {
   showPagination?: boolean;
 }
 
-export default function UserBlogsSection({
+export const UserBlogsSection = ({
   userBlogs,
   onCreateNew,
   onUpdate,
@@ -29,7 +29,7 @@ export default function UserBlogsSection({
   onPageChange,
   onPageSizeChange,
   showPagination = false,
-}: Props) {
+}: Props) => {
   return (
     <div className="space-y-6">
       {/* Loading state */}
@@ -72,4 +72,4 @@ export default function UserBlogsSection({
       )}
     </div>
   );
-}
+};

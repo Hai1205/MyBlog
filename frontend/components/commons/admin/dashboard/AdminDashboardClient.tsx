@@ -1,22 +1,33 @@
 "use client";
 
-import { useEffect } from "react";
 import { DashboardHeader } from "@/components/commons/admin/dashboard/DashboardHeader";
 import { StatsCard } from "@/components/commons/admin/dashboard/StatsCard";
 import { RecentActivity } from "@/components/commons/admin/dashboard/RecentActivity";
 import { Button } from "@/components/ui/button";
 import { Eye, Users, FileText } from "lucide-react";
-import { useStatsStore } from "@/stores/statsStore";
+import { useDashboardStatsQuery } from "@/hooks/api/queries/useStatsQueries";
 
 export default function AdminDashboardClient() {
-  const { dashboardStats, fetchDashboardStatsInBackground } = useStatsStore();
+  const {
+    data: dashboardStatsResponse,
+    isLoading,
+    error,
+  } = useDashboardStatsQuery();
+  const dashboardStats = dashboardStatsResponse?.data?.dashboardStats;
 
-  useEffect(() => {
-    // Fetch in background to update cache
-    fetchDashboardStatsInBackground();
-  }, []);
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <p className="text-muted-foreground mb-4">
+            Loading dashboard statistics...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
-  if (!dashboardStats) {
+  if (error || !dashboardStats) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">

@@ -5,19 +5,25 @@ import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { EUserRole, EUserStatus } from "@/types/enum";
-import { useUserStore } from "@/stores/userStore";
 import { useAuthStore } from "@/stores/authStore";
 import { toast } from "react-toastify";
 import { DashboardHeader } from "@/components/commons/admin/dashboard/DashboardHeader";
-import CreateUserDialog from "@/components/commons/admin/userDashboard/CreateUserDialog";
-import UpdateUserDialog from "@/components/commons/admin/userDashboard/UpdateUserDialog";
+import { CreateUserDialog } from "@/components/commons/admin/userDashboard/CreateUserDialog";
+import { UpdateUserDialog } from "@/components/commons/admin/userDashboard/UpdateUserDialog";
 import { TableSearch } from "@/components/commons/admin/adminTable/TableSearch";
 import { UserFilter } from "@/components/commons/admin/userDashboard/UserFilter";
 import { UserTable } from "@/components/commons/admin/userDashboard/UserTable";
 import { ExtendedUserData } from "@/components/commons/admin/userDashboard/constant";
-import ConfirmationDialog from "@/components/commons/layout/ConfirmationDialog";
-import TableDashboardSkeleton from "../adminTable/TableDashboardSkeleton";
+import { ConfirmationDialog } from "@/components/commons/layout/ConfirmationDialog";
+import { TableDashboardSkeleton } from "../adminTable/TableDashboardSkeleton";
 import { useRouter } from "next/navigation";
+import { useAllUsersQuery } from "@/hooks/api/queries/useUserQueries";
+import {
+  useCreateUserMutation,
+  useUpdateUserMutation,
+  useDeleteUserMutation,
+} from "@/hooks/api/mutations/useUserMutations";
+import { useResetPasswordMutation } from "@/hooks/api/mutations/useAuthMutations";
 
 export type UserFilterType = "status" | "role" | "plan";
 export interface IUserFilter {
@@ -35,14 +41,16 @@ const userInitialFilters: IUserFilter = {
 
 export default function UserDashboardClient() {
   const {
-    usersTable,
-    fetchAllUsersInBackground,
-    createUser,
-    updateUser,
-    deleteUser,
-    getAllUsers,
-  } = useUserStore();
-  const { resetPassword } = useAuthStore();
+    data: usersResponse,
+    isLoading: isLoadingUsers,
+    refetch: refetchUsers,
+  } = useAllUsersQuery();
+  const usersTable = usersResponse?.data?.users || [];
+
+  const { mutate: createUser } = useCreateUserMutation();
+  const { mutate: updateUser } = useUpdateUserMutation();
+  const { mutate: deleteUser } = useDeleteUserMutation();
+  const { mutate: resetPassword } = useResetPasswordMutation();
 
   const router = useRouter();
 
@@ -76,11 +84,6 @@ export default function UserDashboardClient() {
   const setPage = (page: number) => {
     setCurrentPage(page);
   };
-
-  useEffect(() => {
-    // Fetch in background to update cache
-    fetchAllUsersInBackground();
-  }, []);
 
   const filterData = useCallback(
     (query: string, filters: { status: string[]; role: string[] }) => {
@@ -166,7 +169,7 @@ export default function UserDashboardClient() {
   const handleRefresh = () => {
     setActiveFilters(userInitialFilters);
     setSearchQuery("");
-    getAllUsers();
+    refetchUsers();
   };
 
   const [openMenuFilters, setOpenMenuFilters] = useState(false);
@@ -224,57 +227,53 @@ export default function UserDashboardClient() {
   };
 
   const handleUpdate = async () => {
-    if (!data) {
-      return;
-    }
+    if (!data) return;
 
-    const res = await updateUser(
-      data.id,
-      data.birth || "",
-      data.summary || "",
-      avatarFile || null,
-      data.role,
-      data.status,
-      data.instagram || "",
-      data.facebook || "",
-      data.linkedin || "",
+    updateUser(
+      {
+        userId: data.id,
+        data: {
+          birth: data.birth || "",
+          summary: data.summary || "",
+          avatar: avatarFile,
+          role: data.role,
+          status: data.status,
+          instagram: data.instagram || "",
+          facebook: data.facebook || "",
+          linkedin: data.linkedin || "",
+        },
+      },
+      {
+        onSuccess: () => {
+          setIsUpdateUserOpen(false);
+        },
+      },
     );
-
-    if (res?.data?.success) {
-      toast.success("User updated successfully");
-    } else {
-      toast.error("Failed to update user");
-    }
-
-    setIsUpdateUserOpen(false);
   };
 
   const handleCreate = async () => {
-    if (!data) {
-      return;
-    }
+    if (!data) return;
 
-    const res = await createUser(
-      data.email,
-      data.password || "",
-      data.username,
-      data.birth || "",
-      data.summary || "",
-      avatarFile || null,
-      data.role,
-      data.status,
-      data.instagram || "",
-      data.facebook || "",
-      data.linkedin || "",
+    createUser(
+      {
+        email: data.email,
+        password: data.password || "",
+        username: data.username,
+        birth: data.birth || "",
+        summary: data.summary || "",
+        avatar: avatarFile,
+        role: data.role,
+        status: data.status,
+        instagram: data.instagram || "",
+        facebook: data.facebook || "",
+        linkedin: data.linkedin || "",
+      },
+      {
+        onSuccess: () => {
+          setIsCreateUserOpen(false);
+        },
+      },
     );
-
-    if (res?.data?.success) {
-      toast.success("User created successfully");
-    } else {
-      toast.error("Failed to create user");
-    }
-
-    setIsCreateUserOpen(false);
   };
 
   const onDelete = (user: IUser) => {
@@ -302,15 +301,17 @@ export default function UserDashboardClient() {
 
   const handleDialogConfirm = async () => {
     if (isDeleteDialog && userToDelete) {
-      toast.success("Xóa người dùng thành công!");
+      deleteUser(userToDelete.id);
       setDeleteDialogOpen(false);
       setUserToDelete(null);
-      await deleteUser(userToDelete.id);
     } else if (!isDeleteDialog && userToResetPassword) {
-      toast.success("Đã gửi mật khẩu mới về email của người dùng!");
+      resetPassword(userToResetPassword.email, {
+        onSuccess: () => {
+          toast.success("Đã gửi mật khẩu mới về email của người dùng!");
+        },
+      });
       setResetPasswordDialogOpen(false);
       setUserToResetPassword(null);
-      await resetPassword(userToResetPassword.email);
     }
   };
 
@@ -319,7 +320,7 @@ export default function UserDashboardClient() {
     setIsUpdateUserOpen(true);
   };
 
-  if (usersTable === null) {
+  if (isLoadingUsers) {
     return <TableDashboardSkeleton />;
   }
 

@@ -116,7 +116,7 @@ export function GridPagination({
                   onClick={() => onPageChange(1)}
                   className="rounded-xl hover:scale-105 hover:shadow-md hover:shadow-primary/20 transition-all duration-200"
                 >
-                  <span className="text-xs font-semibold">Đầu</span>
+                  <span className="text-xs font-semibold">First</span>
                 </PaginationLink>
               </PaginationItem>
             )}
@@ -143,15 +143,15 @@ export function GridPagination({
                     onClick={() => onPageChange(page)}
                     isActive={currentPage === page}
                     className={cn(
-                      "rounded-xl hover:scale-105 hover:shadow-md hover:shadow-primary/20 transition-all duration-200 min-w-[3rem] font-semibold",
+                      "rounded-xl hover:scale-105 hover:shadow-md hover:shadow-primary/20 transition-all duration-200 min-w-12 font-semibold",
                       currentPage === page &&
-                        "pointer-events-none bg-linear-to-br from-primary to-secondary text-primary-foreground shadow-lg shadow-primary/30"
+                        "pointer-events-none bg-linear-to-br from-primary to-secondary text-primary-foreground shadow-lg shadow-primary/30",
                     )}
                   >
                     {page}
                   </PaginationLink>
                 </PaginationItem>
-              )
+              ),
             )}
 
             {/* Next button */}
@@ -171,7 +171,7 @@ export function GridPagination({
                   onClick={() => onPageChange(totalPages)}
                   className="rounded-xl hover:scale-105 hover:shadow-md hover:shadow-primary/20 transition-all duration-200"
                 >
-                  <span className="text-xs font-semibold">Cuối</span>
+                  <span className="text-xs font-semibold">Last</span>
                 </PaginationLink>
               </PaginationItem>
             )}
@@ -183,22 +183,22 @@ export function GridPagination({
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 w-full max-w-4xl">
         {/* Info text */}
         <div className="text-sm text-muted-foreground bg-card/60 backdrop-blur-sm px-5 py-2.5 rounded-xl border border-border/50 shadow-md">
-          Hiển thị{" "}
+          Showing{" "}
           <span className="font-bold text-foreground bg-linear-to-br from-primary/20 to-secondary/20 px-2 py-0.5 rounded">
             {startItem}-{endItem}
           </span>{" "}
-          trong tổng số{" "}
+          of{" "}
           <span className="font-bold text-foreground bg-linear-to-br from-primary/20 to-secondary/20 px-2 py-0.5 rounded">
             {totalElements}
           </span>{" "}
-          kết quả
+          results
         </div>
 
         {/* Page size selector */}
         {showPageSizeSelector && onPageSizeChange && (
           <div className="flex items-center gap-3 bg-card/60 backdrop-blur-sm px-5 py-2.5 rounded-xl border border-border/50 shadow-md">
             <span className="text-sm text-muted-foreground font-medium">
-              Số lượng:
+              Per page:
             </span>
             <Select
               value={pageSize.toString()}

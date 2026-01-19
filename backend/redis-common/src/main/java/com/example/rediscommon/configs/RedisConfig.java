@@ -87,7 +87,8 @@ public class RedisConfig {
         objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
         // Enable default typing for proper deserialization from Redis
-        // This adds type information to JSON so Redis can deserialize back to correct types
+        // This adds type information to JSON so Redis can deserialize back to correct
+        // types
         BasicPolymorphicTypeValidator ptv = BasicPolymorphicTypeValidator.builder()
                 .allowIfSubType(Object.class)
                 .build();

@@ -2,12 +2,13 @@ import type React from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/commons/layout/ThemeProvider";
+import { QueryProvider } from "@/components/commons/layout/QueryProvider";
 import { TokenRefresher } from "@/components/commons/layout/TokenRefresher";
 import { CookieMonitor } from "@/components/commons/layout/CookieMonitor";
 import { Slide, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { Navbar } from "@/components/commons/layout/navbar/Navbar";
-import Footer from "@/components/commons/layout/Footer";
+import { Footer } from "@/components/commons/layout/Footer";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 const geistSans = Geist({
@@ -52,35 +53,37 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased overflow-hidden h-screen`}
       >
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="dark"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <CookieMonitor />
-          <TokenRefresher />
+        <QueryProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="dark"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <CookieMonitor />
+            <TokenRefresher />
 
-          <Navbar />
-          <ScrollArea className="h-[calc(100vh-64px)]">
-            <main className="min-h-[calc(100vh-64px)]">{children}</main>
-            <Footer />
-          </ScrollArea>
+            <Navbar />
+            <ScrollArea className="h-[calc(100vh-64px)]">
+              <main className="min-h-[calc(100vh-64px)]">{children}</main>
+              <Footer />
+            </ScrollArea>
 
-          <ToastContainer
-            position="bottom-right"
-            autoClose={5000}
-            hideProgressBar={false}
-            newestOnTop
-            closeOnClick
-            rtl={false}
-            pauseOnFocusLoss
-            draggable
-            pauseOnHover
-            theme="light"
-            transition={Slide}
-          />
-        </ThemeProvider>
+            <ToastContainer
+              position="bottom-right"
+              autoClose={5000}
+              hideProgressBar={false}
+              newestOnTop
+              closeOnClick
+              rtl={false}
+              pauseOnFocusLoss
+              draggable
+              pauseOnHover
+              theme="light"
+              transition={Slide}
+            />
+          </ThemeProvider>
+        </QueryProvider>
       </body>
     </html>
   );

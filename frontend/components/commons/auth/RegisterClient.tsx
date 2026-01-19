@@ -7,14 +7,21 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import type React from "react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAuthStore } from "@/stores/authStore";
+import {
+  useRegisterMutation,
+  useSendOTPMutation,
+} from "@/hooks/api/mutations/useAuthMutations";
 import Link from "next/link";
 import { Loader2, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { toast } from "react-toastify";
 
 const RegisterClient: React.FC = () => {
-  const { isLoading, register, sendOTP } = useAuthStore();
+  const registerMutation = useRegisterMutation();
+  const sendOTPMutation = useSendOTPMutation();
+  
   const router = useRouter();
+
+  const isLoading = registerMutation.isPending || sendOTPMutation.isPending;
 
   const [formData, setFormData] = useState({
     username: "",
@@ -70,24 +77,29 @@ const RegisterClient: React.FC = () => {
       return;
     }
 
-    const response = await register(
-      formData.username,
-      formData.email,
-      formData.password
-    );
+    try {
+      const response = await registerMutation.mutateAsync({
+        username: formData.username,
+        email: formData.email,
+        password: formData.password,
+      });
 
-    if (response?.status === 200) {
-      toast.success(
-        "Registration successful! Please check your email to verify."
-      );
+      if (response?.status === 200) {
+        toast.success(
+          "Registration successful! Please check your email to verify.",
+        );
 
-      router.push(
-        `/auth/verification?identifier=${encodeURIComponent(
-          formData.email
-        )}&isActivation=true`
-      );
+        router.push(
+          `/auth/verification?identifier=${encodeURIComponent(
+            formData.email,
+          )}&isActivation=true`,
+        );
 
-      await sendOTP(formData.email);
+        await sendOTPMutation.mutateAsync(formData.email);
+      }
+    } catch (error) {
+      // Error handling is done by TanStack Query + toast
+      console.error("Registration failed:", error);
     }
   };
 

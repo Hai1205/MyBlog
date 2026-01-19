@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import AdminSidebar from "./AdminSidebar";
+import { AdminSidebar } from "./AdminSidebar";
 
 interface AdminLayoutClientProps {
   children: React.ReactNode;

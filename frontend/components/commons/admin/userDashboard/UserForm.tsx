@@ -26,7 +26,7 @@ interface UserFormProps {
   showFooterButtons?: boolean;
 }
 
-const UserForm: React.FC<UserFormProps> = ({
+export const UserForm: React.FC<UserFormProps> = ({
   data,
   onChange,
   previewAvatar,
@@ -233,7 +233,7 @@ const UserForm: React.FC<UserFormProps> = ({
           placeholder="Nhập LinkedIn"
         />
       </div>
-      
+
       {/* Status and Role */}
       <div className="flex gap-4">
         <div className="flex-1 space-y-2">
@@ -287,5 +287,3 @@ const UserForm: React.FC<UserFormProps> = ({
     </div>
   );
 };
-
-export default UserForm;

@@ -2,30 +2,28 @@
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useCallback, useEffect, useState } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Facebook, Instagram, Linkedin } from "lucide-react";
 import { useParams } from "next/navigation";
-import { useUserStore } from "@/stores/userStore";
-import Loading from "../layout/Loading";
+import { useUserQuery } from "@/hooks/api/queries/useUserQueries";
+import { ProfileSkeleton } from "./ProfileSkeleton";
 
 const ProfileClient = () => {
-  const { getUser } = useUserStore();
-
-  const [user, setUser] = useState<IUser | null>(null);
-
   const { id } = useParams();
 
-  const handleGetUser = useCallback(async () => {
-    const res = await getUser(id as string);
-    setUser(res?.data?.user || null);
-  }, [id, getUser]);
+  const { data: userResponse, isLoading } = useUserQuery(id as string);
+  const user = userResponse?.data?.user;
 
-  useEffect(() => {
-    handleGetUser();
-  }, [id, handleGetUser]);
+  if (isLoading) {
+    return <ProfileSkeleton />;
+  }
 
   if (!user) {
-    return <Loading />;
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        User not found
+      </div>
+    );
   }
   return (
     <div className="flex justify-center items-center min-h-screen p-4">

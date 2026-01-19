@@ -1,6 +1,6 @@
 import { UserCog } from "lucide-react";
 import { AdminDialog } from "../dialog/AdminDialog";
-import UserForm from "./UserForm";
+import { UserForm } from "./UserForm";
 import { ExtendedUserData } from "./constant";
 
 interface CreateUserDialogProps {
@@ -13,7 +13,7 @@ interface CreateUserDialogProps {
   handleAvatarChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
-const CreateUserDialog = ({
+export const CreateUserDialog = ({
   isOpen,
   onOpenChange,
   onChange,
@@ -26,8 +26,8 @@ const CreateUserDialog = ({
     <AdminDialog<IUser>
       isOpen={isOpen}
       onOpenChange={onOpenChange}
-      title="Tạo người dùng"
-      description="Tạo thông tin người dùng"
+      title="Create User"
+      description="Create user information"
       icon={UserCog}
       onSubmit={onUserCreated}
       isCreateDialog={true}
@@ -43,5 +43,3 @@ const CreateUserDialog = ({
     </AdminDialog>
   );
 };
-
-export default CreateUserDialog;

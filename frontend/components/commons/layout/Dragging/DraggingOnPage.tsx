@@ -3,10 +3,7 @@ interface DraggingOnPageProps {
   subtitle: string;
 }
 
-export default function DraggingOnPage({
-  title,
-  subtitle,
-}: DraggingOnPageProps) {
+export const DraggingOnPage = ({ title, subtitle }: DraggingOnPageProps) => {
   return (
     <div className="fixed inset-0 bg-primary/10 backdrop-blur-sm z-50 flex items-center justify-center pointer-events-none">
       <div className="bg-background border-2 border-dashed border-primary rounded-lg p-12 shadow-2xl">
@@ -27,15 +24,11 @@ export default function DraggingOnPage({
             </svg>
           </div>
           <div className="text-center">
-            <p className="text-2xl font-bold text-primary mb-2">
-              {title}
-            </p>
-            <p className="text-sm text-muted-foreground">
-              {subtitle}
-            </p>
+            <p className="text-2xl font-bold text-primary mb-2">{title}</p>
+            <p className="text-sm text-muted-foreground">{subtitle}</p>
           </div>
         </div>
       </div>
     </div>
   );
-}
+};

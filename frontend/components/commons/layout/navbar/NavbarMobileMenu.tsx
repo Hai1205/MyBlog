@@ -98,7 +98,7 @@ export const NavbarMobileMenu = ({
               "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200",
               pathname === link.href
                 ? "bg-linear-to-br from-primary to-secondary text-primary-foreground shadow-lg shadow-primary/30"
-                : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                : "text-muted-foreground hover:text-foreground hover:bg-accent/50",
             )}
           >
             {pathname === link.href && (
@@ -116,7 +116,7 @@ export const NavbarMobileMenu = ({
             onClick={onLogout}
             className="w-full bg-linear-to-br from-destructive/10 to-destructive/5 hover:from-destructive/20 hover:to-destructive/10 text-destructive hover:text-destructive border-destructive/30 hover:border-destructive/50 transition-all duration-200"
           >
-            Đăng xuất
+            Logout
           </Button>
         </div>
       ) : (
@@ -126,12 +126,12 @@ export const NavbarMobileMenu = ({
               variant="outline"
               className="w-full hover:bg-accent/50 transition-all duration-200"
             >
-              Đăng nhập
+              Sign In
             </Button>
           </Link>
           <Link href="/auth/register" onClick={() => onOpenChange(false)}>
             <Button className="w-full bg-linear-to-br from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all duration-200">
-              Đăng ký
+              Sign Up
             </Button>
           </Link>
         </div>

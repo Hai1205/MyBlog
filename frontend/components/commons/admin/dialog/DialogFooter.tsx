@@ -8,12 +8,12 @@ interface IContactFooterProps {
   isDisabled?: boolean;
 }
 
-export default function DialogFooter({
+export const DialogFooter = ({
   isLoading,
   onOpenChange,
   onResolveContact,
   isDisabled,
-}: IContactFooterProps) {
+}: IContactFooterProps) => {
   return (
     <footer className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2">
       <div className="flex justify-between items-center w-full">
@@ -29,9 +29,7 @@ export default function DialogFooter({
           variant="default"
           onClick={onResolveContact}
           className="bg-green-600 hover:bg-green-700 text-white shadow-md hover:shadow-lg transition-all"
-          disabled={
-            isLoading || isDisabled
-          }
+          disabled={isLoading || isDisabled}
         >
           {isLoading ? (
             <span className="flex items-center gap-2">
@@ -47,5 +45,5 @@ export default function DialogFooter({
         </Button>
       </div>
     </footer>
-  )
-}
+  );
+};

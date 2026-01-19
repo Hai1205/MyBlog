@@ -1,33 +1,27 @@
 "use client";
 
-import { useBlogStore } from "@/stores/blogStore";
-import BlogCard from "./BlogCard";
-import { useEffect } from "react";
+import { BlogCard } from "./BlogCard";
 import { useAuthStore } from "@/stores/authStore";
-import BlogsSkeleton from "./BlogsSkeleton";
+import { BlogsSkeleton } from "./BlogsSkeleton";
+import { useSavedBlogsQuery } from "@/hooks/api/queries/useBlogQueries";
+import { useUnsaveBlogMutation } from "@/hooks/api/mutations/useBlogMutations";
 
 const SavedBlogClient = () => {
   const { userAuth } = useAuthStore();
-  const {
-    fetchSavedBlogsInBackground,
-    unsaveBlog,
-    savedBlogs,
-    isLoadingSavedBlogs,
-  } = useBlogStore();
 
-  useEffect(() => {
-    if (userAuth) {
-      fetchSavedBlogsInBackground(userAuth.id);
-      console.log("Fetching saved Blogs for user:", userAuth.id);
-    }
-  }, [userAuth]);
+  const { data: savedBlogsResponse, isLoading } = useSavedBlogsQuery(
+    userAuth?.id || "",
+  );
+  const { mutate: unsaveBlog } = useUnsaveBlogMutation();
+
+  const savedBlogs = savedBlogsResponse?.data?.blogs || [];
 
   const handleUnsave = async (blogId: string) => {
     if (!userAuth) return;
-    await unsaveBlog(blogId, userAuth.id);
+    unsaveBlog({ blogId, userId: userAuth.id });
   };
 
-  if (isLoadingSavedBlogs) {
+  if (isLoading) {
     return <BlogsSkeleton />;
   }
 
@@ -35,8 +29,8 @@ const SavedBlogClient = () => {
     <div className="container mx-auto px-4">
       <h1 className="text-3xl font-bold mt-2">Saved Blogs</h1>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-        {savedBlogs.length > 0 ? (
-          savedBlogs.map((blog) => {
+        {(savedBlogs.length || 0) > 0 ? (
+          savedBlogs.map((blog: IBlog) => {
             return (
               <BlogCard
                 key={blog.id}

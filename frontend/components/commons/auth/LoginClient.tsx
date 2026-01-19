@@ -7,12 +7,17 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import type React from "react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAuthStore } from "@/stores/authStore";
+import {
+  useLoginMutation,
+  useSendOTPMutation,
+} from "@/hooks/api/mutations/useAuthMutations";
 import Link from "next/link";
 import { Loader2, Mail, Lock, EyeOff, Eye } from "lucide-react";
 
 const LoginClient: React.FC = () => {
-  const { isLoading, login, sendOTP } = useAuthStore();
+  const loginMutation = useLoginMutation();
+  const sendOTPMutation = useSendOTPMutation();
+  
   const router = useRouter();
 
   const [showPassword, setShowPassword] = useState(false);
@@ -21,6 +26,8 @@ const LoginClient: React.FC = () => {
     password: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const isLoading = loginMutation.isPending || sendOTPMutation.isPending;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -50,25 +57,33 @@ const LoginClient: React.FC = () => {
     e.preventDefault();
     if (!validate()) return;
 
-    const response = await login(formData.identifier, formData.password);
+    try {
+      const response = await loginMutation.mutateAsync({
+        identifier: formData.identifier,
+        password: formData.password,
+      });
 
-    if (response?.status === 403) {
-      router.push(
-        `/auth/verification?identifier=${encodeURIComponent(
-          formData.identifier
-        )}&isActivation=true`
-      );
-      await sendOTP(formData.identifier);
-      return;
-    }
+      if (response?.status === 403) {
+        router.push(
+          `/auth/verification?identifier=${encodeURIComponent(
+            formData.identifier,
+          )}&isActivation=true`,
+        );
+        await sendOTPMutation.mutateAsync(formData.identifier);
+        return;
+      }
 
-    if (response?.status && response?.status === 403) {
-      router.push(`/auth/banned`);
-      return;
-    }
+      if (response?.status && response?.status === 451) {
+        router.push(`/auth/banned`);
+        return;
+      }
 
-    if (response?.status === 200) {
-      router.push(`/`);
+      if (response?.status === 200) {
+        router.push(`/`);
+      }
+    } catch (error) {
+      // Error handling is done by TanStack Query + toast
+      console.error("Login failed:", error);
     }
   };
 

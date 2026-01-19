@@ -1,24 +1,20 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import Loading from "../layout/Loading";
-import { useBlogStore } from "@/stores/blogStore";
-import BlogCard from "./BlogCard";
+import { BlogCard } from "./BlogCard";
 import { Search } from "lucide-react";
 import { usePagination } from "@/hooks/use-pagination";
 import { PaginationControls } from "@/components/commons/layout/pagination/PaginationControls";
 import { blogCategories } from "../admin/blogDashboard/constant";
+import { useAllBlogsQuery } from "@/hooks/api/queries/useBlogQueries";
+import { BlogsSkeleton } from "./BlogsSkeleton";
 
 const BlogsClient = () => {
-  const { isLoading, blogs, fetchAllBlogsInBackground } = useBlogStore();
+  const { data: blogsResponse, isLoading } = useAllBlogsQuery();
+  const blogs = blogsResponse?.data?.blogs || [];
+
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
-
-  console.log("BlogsClient render: ", { blogs });
-  useEffect(() => {
-    // Fetch in background to update cache
-    fetchAllBlogsInBackground();
-  }, []);
 
   // Pagination
   const { paginationData, paginationState, setPage, updateTotalElements } =
@@ -29,8 +25,7 @@ const BlogsClient = () => {
 
   // Filter blogs based on search term and category
   const filteredBlogs = useMemo(() => {
-    const blogList = blogs || [];
-    const filtered = blogList.filter((blog) => {
+    const filtered = blogs.filter((blog: IBlog) => {
       const matchesSearch =
         searchTerm === "" ||
         blog.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -44,11 +39,13 @@ const BlogsClient = () => {
       return matchesSearch && matchesCategory && isVisible;
     });
 
-    // Update total elements for pagination
-    updateTotalElements(filtered.length);
-
     return filtered;
-  }, [blogs, searchTerm, selectedCategory, updateTotalElements]);
+  }, [blogs, searchTerm, selectedCategory]);
+
+  // Update pagination total whenever filteredBlogs changes
+  useEffect(() => {
+    updateTotalElements(filteredBlogs.length);
+  }, [filteredBlogs.length, updateTotalElements]);
 
   // Paginate the filtered blogs
   const paginatedBlogs = useMemo(() => {
@@ -60,7 +57,7 @@ const BlogsClient = () => {
   return (
     <div>
       {isLoading ? (
-        <Loading />
+        <BlogsSkeleton />
       ) : (
         <div className="container mx-auto px-4">
           {/* Filter Section */}
@@ -96,7 +93,7 @@ const BlogsClient = () => {
 
             {/* Results Counter */}
             <div className="text-sm text-gray-600 dark:text-gray-400">
-              Showing {filteredBlogs.length} of {blogs?.length || 0} blogs
+              Showing {filteredBlogs.length} of {blogs.length || 0} blogs
             </div>
           </div>
 
@@ -109,7 +106,7 @@ const BlogsClient = () => {
                 </p>
               </div>
             ) : (
-              paginatedBlogs.map((blog) => (
+              paginatedBlogs.map((blog: IBlog) => (
                 <BlogCard key={blog.id} blog={blog} />
               ))
             )}

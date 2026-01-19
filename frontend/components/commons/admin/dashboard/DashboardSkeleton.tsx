@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export default function DashboardSkeleton() {
+export const DashboardSkeleton = () => {
   return (
     <div className="space-y-6">
       {/* Header Skeleton */}
@@ -47,4 +47,4 @@ export default function DashboardSkeleton() {
       </Card>
     </div>
   );
-}
+};

@@ -12,7 +12,7 @@ interface BlogCardProps {
   onDelete?: (blogId: string) => void;
 }
 
-const BlogCard: React.FC<BlogCardProps> = ({
+export const BlogCard: React.FC<BlogCardProps> = ({
   blog,
   onUnsave,
   onUpdate,
@@ -90,5 +90,3 @@ const BlogCard: React.FC<BlogCardProps> = ({
     </Link>
   );
 };
-
-export default BlogCard;

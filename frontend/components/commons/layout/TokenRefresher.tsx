@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useAuthStore } from "@/stores/authStore";
+import { useRefreshTokenMutation } from "@/hooks/api/mutations/useAuthMutations";
 
 const TOKEN_REFRESH_INTERVAL = 10 * 60 * 1000; // 10 minutes in milliseconds
 
@@ -22,7 +23,10 @@ const hasRefreshToken = (): boolean => {
 };
 
 export function TokenRefresher() {
-  const { RefreshToken, userAuth } = useAuthStore();
+  const { userAuth } = useAuthStore();
+
+  const { mutate: refreshToken } = useRefreshTokenMutation();
+
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const hasRunInitialRefresh = useRef(false);
 
@@ -51,17 +55,19 @@ export function TokenRefresher() {
         return;
       }
 
-      try {
-        await RefreshToken();
-        console.log("Token refreshed successfully");
-      } catch (error) {
-        console.error("Failed to refresh token:", error);
-        // Stop the interval if refresh fails
-        if (intervalRef.current) {
-          clearInterval(intervalRef.current);
-          intervalRef.current = null;
-        }
-      }
+      refreshToken(undefined, {
+        onSuccess: () => {
+          console.log("Token refreshed successfully");
+        },
+        onError: (error) => {
+          console.error("Failed to refresh token:", error);
+          // Stop the interval if refresh fails
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+          }
+        },
+      });
     };
 
     // Skip initial refresh if just logged in (within 30 seconds)
@@ -82,7 +88,7 @@ export function TokenRefresher() {
         console.log("🛑 Token refresher stopped");
       }
     };
-  }, [userAuth, RefreshToken]);
+  }, [userAuth, refreshToken]);
 
   // This component doesn't render anything
   return null;

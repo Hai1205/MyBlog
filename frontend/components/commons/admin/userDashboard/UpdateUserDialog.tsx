@@ -1,6 +1,6 @@
 import { UserCog } from "lucide-react";
 import { AdminDialog } from "../dialog/AdminDialog";
-import UserForm from "./UserForm";
+import { UserForm } from "./UserForm";
 import { ExtendedUserData } from "./constant";
 
 interface UpdateUserDialogProps {
@@ -13,7 +13,7 @@ interface UpdateUserDialogProps {
   handleAvatarChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
-const UpdateUserDialog = ({
+export const UpdateUserDialog = ({
   isOpen,
   onOpenChange,
   onChange,
@@ -26,8 +26,8 @@ const UpdateUserDialog = ({
     <AdminDialog<IUser>
       isOpen={isOpen}
       onOpenChange={onOpenChange}
-      title="Chỉnh sửa người dùng"
-      description="Cập nhật thông tin quản trị viên"
+      title="Edit User"
+      description="Update administrator information"
       icon={UserCog}
       onSubmit={onUserUpdated}
       isCreateDialog={false}
@@ -43,5 +43,3 @@ const UpdateUserDialog = ({
     </AdminDialog>
   );
 };
-
-export default UpdateUserDialog;

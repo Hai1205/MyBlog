@@ -2,16 +2,12 @@
 
 import { Button } from "@/components/ui/button";
 import { InputWithIcon } from "@/components/ui/input-with-icon";
-import { EUserRole, EUserStatus } from "@/types/enum";
 import { Eye, EyeOff, Lock, Loader2, Trash2 } from "lucide-react";
 import { useState } from "react";
-import ConfirmationDialog from "@/components/commons/layout/ConfirmationDialog";
+import { ConfirmationDialog } from "@/components/commons/layout/ConfirmationDialog";
 import { toast } from "react-toastify";
 
 type ExtendedUserData = Omit<IUser, "status"> & {
-  status: EUserStatus;
-  role: EUserRole;
-  password?: string;
   newPassword?: string;
   currentPassword?: string;
   confirmPassword?: string;
@@ -21,18 +17,18 @@ interface SecurityTabProps {
   data: ExtendedUserData | null;
   onChange: (
     field: keyof ExtendedUserData,
-    value: string | string[] | boolean
+    value: string | string[] | boolean,
   ) => void;
   onChangePassword: (e: React.FormEvent) => void;
   isLoading?: boolean;
 }
 
-export default function SecurityTab({
+export const SecurityTab = ({
   data,
   onChange,
   onChangePassword,
   isLoading = false,
-}: SecurityTabProps) {
+}: SecurityTabProps) => {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -136,4 +132,4 @@ export default function SecurityTab({
       />
     </>
   );
-}
+};

@@ -3,7 +3,7 @@
 import { CheckCircle, Sparkles, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
 
-export default function FeaturesSection() {
+export const FeaturesSection = () => {
   const [isVisible, setIsVisible] = useState(false);
   useEffect(() => setIsVisible(true), []);
 
@@ -65,4 +65,4 @@ export default function FeaturesSection() {
       </div>
     </section>
   );
-}
+};

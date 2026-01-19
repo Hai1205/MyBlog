@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,9 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Camera, Loader2 } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
-import { useUserStore } from "@/stores/userStore";
 import { EUserRole, EUserStatus } from "@/types/enum";
-import { validatePhoneNumber } from "@/lib/utils";
 
 type ExtendedUserData = Omit<IUser, "status"> & {
   status: EUserStatus;
@@ -30,18 +27,18 @@ interface ProfileTabProps {
   onUpdate: () => void;
   previewAvatar: string;
   onAvatarChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  isLoading?: boolean;
 }
 
-export default function ProfileTab({
+export const ProfileTab = ({
   data,
   onChange,
   onUpdate,
   previewAvatar,
   onAvatarChange,
-}: ProfileTabProps) {
+  isLoading = false,
+}: ProfileTabProps) => {
   const { userAuth } = useAuthStore();
-  const { isLoading } = useUserStore();
-  const [phoneError, setPhoneError] = useState<string>("");
 
   return (
     <div className="space-y-6">
@@ -185,7 +182,7 @@ export default function ProfileTab({
       <div className="flex justify-end gap-3 pt-4">
         <Button
           type="submit"
-          disabled={isLoading || !!phoneError}
+          disabled={isLoading}
           onClick={onUpdate}
           className="bg-linear-to-br from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
         >
@@ -201,4 +198,4 @@ export default function ProfileTab({
       </div>
     </div>
   );
-}
+};

@@ -4,7 +4,7 @@ import { Home, Users, FileText, Menu, X, LogOut } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { useAuthStore } from "@/stores/authStore";
+import { useLogoutMutation } from "@/hooks/api/mutations/useAuthMutations";
 
 interface AdminSidebarProps {
   collapsed: boolean;
@@ -13,26 +13,23 @@ interface AdminSidebarProps {
   onStartResizing: (e: React.MouseEvent) => void;
 }
 
-export default function AdminSidebar({
+export const AdminSidebar = ({
   collapsed,
   width,
   onToggle,
   onStartResizing,
-}: AdminSidebarProps) {
-  const { logout } = useAuthStore();
+}: AdminSidebarProps) => {
+  const { mutate: logout } = useLogoutMutation();
 
   const pathname = usePathname();
   const router = useRouter();
 
   const handleLogout = async () => {
-    try {
-      const response = await logout();
-      if (response) {
+    logout(undefined, {
+      onSuccess: () => {
         router.push("/auth/login");
-      }
-    } catch (error) {
-      console.error("Logout failed:", error);
-    }
+      },
+    });
   };
 
   const menuItems = [
@@ -45,7 +42,9 @@ export default function AdminSidebar({
     <aside
       className={cn(
         "bg-linear-to-b from-card via-card to-muted/30 dark:from-card dark:via-card dark:to-card/80 border border-border/50 flex flex-col transition-all duration-300 ease-in-out z-30 rounded-tr-2xl rounded-br-2xl backdrop-blur-sm",
-        collapsed ? "shadow-lg shadow-primary/5" : "shadow-xl shadow-primary/10"
+        collapsed
+          ? "shadow-lg shadow-primary/5"
+          : "shadow-xl shadow-primary/10",
       )}
       style={{ width: collapsed ? 80 : width, height: "100%" }}
     >
@@ -93,7 +92,7 @@ export default function AdminSidebar({
                     "flex items-center rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-200 group relative overflow-hidden",
                     isActive
                       ? "bg-linear-to-br from-primary to-secondary text-primary-foreground shadow-lg shadow-primary/30"
-                      : "text-foreground/70 hover:text-foreground hover:bg-accent/50 dark:hover:bg-accent/30"
+                      : "text-foreground/70 hover:text-foreground hover:bg-accent/50 dark:hover:bg-accent/30",
                   )}
                 >
                   {isActive && (
@@ -102,7 +101,7 @@ export default function AdminSidebar({
                   <Icon
                     className={cn(
                       "h-5 w-5 relative z-10 transition-transform duration-200",
-                      isActive ? "scale-110" : "group-hover:scale-110"
+                      isActive ? "scale-110" : "group-hover:scale-110",
                     )}
                   />
                   {!collapsed && (
@@ -124,7 +123,7 @@ export default function AdminSidebar({
           onClick={handleLogout}
           className={cn(
             "flex w-full items-center rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-200 group",
-            "text-destructive hover:bg-destructive/10 dark:hover:bg-destructive/20 hover:shadow-lg hover:shadow-destructive/20"
+            "text-destructive hover:bg-destructive/10 dark:hover:bg-destructive/20 hover:shadow-lg hover:shadow-destructive/20",
           )}
         >
           <LogOut className="h-5 w-5 transition-transform duration-200 group-hover:scale-110 group-hover:-translate-x-1" />
@@ -139,4 +138,4 @@ export default function AdminSidebar({
       />
     </aside>
   );
-}
+};

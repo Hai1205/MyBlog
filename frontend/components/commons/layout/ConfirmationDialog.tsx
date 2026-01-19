@@ -22,16 +22,16 @@ interface ConfirmationDialogProps {
   cancelText?: string;
 }
 
-export default function ConfirmationDialog({
+export const ConfirmationDialog = ({
   open,
   description,
   onOpenChange,
   onConfirm,
   isDestructive = false,
-  title = "Bạn có chắc chắn?",
+  title = "Are you sure?",
   confirmText = "Confirm",
   cancelText = "Cancel",
-}: ConfirmationDialogProps) {
+}: ConfirmationDialogProps) => {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
@@ -55,4 +55,4 @@ export default function ConfirmationDialog({
       </AlertDialogContent>
     </AlertDialog>
   );
-}
+};

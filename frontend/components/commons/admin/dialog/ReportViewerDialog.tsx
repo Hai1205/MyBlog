@@ -11,8 +11,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Download, FileText, Loader2 } from "lucide-react";
-import { useStatsStore } from "@/stores/statsStore";
 import { toast } from "react-toastify";
+import { useStatsReportBlob } from "@/hooks/api/queries/useStatsQueries";
 
 interface ReportViewerDialogProps {
   open: boolean;
@@ -23,11 +23,14 @@ export function ReportViewerDialog({
   open,
   onOpenChange,
 }: ReportViewerDialogProps) {
-  const { getStatsReport, fetchReportInBackground, statsReport } =
-    useStatsStore();
+  const {
+    blob: statsReport,
+    isLoading: isLoadingReport,
+    error: reportError,
+  } = useStatsReportBlob({ enabled: open });
+
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [loadError, setLoadError] = useState(false);
-  const [isLocalLoading, setIsLocalLoading] = useState(false);
 
   // Cleanup effect for pdfUrl
   useEffect(() => {
@@ -40,92 +43,29 @@ export function ReportViewerDialog({
 
   // Load report effect
   useEffect(() => {
-    if (!open) {
+    if (!open || !statsReport) {
       setPdfUrl(null);
       return;
     }
 
-    let cancelled = false;
-
-    const loadReport = async () => {
-      try {
-        setIsLocalLoading(true);
-        setLoadError(false);
-        setPdfUrl(null); // Clear old URL first
-
-        // This will use cached report if available
-        const blob = await getStatsReport();
-
-        if (cancelled) return;
-
-        console.log("ReportViewerDialog: getStatsReport returned:", blob);
-        console.log("ReportViewerDialog: blob type:", typeof blob);
-        console.log(
-          "ReportViewerDialog: blob instanceof Blob:",
-          blob instanceof Blob
-        );
-
-        if (blob && blob instanceof Blob) {
-          const url = URL.createObjectURL(blob);
-          setPdfUrl(url);
-          setLoadError(false);
-        } else {
-          setLoadError(true);
-          toast.error("Failed to load report");
-        }
-      } catch (error) {
-        if (cancelled) return;
-        console.error("Error loading report:", error);
-        setLoadError(true);
-        toast.error("Failed to load report");
-      } finally {
-        if (!cancelled) {
-          setIsLocalLoading(false);
-        }
-      }
-    };
-
-    loadReport();
-    // Refresh report in background for next time
-    fetchReportInBackground();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [open, getStatsReport, fetchReportInBackground]);
-
-  const loadReport = async () => {
     try {
       setLoadError(false);
-
-      // This will use cached report if available
-      const blob = await getStatsReport();
-
-      console.log("ReportViewerDialog: getStatsReport returned:", blob);
-      console.log("ReportViewerDialog: blob type:", typeof blob);
-      console.log(
-        "ReportViewerDialog: blob instanceof Blob:",
-        blob instanceof Blob
-      );
-
-      if (blob) {
-        // Clean up old URL if exists
-        if (pdfUrl) {
-          URL.revokeObjectURL(pdfUrl);
-        }
-        const url = URL.createObjectURL(blob);
-        setPdfUrl(url);
-        setLoadError(false);
-      } else {
-        setLoadError(true);
-        toast.error("Failed to load report");
-      }
+      const url = URL.createObjectURL(statsReport);
+      setPdfUrl(url);
     } catch (error) {
-      console.error("Error loading report:", error);
+      console.error("Error creating PDF URL:", error);
       setLoadError(true);
       toast.error("Failed to load report");
     }
-  };
+  }, [open, statsReport]);
+
+  // Handle error state
+  useEffect(() => {
+    if (reportError && open) {
+      setLoadError(true);
+      toast.error("Failed to load report");
+    }
+  }, [reportError, open]);
 
   const handleDownload = () => {
     if (!statsReport) {
@@ -159,7 +99,7 @@ export function ReportViewerDialog({
         </DialogHeader>
 
         <div className="flex-1 flex flex-col gap-4 overflow-hidden">
-          {isLocalLoading || (!pdfUrl && !loadError) ? (
+          {isLoadingReport || (!pdfUrl && !loadError) ? (
             <div className="flex-1 flex items-center justify-center">
               <div className="flex flex-col items-center gap-3">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -197,7 +137,11 @@ export function ReportViewerDialog({
                 <p className="text-muted-foreground">
                   Failed to load report. Please try again.
                 </p>
-                <Button onClick={loadReport} variant="outline" className="mt-4">
+                <Button
+                  onClick={() => window.location.reload()}
+                  variant="outline"
+                  className="mt-4"
+                >
                   Retry
                 </Button>
               </div>

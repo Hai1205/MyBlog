@@ -8,9 +8,9 @@ import type React from "react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
-import { useAuthStore } from "@/stores/authStore";
 import Link from "next/link";
 import { Loader2, Lock, Eye, EyeOff, ArrowLeft, KeyRound } from "lucide-react";
+import { useForgotPasswordMutation } from "@/hooks/api/mutations/useAuthMutations";
 
 interface ResetPasswordClientProps {
   identifier: string | null;
@@ -19,9 +19,10 @@ interface ResetPasswordClientProps {
 const ResetPasswordClient: React.FC<ResetPasswordClientProps> = ({
   identifier: initialIdentifier,
 }) => {
-  const { forgotPassword, isLoading } = useAuthStore();
+  const { mutate: forgotPassword, isPending } = useForgotPasswordMutation();
+
   const router = useRouter();
-  const [identifier, setIdentifier] = useState(initialIdentifier || "");
+  const identifier = initialIdentifier || "";
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -64,18 +65,20 @@ const ResetPasswordClient: React.FC<ResetPasswordClientProps> = ({
       return;
     }
 
-    const res = await forgotPassword(
-      identifier,
-      formData.newPassword,
-      formData.rePassword
+    forgotPassword(
+      {
+        identifier,
+        data: {
+          password: formData.newPassword,
+          confirmPassword: formData.rePassword,
+        },
+      },
+      {
+        onSuccess: () => {
+          router.push("/auth/login");
+        },
+      },
     );
-
-    if (!res) {
-      return;
-    }
-
-    toast.success("Password changed successfully");
-    router.push("/auth/login");
   };
 
   return (
@@ -94,12 +97,12 @@ const ResetPasswordClient: React.FC<ResetPasswordClientProps> = ({
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="newPassword">Mật khẩu mới</Label>
+          <Label htmlFor="newPassword">New Password</Label>
           <InputWithIcon
             id="newPassword"
             name="newPassword"
             type={showPassword ? "text" : "password"}
-            placeholder="Nhập mật khẩu mới"
+            placeholder="Enter new password"
             value={formData.newPassword}
             onChange={handleChange}
             leftIcon={Lock}
@@ -112,17 +115,17 @@ const ResetPasswordClient: React.FC<ResetPasswordClientProps> = ({
             </Alert>
           )}
           <p className="text-xs text-muted-foreground">
-            Mật khẩu phải có ít nhất 8 ký tự
+            Password must be at least 8 characters
           </p>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="rePassword">Xác nhận mật khẩu</Label>
+          <Label htmlFor="rePassword">Confirm Password</Label>
           <InputWithIcon
             id="rePassword"
             name="rePassword"
             type={showConfirmPassword ? "text" : "password"}
-            placeholder="Nhập lại mật khẩu mới"
+            placeholder="Re-enter new password"
             value={formData.rePassword}
             onChange={handleChange}
             leftIcon={Lock}
@@ -138,11 +141,11 @@ const ResetPasswordClient: React.FC<ResetPasswordClientProps> = ({
           )}
         </div>
 
-        <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? (
+        <Button type="submit" className="w-full" disabled={isPending}>
+          {isPending ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Đang đặt lại...
+              Resetting...
             </>
           ) : (
             "Reset Password"

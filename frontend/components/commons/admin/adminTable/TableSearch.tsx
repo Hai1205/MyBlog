@@ -24,7 +24,7 @@ export const TableSearch = ({
         placeholder={placeholder}
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
-        className="pl-10 h-9 w-[300px] border-border/50 bg-background/50 backdrop-blur-sm focus:border-primary/50 focus:ring-primary/20 transition-all"
+        className="pl-10 h-9 w-75 border-border/50 bg-background/50 backdrop-blur-sm focus:border-primary/50 focus:ring-primary/20 transition-all"
         onKeyDown={(e) => {
           if (e.key === "Enter") {
             e.preventDefault();

@@ -7,7 +7,7 @@ interface PageHeaderProps {
   onCreateNew: () => void;
 }
 
-export default function PageHeader({ onCreateNew }: PageHeaderProps) {
+export const PageHeader = ({ onCreateNew }: PageHeaderProps) => {
   return (
     <div className="flex items-center justify-between">
       <div>
@@ -29,4 +29,4 @@ export default function PageHeader({ onCreateNew }: PageHeaderProps) {
       </div>
     </div>
   );
-}
+};

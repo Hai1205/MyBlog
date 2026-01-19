@@ -11,9 +11,13 @@ import { NavbarLinks } from "./NavbarLinks";
 import { NavbarUserMenu } from "./NavbarUserMenu";
 import { NavbarAuthButtons } from "./NavbarAuthButtons";
 import { NavbarMobileMenu } from "./NavbarMobileMenu";
+import { useLogoutMutation } from "@/hooks/api/mutations/useAuthMutations";
 
 export function Navbar() {
   const authStore = useAuthStore();
+
+  const { mutate: logout } = useLogoutMutation();
+
   const router = useRouter();
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
@@ -25,7 +29,6 @@ export function Navbar() {
 
   const userAuth = authStore?.userAuth || null;
   const isAdmin = authStore?.isAdmin || false;
-  const logout = authStore?.logout || (() => {});
 
   const navLinks = [
     { href: "/", label: "Home" },
@@ -37,9 +40,12 @@ export function Navbar() {
     : navLinks;
 
   const handleLogout = () => {
-    logout();
-    setMobileMenuOpen(false);
-    router.push("/");
+    logout(undefined, {
+      onSuccess: () => {
+        setMobileMenuOpen(false);
+        router.push("/");
+      },
+    });
   };
 
   if (!isHydrated)

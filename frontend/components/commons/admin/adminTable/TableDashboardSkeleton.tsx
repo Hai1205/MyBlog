@@ -1,7 +1,7 @@
 import { Card, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export default function TableDashboardSkeleton() {
+export const TableDashboardSkeleton = () => {
   return (
     <div className="space-y-4">
       {/* Header Skeleton */}
@@ -75,4 +75,4 @@ export default function TableDashboardSkeleton() {
       </Card>
     </div>
   );
-}
+};

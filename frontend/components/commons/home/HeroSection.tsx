@@ -6,7 +6,7 @@ import { FileText, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Typewriter from "typewriter-effect";
 
-export default function HeroSection() {
+export const HeroSection = () => {
   const router = useRouter();
 
   const handleCreate = async () => {
@@ -56,4 +56,4 @@ export default function HeroSection() {
       </div>
     </section>
   );
-}
+};

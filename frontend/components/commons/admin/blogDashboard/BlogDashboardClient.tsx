@@ -5,14 +5,14 @@ import { useRouter } from "next/navigation";
 import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
-import { useBlogStore } from "@/stores/blogStore";
-import { toast } from "react-toastify";
 import { DashboardHeader } from "@/components/commons/admin/dashboard/DashboardHeader";
 import { TableSearch } from "@/components/commons/admin/adminTable/TableSearch";
-import ConfirmationDialog from "@/components/commons/layout/ConfirmationDialog";
-import TableDashboardSkeleton from "../adminTable/TableDashboardSkeleton";
+import { ConfirmationDialog } from "@/components/commons/layout/ConfirmationDialog";
+import { TableDashboardSkeleton } from "../adminTable/TableDashboardSkeleton";
 import { BlogFilter } from "./BlogFilter";
 import { BlogTable } from "./BlogTable";
+import { useAllBlogsQuery } from "@/hooks/api/queries/useBlogQueries";
+import { useDeleteBlogMutation } from "@/hooks/api/mutations/useBlogMutations";
 
 export type BlogFilterType = "category" | "visibility";
 export interface IBlogFilter {
@@ -27,8 +27,14 @@ const blogInitialFilters: IBlogFilter = {
 };
 
 export default function BlogDashboardClient() {
-  const { blogsTable, fetchAllBlogsInBackground, deleteBlog, getAllBlogs } =
-    useBlogStore();
+  const {
+    data: blogsResponse,
+    isLoading: isLoadingBlogs,
+    refetch: refetchBlogs,
+  } = useAllBlogsQuery();
+  const blogsTable = blogsResponse?.data?.blogs || [];
+
+  const { mutate: deleteBlogMutation } = useDeleteBlogMutation();
 
   const router = useRouter();
 
@@ -57,11 +63,6 @@ export default function BlogDashboardClient() {
   const setPage = (page: number) => {
     setCurrentPage(page);
   };
-
-  useEffect(() => {
-    // Fetch in background to update cache
-    fetchAllBlogsInBackground();
-  }, []);
 
   const filterData = useCallback(
     (query: string, filters: IBlogFilter) => {
@@ -152,7 +153,7 @@ export default function BlogDashboardClient() {
   const handleRefresh = () => {
     setActiveFilters(blogInitialFilters);
     setSearchQuery("");
-    getAllBlogs();
+    refetchBlogs();
   };
 
   const [openMenuFilters, setOpenMenuFilters] = useState(false);
@@ -188,13 +189,12 @@ export default function BlogDashboardClient() {
   const handleDialogConfirm = async () => {
     if (!blogToDelete) return;
 
-    toast.success("Blog deleted successfully!");
+    deleteBlogMutation({ blogId: blogToDelete.id });
     setDeleteDialogOpen(false);
     setBlogToDelete(null);
-    await deleteBlog(blogToDelete.id);
   };
 
-  if (blogsTable === null) {
+  if (isLoadingBlogs) {
     return <TableDashboardSkeleton />;
   }
 

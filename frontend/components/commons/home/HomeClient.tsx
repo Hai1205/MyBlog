@@ -1,6 +1,6 @@
 import BlogsClient from "../blogs/BlogsClient";
-import FeaturesSection from "./FeaturesSection";
-import HeroSection from "./HeroSection";
+import { FeaturesSection } from "./FeaturesSection";
+import { HeroSection } from "./HeroSection";
 
 export default function HomeClient() {
   return (

@@ -1,24 +1,11 @@
-import { toast } from "react-toastify";
 import { create } from "zustand";
 import { persist, createJSONStorage, PersistOptions, PersistStorage } from "zustand/middleware";
 import Cookies from 'js-cookie';
 
 export interface IBaseStore {
-  isLoading: boolean;
-  error: string | null;
-  status: number;
-  message: string | null;
-
   handleRequest: <R>(apiCall: () => Promise<R>) => Promise<R>;
   reset: () => void;
 }
-
-export const baseInitialState = {
-  isLoading: false,
-  error: null,
-  status: 0,
-  message: null,
-};
 
 type TVariables = Record<string, unknown>;
 
@@ -62,7 +49,6 @@ export function createStore<T extends IBaseStore, U = TVariables>(
 ) {
   const storageType = options?.storageType ?? EStorageType.SESSION;
   const storage = (() => {
-    // SSR safety check
     if (typeof window === 'undefined') {
       return {
         getItem: () => null,
@@ -85,50 +71,22 @@ export function createStore<T extends IBaseStore, U = TVariables>(
   return create<T>()(
     persist(
       (set, get) => {
-        const handleRequest = async <R>(apiCall: () => Promise<R>): Promise<R> => {
-          set({ isLoading: true, error: null } as T);
-
-          try {
-            return await apiCall();
-          } catch (error: unknown) {
-            console.error(error);
-            const message =
-              (error as { response?: { data?: { message?: string } } }).response
-                ?.data?.message || (error as Error).message;
-            set({ error: message } as T);
-
-            if (message) toast.error(message);
-
-            throw error;
-          } finally {
-            set({ isLoading: false } as T);
-          }
-        };
-
         const reset = () => {
-          set({ ...baseInitialState, ...initialState } as T);
+          set({ ...initialState } as TVariables as T);
         };
 
         return {
-          ...baseInitialState,
           ...initialState,
           ...storeActions((state) => set(state as T), get as () => T),
-          handleRequest,
           reset,
         } as unknown as T;
       },
       {
         name: `${storeName}-storage`,
         storage,
-        // Skip hydration for certain keys to prevent unnecessary re-renders
         partialize: (state) => {
-          const { isLoading, error, status, message, ...rest } = state as T & {
-            isLoading: boolean;
-            error: string | null;
-            status: number;
-            message: string | null;
-          };
-          return rest as T;
+          const { ...rest } = state as T;
+          return rest as TVariables as T;
         },
         ...options?.persistOptions,
       }
