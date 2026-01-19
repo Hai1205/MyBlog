@@ -17,7 +17,7 @@ public class BlogMapper {
         
         return BlogDto.builder()
                 .id(blog.getId())
-                .author(null)
+                .authorId(blog.getAuthorId())
                 .title(blog.getTitle())
                 .category(blog.getCategory() != null ? blog.getCategory().name() : null)
                 .description(blog.getDescription())
@@ -39,7 +39,7 @@ public class BlogMapper {
             
         Blog blog = new Blog();
         blog.setId(dto.getId());
-        blog.setAuthorId(dto.getAuthor() != null ? dto.getAuthor().getId() : null);
+        blog.setAuthorId(dto.getAuthorId());
         blog.setTitle(dto.getTitle());
         blog.setCategory(dto.getCategory() != null ? Blog.Category.valueOf(dto.getCategory()) : null);
         blog.setDescription(dto.getDescription());

@@ -44,7 +44,7 @@ public class BlogController {
         return ResponseEntity.status(response.getStatusCode()).body(response);
     }
 
-    @GetMapping("/{blogId}/users/{userId}/save")
+    @PostMapping("/{blogId}/users/{userId}/save")
     public ResponseEntity<Response> saveBlog(
             @PathVariable("userId") UUID userId,
             @PathVariable("blogId") UUID blogId) {

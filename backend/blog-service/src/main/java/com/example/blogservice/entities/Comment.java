@@ -19,6 +19,7 @@ public class Comment {
 
     private UUID blogId;
     private UUID userId;
+    private String username;
 
     @Column(columnDefinition = "TEXT")
     private String content;

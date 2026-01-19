@@ -75,7 +75,7 @@ export default function NotFoundClient() {
                   </Link>
 
                   <Link
-                    href="/blog/saved"
+                    href="/blogs/saved"
                     className="text-primary hover:underline"
                   >
                     Saved Blogs

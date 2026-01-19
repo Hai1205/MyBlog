@@ -21,9 +21,6 @@ public class RootUserInitializer implements CommandLineRunner {
     @Value("${ROOT_PASSWORD}")
     private String rootPassword;
 
-    @Value("${ROOT_FULLNAME}")
-    private String rootFullname;
-
     @Value("${ROOT_USERNAME}")
     private String rootUsername;
 
@@ -47,8 +44,7 @@ public class RootUserInitializer implements CommandLineRunner {
         if (existingUser == null) {
             log.info("Root user not found. Creating root user: {}", rootEmail);
 
-            // Parameters: username, email, password, fullname, location, birth, summary, role, status, instagram, linkedin, facebook, avatar
-            userService.handleCreateUser(rootUsername, rootEmail, rootPassword, rootFullname, null, null, null,
+            userService.handleCreateUser(rootUsername, rootEmail, rootPassword, null, null, null,
                     rootRole, rootStatus, null, null, null, null);
 
             log.info("Root user created successfully");

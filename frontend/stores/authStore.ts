@@ -14,7 +14,7 @@ export interface IAuthStore extends IBaseStore {
 	userAuth: IUser | null;
 	isAdmin: boolean;
 
-	register: (fullname: string, username: string, email: string, password: string) => Promise<IApiResponse>;
+	register: (username: string, email: string, password: string) => Promise<IApiResponse>;
 	login: (identifier: string, password: string) => Promise<IApiResponse<IAuthDataResponse>>;
 	logout: () => Promise<IApiResponse>;
 	RefreshToken: () => Promise<IApiResponse>;
@@ -43,10 +43,9 @@ export const useAuthStore = createStore<IAuthStore>(
 			});
 		},
 
-		register: async (fullname: string, username: string, email: string, password: string): Promise<IApiResponse<IAuthDataResponse>> => {
+		register: async (username: string, email: string, password: string): Promise<IApiResponse<IAuthDataResponse>> => {
 			const formData = new FormData();
 			formData.append("data", JSON.stringify({
-				fullname,
 				username,
 				email,
 				password,

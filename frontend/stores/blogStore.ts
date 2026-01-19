@@ -4,6 +4,7 @@ import { createStore, EStorageType, IBaseStore } from "@/lib/initialStore";
 interface IBlogDataResponse {
 	blog: IBlog,
 	blogs: IBlog[],
+	comment: IComment,
 	comments: IComment[],
 	content: string,
 	title: string,
@@ -81,6 +82,7 @@ export interface IBlogStore extends IBaseStore {
 	) => Promise<IApiResponse<IBlogDataResponse>>;
 	updateComment: (
 		commentId: string,
+		content: string,
 	) => Promise<IApiResponse<IBlogDataResponse>>;
 	deleteComment: (
 		commentId: string
@@ -123,6 +125,7 @@ export const useBlogStore = createStore<IBlogStore>(
 					if (res.data && res.data.success && res.data.blogs) {
 						set({
 							blogsTable: res.data.blogs,
+							blogs: res.data.blogs,
 							lastFetchTimeAllBlogs: Date.now(),
 							isLoadingAllBlogs: false
 						});
@@ -411,14 +414,7 @@ export const useBlogStore = createStore<IBlogStore>(
 			}));
 
 			return await get().handleRequest(async () => {
-				const res = await handleRequest<IBlogDataResponse>(EHttpType.POST, `/comments/blogs/${blogId}/users/${userId}`, formData);
-				console.log("Add Comment response:", res);
-
-				if (res.data && res.data.success && res.data.blog) {
-					get().handleAddBlogToUserBlogs(res.data.blog);
-				}
-
-				return res;
+				return await handleRequest(EHttpType.POST, `/comments/blogs/${blogId}/users/${userId}`, formData);
 			});
 		},
 
@@ -447,6 +443,24 @@ export const useBlogStore = createStore<IBlogStore>(
 
 		handleClearBlogList: (): void => {
 			set({ blogList: [] });
+		},
+
+		handleAddBlogToUserBlogs: (blog: IBlog): void => {
+			const currentBlogs = get().userBlogs;
+			const exists = currentBlogs.some(b => b.id === blog.id);
+			if (!exists) {
+				set({ userBlogs: [...currentBlogs, blog] });
+			}
+		},
+
+		handleRemoveBlogFromUserBlogs: (blogId: string): void => {
+			const currentBlogs = get().userBlogs;
+			set({ userBlogs: currentBlogs.filter(b => b.id !== blogId) });
+		},
+
+		handleRemoveBlogFromTable: (blogId: string): void => {
+			const currentBlogs = get().blogsTable;
+			set({ blogsTable: currentBlogs.filter(b => b.id !== blogId) });
 		},
 
 		reset: () => {

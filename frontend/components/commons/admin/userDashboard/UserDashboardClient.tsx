@@ -90,7 +90,6 @@ export default function UserDashboardClient() {
         const searchTerms = query.toLowerCase().trim();
         results = results.filter(
           (user) =>
-            user.fullname.toLowerCase().includes(searchTerms) ||
             user.email.toLowerCase().includes(searchTerms) ||
             user.username.toLowerCase().includes(searchTerms),
         );
@@ -193,7 +192,6 @@ export default function UserDashboardClient() {
     username: "",
     email: "",
     password: "",
-    fullname: "",
     role: EUserRole.USER,
     status: EUserStatus.PENDING,
     planExpiration: "",
@@ -232,7 +230,6 @@ export default function UserDashboardClient() {
 
     const res = await updateUser(
       data.id,
-      data.fullname,
       data.birth || "",
       data.summary || "",
       avatarFile || null,
@@ -260,7 +257,6 @@ export default function UserDashboardClient() {
     const res = await createUser(
       data.email,
       data.password || "",
-      data.fullname,
       data.username,
       data.birth || "",
       data.summary || "",
@@ -434,7 +430,7 @@ export default function UserDashboardClient() {
           isDeleteDialog
             ? "Hành động này không thể hoàn tác. Điều này sẽ xóa vĩnh viễn người dùng và loại bỏ nó khỏi máy chủ của chúng tôi."
             : `Bạn có muốn gửi email đặt lại mật khẩu cho ${
-                userToResetPassword?.fullname || userToResetPassword?.email
+                userToResetPassword?.email
               }?`
         }
         confirmText={isDeleteDialog ? "Delete" : "Gửi email"}

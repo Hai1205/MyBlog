@@ -46,7 +46,7 @@ const UserForm: React.FC<UserFormProps> = ({
                 (data as any)?.avatar ||
                 "/svgs/placeholder.svg"
               }
-              alt={data?.fullname || "User"}
+              alt={data?.username || "User"}
               className="object-cover"
             />
             <AvatarFallback className="bg-linear-to-br from-primary/20 to-secondary/20">
@@ -75,21 +75,6 @@ const UserForm: React.FC<UserFormProps> = ({
             onChange={handleAvatarChange}
           />
         </div>
-      </div>
-
-      {/* Fullname */}
-      <div className="space-y-2">
-        <Label htmlFor="form-fullname" className="text-sm font-medium">
-          Tên đầy đủ <span className="text-destructive">*</span>
-        </Label>
-        <Input
-          id="form-fullname"
-          value={data?.fullname || ""}
-          onChange={(e) => onChange("fullname", e.target.value)}
-          className="bg-background/50 border-border/50 focus:border-primary transition-colors"
-          placeholder="Nhập tên đầy đủ"
-          required
-        />
       </div>
 
       {/* Username */}

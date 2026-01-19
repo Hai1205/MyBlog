@@ -24,7 +24,6 @@ declare global {
         id: string
         username: string
         email: string
-        fullname: string
         birth?: string
         summary?: string
         avatarUrl?: string
@@ -45,6 +44,7 @@ declare global {
         thumbnailUrl: string;
         category: ECategory;
         author: IUser;
+        comments: IComment[];
         isVisibility: boolean
         createdAt: string;
         updatedAt: string;
@@ -54,9 +54,10 @@ declare global {
         id: string;
         userId: string;
         blogId: string;
-        fullname: string
-        content: string
+        username: string;
+        content: string;
         createdAt: string;
+        updatedAt: string;
     }
 
     interface ISavedBlog {

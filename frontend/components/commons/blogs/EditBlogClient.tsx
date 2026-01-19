@@ -14,7 +14,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useBlogStore } from "@/stores/blogStore";
 import { blogCategories } from "../admin/blogDashboard/constant";
 import {
@@ -49,6 +49,8 @@ const EditBlogClient = ({ isCreate }: EditBlogClientProps) => {
   const { userAuth } = useAuthStore();
 
   const { toast } = useToast();
+  const router = useRouter();
+
   const [AIContentLoading, setAIContentLoading] = useState(false);
   const editor = useRef(null);
   const [content, setContent] = useState("");
@@ -72,7 +74,7 @@ const EditBlogClient = ({ isCreate }: EditBlogClientProps) => {
   }>({
     title: "",
     description: "",
-    category: "",
+    category: "technology",
     thumbnail: null,
     content: "",
     isVisibility: true,
@@ -268,8 +270,7 @@ const EditBlogClient = ({ isCreate }: EditBlogClientProps) => {
     e.preventDefault();
 
     if (isCreate && userAuth) {
-      console.log("hello");
-      await createBlog(
+      const res = await createBlog(
         userAuth?.id,
         formData.title,
         formData.description,
@@ -278,6 +279,10 @@ const EditBlogClient = ({ isCreate }: EditBlogClientProps) => {
         formData.content,
         formData.isVisibility,
       );
+
+      if (res?.data?.success && res?.data?.blog) {
+        router.push(`/blogs/${res.data.blog.id}`);
+      }
     } else if (id) {
       await updateBlog(
         id as string,
@@ -288,6 +293,12 @@ const EditBlogClient = ({ isCreate }: EditBlogClientProps) => {
         formData.content,
         formData.isVisibility,
       );
+
+      toast({
+        title: "Success",
+        description: "Blog updated successfully",
+      });
+      router.push(`/blogs/${id}`);
     }
   };
 

@@ -18,7 +18,8 @@ public class CommentMapper {
         return CommentDto.builder()
                 .id(comment.getId())
                 .blogId(comment.getBlogId())
-                .user(null) // TODO: Fetch user info from user service
+                .userId(comment.getUserId())
+                .username(comment.getUsername())
                 .content(comment.getContent())
                 .createdAt(comment.getCreatedAt())
                 .updatedAt(comment.getUpdatedAt())
@@ -35,7 +36,8 @@ public class CommentMapper {
         Comment comment = new Comment();
         comment.setId(dto.getId());
         comment.setBlogId(dto.getBlogId());
-        comment.setUserId(dto.getUser() != null ? dto.getUser().getId() : null);
+        comment.setUserId(dto.getUserId());
+        comment.setUsername(dto.getUsername());
         comment.setContent(dto.getContent());
         comment.setCreatedAt(dto.getCreatedAt());
         comment.setUpdatedAt(dto.getUpdatedAt());

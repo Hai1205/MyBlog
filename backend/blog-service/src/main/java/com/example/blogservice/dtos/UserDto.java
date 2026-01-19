@@ -4,22 +4,27 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import lombok.*;
 
 @Data
 @NoArgsConstructor // Empty constructor for MapStruct
 @Builder
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class UserDto {
     private UUID id;
     private String username;
     private String password;
     private String email;
-    private String fullname;
     private String phone;
     private String birth;
     private String summary;
     private String status;
     private String role;
+    private String facebook;
+    private String linkedin;
+    private String instagram;
 
     private String avatarUrl;
     private String avatarPublicId;
@@ -27,28 +32,29 @@ public class UserDto {
     // Constructor with all fields for MapStruct
     @Builder
     public UserDto(UUID id, String username, String password, String email,
-            String fullname, String phone, String birth, String summary,
-            String status, String role, 
+            String phone, String birth, String summary,
+            String status, String role, String facebook, String linkedin, String instagram,
             String avatarUrl, String avatarPublicId) {
         this.id = id;
         this.username = username;
         this.password = password;
         this.email = email;
-        this.fullname = fullname;
         this.phone = phone;
         this.birth = birth;
         this.summary = summary;
         this.status = status;
         this.role = role;
+        this.facebook = facebook;
+        this.linkedin = linkedin;
+        this.instagram = instagram;
         this.avatarUrl = avatarUrl;
         this.avatarPublicId = avatarPublicId;
     }
 
     // Basic constructor
-    public UserDto(UUID id, String username, String email, String fullname) {
+    public UserDto(UUID id, String username, String email) {
         this.id = id;
         this.username = username;
         this.email = email;
-        this.fullname = fullname;
     }
 }

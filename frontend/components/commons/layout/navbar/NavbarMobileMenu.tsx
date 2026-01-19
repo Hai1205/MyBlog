@@ -56,17 +56,17 @@ export const NavbarMobileMenu = ({
                 {userAuth.avatarUrl && (
                   <AvatarImage
                     src={userAuth.avatarUrl}
-                    alt={userAuth.fullname || "User"}
+                    alt={userAuth.username || "User"}
                     className="object-cover"
                   />
                 )}
                 <AvatarFallback className="bg-linear-to-br from-primary to-secondary text-primary-foreground font-bold text-lg">
-                  {userAuth.fullname?.charAt(0).toUpperCase() || "U"}
+                  {userAuth.username?.charAt(0).toUpperCase() || "U"}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1">
                 <p className="text-sm font-semibold text-foreground">
-                  {userAuth.fullname}
+                  {userAuth.username}
                 </p>
                 <p className="text-xs text-muted-foreground line-clamp-1">
                   {userAuth.email}

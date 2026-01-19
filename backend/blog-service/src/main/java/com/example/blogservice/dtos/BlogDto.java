@@ -1,6 +1,7 @@
 package com.example.blogservice.dtos;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import jakarta.persistence.Column;
@@ -12,7 +13,9 @@ import lombok.*;
 @Builder
 public class BlogDto {
     private UUID id;
+    private UUID authorId;
     private UserDto author;
+    private List<CommentDto> comments;
     private String title;
     private String category;
 

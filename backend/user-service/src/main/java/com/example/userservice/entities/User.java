@@ -29,7 +29,6 @@ public class User {
     @Column(nullable = false)
     private String email;
 
-    private String fullname;
     private String birth;
 
     private String facebook;
@@ -61,7 +60,7 @@ public class User {
 
     // Full constructor for MapStruct
     @Builder
-    public User(UUID id, String username, String password, String email, String fullname,
+    public User(UUID id, String username, String password, String email,
             String phone, String birth, String summary,
             UserRole role, UserStatus status,
             String avatarUrl, String avatarPublicId,
@@ -71,7 +70,6 @@ public class User {
         this.username = username;
         this.password = password;
         this.email = email;
-        this.fullname = fullname;
         this.birth = birth;
         this.summary = summary;
         this.role = role;
@@ -86,10 +84,9 @@ public class User {
     }
 
     // Basic constructor
-    public User(String username, String email, String fullname) {
+    public User(String username, String email) {
         this.username = username;
         this.email = email;
-        this.fullname = fullname;
     }
 
     public enum UserRole {

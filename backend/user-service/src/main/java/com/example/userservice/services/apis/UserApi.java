@@ -78,7 +78,6 @@ public class UserApi extends BaseApi {
     public UserDto handleCreateUser(String username,
             String email,
             String password,
-            String fullname,
             String location,
             String birth,
             String summary,
@@ -126,8 +125,7 @@ public class UserApi extends BaseApi {
 
             User user = new User(
                     username,
-                    email,
-                    fullname);
+                    email);
 
             if (birth != null && !birth.isEmpty()) {
                 user.setBirth(birth);
@@ -176,7 +174,6 @@ public class UserApi extends BaseApi {
                     user.getUsername(),
                     user.getEmail(),
                     user.getPassword(),
-                    user.getFullname(),
                     user.getBirth(),
                     user.getSummary(),
                     user.getAvatarUrl(),
@@ -358,7 +355,6 @@ public class UserApi extends BaseApi {
             String username = request.getUsername();
             String email = request.getEmail();
             String password = request.getPassword();
-            String fullname = request.getFullname();
             String location = request.getLocation();
             String birth = request.getBirth();
             String summary = request.getSummary();
@@ -369,7 +365,7 @@ public class UserApi extends BaseApi {
             String linkedin = request.getLinkedin();
             String facebook = request.getFacebook();
 
-            UserDto savedUserDto = handleCreateUser(username, email, password, fullname, location, birth,
+            UserDto savedUserDto = handleCreateUser(username, email, password, location, birth,
                     summary, role, status, instagram, linkedin, facebook, avatar);
 
             long endTime = System.currentTimeMillis();
@@ -501,7 +497,7 @@ public class UserApi extends BaseApi {
         }
     }
 
-    public UserDto handleUpdateUser(UUID userId, String fullname, String location, String birth,
+    public UserDto handleUpdateUser(UUID userId, String location, String birth,
             String summary, String role, String status, String instagram, String linkedin, String facebook,
             MultipartFile avatar) {
         try {
@@ -531,11 +527,6 @@ public class UserApi extends BaseApi {
 
                 existingUser.setAvatarUrl((String) uploadResult.get("url"));
                 existingUser.setAvatarPublicId((String) uploadResult.get("publicId"));
-            }
-
-            // Update other fields
-            if (fullname != null && !fullname.isEmpty() && !fullname.equals(existingUser.getFullname())) {
-                existingUser.setFullname(fullname);
             }
 
             if (instagram != null && !instagram.equals(existingUser.getInstagram())) {
@@ -579,7 +570,6 @@ public class UserApi extends BaseApi {
             // Update user using command repository
             userCommandRepository.updateUserAllFields(
                     userId,
-                    existingUser.getFullname(),
                     existingUser.getBirth(),
                     existingUser.getSummary(),
                     existingUser.getAvatarUrl(),
@@ -618,7 +608,6 @@ public class UserApi extends BaseApi {
             }
 
             UpdateUserRequest request = objectMapper.readValue(dataJson, UpdateUserRequest.class);
-            String fullname = request.getFullname();
             String location = request.getLocation();
             String birth = request.getBirth();
             String summary = request.getSummary();
@@ -628,7 +617,7 @@ public class UserApi extends BaseApi {
             String linkedin = request.getLinkedin();
             String facebook = request.getFacebook();
 
-            UserDto updatedUserDto = handleUpdateUser(userId, fullname, location, birth, summary, role, status,
+            UserDto updatedUserDto = handleUpdateUser(userId, location, birth, summary, role, status,
                     instagram, linkedin, facebook, avatar);
 
             long endTime = System.currentTimeMillis();

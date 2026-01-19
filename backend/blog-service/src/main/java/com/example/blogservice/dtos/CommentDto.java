@@ -12,7 +12,8 @@ import lombok.*;
 public class CommentDto {
     private UUID id;
     private UUID blogId;
-    private UserDto user;
+    private UUID userId;
+    private String username;
     private String content;
     private Instant createdAt;
     private Instant updatedAt;

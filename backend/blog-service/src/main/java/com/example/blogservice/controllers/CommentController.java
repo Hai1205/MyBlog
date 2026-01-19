@@ -47,7 +47,7 @@ public class CommentController {
         }
     }
 
-    @PostMapping("/blogs/{blogId}")
+    @GetMapping("/blogs/{blogId}")
     public ResponseEntity<Response> getBlogComments(
             @PathVariable("blogId") UUID blogId) {
         Response response = commentApi.getBlogComments(blogId);
@@ -55,14 +55,13 @@ public class CommentController {
         return ResponseEntity.status(response.getStatusCode()).body(response);
     }
 
-    @PatchMapping("/{commentId}/users/{userId}")
+    @PatchMapping("/{commentId}")
     public ResponseEntity<Response> updateComment(
             @PathVariable("commentId") UUID commentId,
-            @PathVariable("userId") UUID userId,
             @RequestPart("data") String dataJson) {
         try {
             UpdateCommentRequest request = objectMapper.readValue(dataJson, UpdateCommentRequest.class);
-            Response response = commentApi.updateComment(commentId, userId, request);
+            Response response = commentApi.updateComment(commentId, request);
             return ResponseEntity.status(response.getStatusCode()).body(response);
         } catch (Exception e) {
             log.error("Error parsing update comment request: {}", e.getMessage(), e);
@@ -70,11 +69,10 @@ public class CommentController {
         }
     }
 
-    @DeleteMapping("/{commentId}/users/{userId}")
+    @DeleteMapping("/{commentId}")
     public ResponseEntity<Response> deleteComment(
-            @PathVariable("commentId") UUID commentId,
-            @PathVariable("userId") UUID userId) {
-        Response response = commentApi.deleteComment(commentId, userId);
+            @PathVariable("commentId") UUID commentId) {
+        Response response = commentApi.deleteComment(commentId);
         return ResponseEntity.status(response.getStatusCode()).body(response);
     }
 

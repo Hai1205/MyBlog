@@ -43,25 +43,6 @@ export default function ProfileTab({
   const { isLoading } = useUserStore();
   const [phoneError, setPhoneError] = useState<string>("");
 
-  // Phone validation function
-  const validatePhone = (phone: string): boolean => {
-    if (!phone.trim()) {
-      setPhoneError("");
-      return true; // Empty phone is allowed
-    }
-
-    const isValid = validatePhoneNumber(phone);
-    if (!isValid) {
-      setPhoneError(
-        "Invalid phone number. Please enter a Vietnamese phone number (10 digits, starting with 03, 05, 07, 08, 09)",
-      );
-      return false;
-    }
-
-    setPhoneError("");
-    return true;
-  };
-
   return (
     <div className="space-y-6">
       {/* Avatar Section */}
@@ -75,7 +56,7 @@ export default function ProfileTab({
               />
             )}
             <AvatarFallback className="text-3xl font-bold bg-linear-to-br from-primary to-secondary text-primary-foreground">
-              {data?.fullname?.charAt(0).toUpperCase() || "U"}
+              {data?.username?.charAt(0).toUpperCase() || "U"}
             </AvatarFallback>
           </Avatar>
           <label
@@ -122,17 +103,6 @@ export default function ProfileTab({
             value={data?.email}
             disabled
             className="border-border/50 bg-muted/50"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="fullname">Full Name</Label>
-          <Input
-            id="fullname"
-            value={data?.fullname}
-            onChange={(e) => onChange("fullname", e.target.value)}
-            placeholder="Enter full name"
-            className="border-border/50 focus:border-primary/50 focus:ring-primary/20"
           />
         </div>
 

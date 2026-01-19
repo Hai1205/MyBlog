@@ -39,6 +39,7 @@ public class BlogApi extends BaseApi {
     private final ObjectMapper objectMapper;
     private final RedisService redisService;
     private final RateLimiterService rateLimiterService;
+    private final CommentApi commentApi;
 
     public BlogApi(
             BlogQueryRepository blogQueryRepository,
@@ -48,8 +49,10 @@ public class BlogApi extends BaseApi {
             BlogMapper blogMapper,
             CloudinaryService cloudinaryService,
             UserFeignClient userFeignClient,
+            ObjectMapper redisObjectMapper,
             RedisService redisService,
-            RateLimiterService rateLimiterService) {
+            RateLimiterService rateLimiterService,
+            CommentApi commentApi) {
         this.blogQueryRepository = blogQueryRepository;
         this.blogCommandRepository = blogCommandRepository;
         this.savedBlogCommandRepository = savedBlogCommandRepository;
@@ -57,9 +60,10 @@ public class BlogApi extends BaseApi {
         this.blogMapper = blogMapper;
         this.cloudinaryService = cloudinaryService;
         this.userFeignClient = userFeignClient;
-        this.objectMapper = new ObjectMapper();
+        this.objectMapper = redisObjectMapper;
         this.redisService = redisService;
         this.rateLimiterService = rateLimiterService;
+        this.commentApi = commentApi;
     }
 
     // ========== Private Helper Methods ==========
@@ -147,7 +151,13 @@ public class BlogApi extends BaseApi {
             Object cached = redisService.get(cacheKey);
             if (cached != null) {
                 logger.debug("Cache hit for key: {}", cacheKey);
-                return (List<BlogDto>) cached;
+                // Convert to List<BlogDto> safely
+                if (cached instanceof List) {
+                    List<?> list = (List<?>) cached;
+                    return list.stream()
+                            .map(item -> objectMapper.convertValue(item, BlogDto.class))
+                            .collect(Collectors.toList());
+                }
             }
 
             // Cache miss - fetch from DB
@@ -178,7 +188,13 @@ public class BlogApi extends BaseApi {
             Object cached = redisService.get(cacheKey);
             if (cached != null) {
                 logger.debug("Cache hit for key: {}", cacheKey);
-                return (BlogDto) cached;
+                // Convert LinkedHashMap to BlogDto if needed
+                if (cached instanceof BlogDto) {
+                    return (BlogDto) cached;
+                } else {
+                    // Handle case where Redis returns LinkedHashMap
+                    return objectMapper.convertValue(cached, BlogDto.class);
+                }
             }
 
             // Cache miss - fetch from DB
@@ -186,7 +202,25 @@ public class BlogApi extends BaseApi {
                     .orElseThrow(() -> new OurException("Blog not found", 404));
             BlogDto blogDto = blogMapper.toDto(blog);
 
-            // Store in cache with 10 minutes TTL
+            try {
+                logger.debug("Fetching user by id={}", blog.getAuthorId());
+                Response res = userFeignClient.getUserById(blog.getAuthorId());
+                UserDto author = res.getUser();
+                
+                logger.debug("Fetched user {}", author.getUsername());
+                blogDto.setAuthor(author);
+            } catch (Exception e) {
+                logger.error("Error fetching author for blog={}: {}", blogId, e.getMessage());
+            }
+
+            try {
+                List<CommentDto> comments = commentApi.handleGetBlogComments(blogId);
+
+                blogDto.setComments(comments);
+            } catch (Exception e) {
+                logger.error("Error fetching comments for blog={}: {}", blogId, e.getMessage());
+            }
+
             redisService.set(cacheKey, blogDto, 10, TimeUnit.MINUTES);
             logger.debug("Cached result for key: {}", cacheKey);
 
@@ -209,7 +243,13 @@ public class BlogApi extends BaseApi {
             Object cached = redisService.get(cacheKey);
             if (cached != null) {
                 logger.debug("Cache hit for key: {}", cacheKey);
-                return (List<BlogDto>) cached;
+                // Convert to List<BlogDto> safely
+                if (cached instanceof List) {
+                    List<?> list = (List<?>) cached;
+                    return list.stream()
+                            .map(item -> objectMapper.convertValue(item, BlogDto.class))
+                            .collect(Collectors.toList());
+                }
             }
 
             validateUser(userId);
@@ -363,7 +403,13 @@ public class BlogApi extends BaseApi {
             Object cached = redisService.get(cacheKey);
             if (cached != null) {
                 logger.debug("Cache hit for key: {}", cacheKey);
-                return (List<BlogDto>) cached;
+                // Convert to List<BlogDto> safely
+                if (cached instanceof List) {
+                    List<?> list = (List<?>) cached;
+                    return list.stream()
+                            .map(item -> objectMapper.convertValue(item, BlogDto.class))
+                            .collect(Collectors.toList());
+                }
             }
 
             validateUser(userId);
@@ -393,7 +439,7 @@ public class BlogApi extends BaseApi {
 
             validateUser(userId);
 
-            Blog blog = blogQueryRepository.findBlogById(blogId)
+            blogQueryRepository.findBlogById(blogId)
                     .orElseThrow(() -> new OurException("Blog not found", 404));
 
             // Find the saved blog entry
@@ -453,7 +499,13 @@ public class BlogApi extends BaseApi {
             Object cached = redisService.get(cacheKey);
             if (cached != null) {
                 logger.debug("Cache hit for key: {}", cacheKey);
-                return (List<BlogDto>) cached;
+                // Convert to List<BlogDto> safely
+                if (cached instanceof List) {
+                    List<?> list = (List<?>) cached;
+                    return list.stream()
+                            .map(item -> objectMapper.convertValue(item, BlogDto.class))
+                            .collect(Collectors.toList());
+                }
             }
 
             List<BlogDto> blogs = blogQueryRepository
@@ -506,7 +558,12 @@ public class BlogApi extends BaseApi {
             Object cached = redisService.get(cacheKey);
             if (cached != null) {
                 logger.debug("Cache hit for key: {}", cacheKey);
-                return (List<BlogDto>) cached;
+                if (cached instanceof List) {
+                    List<?> list = (List<?>) cached;
+                    return list.stream()
+                            .map(item -> objectMapper.convertValue(item, BlogDto.class))
+                            .collect(Collectors.toList());
+                }
             }
 
             List<BlogDto> blogs = blogQueryRepository

@@ -12,7 +12,6 @@ public class UserDto {
     private String username;
     private String password;
     private String email;
-    private String fullname;
     private String location;
     private String birth;
     private String summary;
@@ -32,15 +31,13 @@ public class UserDto {
     // Constructor with all fields for MapStruct
     @Builder
     public UserDto(UUID id, String username, String password, String email,
-            String fullname, String location, String birth, String summary,
-            String status, String role, String facebook, String linkedin, String instagram,
-            String oauthProvider, String oauthProviderId, String avatarUrl, String avatarPublicId,
-            boolean isOAuthUser) {
+            String location, String birth, String summary, String status, String role,
+            String facebook, String linkedin, String instagram, String oauthProvider, String oauthProviderId,
+            String avatarUrl, String avatarPublicId, boolean isOAuthUser) {
         this.id = id;
         this.username = username;
         this.password = password;
         this.email = email;
-        this.fullname = fullname;
         this.location = location;
         this.birth = birth;
         this.summary = summary;
@@ -57,21 +54,19 @@ public class UserDto {
     }
 
     // Basic constructor
-    public UserDto(UUID id, String username, String email, String fullname) {
+    public UserDto(UUID id, String username, String email) {
         this.id = id;
         this.username = username;
         this.email = email;
-        this.fullname = fullname;
         this.isOAuthUser = false;
     }
 
     // Constructor for OAuth2 users
-    public UserDto(UUID id, String username, String email, String fullname,
+    public UserDto(UUID id, String username, String email,
             String oauthProvider, String oauthProviderId, String avatarUrl) {
         this.id = id;
         this.username = username;
         this.email = email;
-        this.fullname = fullname;
         this.oauthProvider = oauthProvider;
         this.oauthProviderId = oauthProviderId;
         this.avatarUrl = avatarUrl;

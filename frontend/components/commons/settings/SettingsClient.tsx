@@ -43,7 +43,6 @@ export default function SettingsClient() {
     password: "",
     newPassword: "",
     confirmPassword: "",
-    fullname: "",
     instagram: "",
     facebook: "",
     linkedin: "",
@@ -68,7 +67,6 @@ export default function SettingsClient() {
     if (data) {
       await updateUser(
         data.id,
-        data.fullname,
         data.birth || "",
         data.summary || "",
         avatarFile || null,

@@ -70,20 +70,17 @@ export const UserTable = ({
             {user?.avatarUrl && (
               <AvatarImage
                 src={user.avatarUrl}
-                alt={user?.fullname || "User"}
+                alt={user?.username || "User"}
               />
             )}
             <AvatarFallback>
-              {user?.fullname ? user.fullname.substring(0, 2) : "User"}
+              {user?.username ? user.username.substring(0, 2) : "User"}
             </AvatarFallback>
           </Avatar>
           <div className="flex flex-col items-start">
             {" "}
-            <span className="font-medium">
-              {user?.fullname || "Unknown Artist"}
-            </span>
             <span className="text-sm text-muted-foreground">
-              @{user?.username || "unknown"}
+              {user?.username || "unknown"}
             </span>
             <span className="text-sm text-muted-foreground">
               {user?.email || "unknown"}

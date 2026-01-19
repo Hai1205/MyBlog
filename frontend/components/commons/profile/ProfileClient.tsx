@@ -1,6 +1,6 @@
 "use client";
 
-import { Avatar, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useCallback, useEffect, useState } from "react";
 import { Facebook, Instagram, Linkedin } from "lucide-react";
@@ -34,13 +34,21 @@ const ProfileClient = () => {
           <CardTitle className="text-2xl font-semibold">Profile</CardTitle>
 
           <CardContent className="flex flex-col items-center space-y-4">
-            <Avatar className="w-28 h-28 border-4 border-gray-200 shadow-md cursor-pointer">
-              <AvatarImage src={user?.avatarUrl} alt="profile pic" />
+            <Avatar className="w-28 h-28 border-4 border-primary/20 shadow-md">
+              {user?.avatarUrl && (
+                <AvatarImage
+                  src={user?.avatarUrl}
+                  alt={user?.username || "User"}
+                  className="object-cover"
+                />
+              )}
+              <AvatarFallback className="bg-linear-to-br from-primary to-secondary text-primary-foreground font-bold text-sm">
+                {user?.username?.charAt(0).toUpperCase() || "U"}
+              </AvatarFallback>
             </Avatar>
 
             <div className="w-full space-y-2 text-center">
-              <label className="font-medium">Fullname</label>
-              <p>{user?.fullname}</p>
+              <p>{user?.username}</p>
             </div>
 
             {user?.summary && (

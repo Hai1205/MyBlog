@@ -20,16 +20,16 @@ export const NavbarUserMenu = ({
           {userAuth.avatarUrl && (
             <AvatarImage
               src={userAuth.avatarUrl}
-              alt={userAuth.fullname || "User"}
+              alt={userAuth.username || "User"}
               className="object-cover"
             />
           )}
           <AvatarFallback className="bg-linear-to-br from-primary to-secondary text-primary-foreground font-bold text-sm">
-            {userAuth.fullname?.charAt(0).toUpperCase() || "U"}
+            {userAuth.username?.charAt(0).toUpperCase() || "U"}
           </AvatarFallback>
         </Avatar>
         <div className="flex flex-col items-start">
-          <span className="text-sm font-semibold">{userAuth.fullname}</span>
+          <span className="text-sm font-semibold">{userAuth.username}</span>
           {isAdmin && (
             <span className="text-xs text-primary font-medium">Admin</span>
           )}

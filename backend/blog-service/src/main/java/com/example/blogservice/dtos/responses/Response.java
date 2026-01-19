@@ -7,6 +7,7 @@ import com.example.blogservice.dtos.BlogDto;
 import com.example.blogservice.dtos.CommentDto;
 import com.example.blogservice.dtos.UserDto;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import lombok.*;
 
@@ -14,12 +15,21 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Response {
     private int statusCode;
     private String message;
 
     // User field
     private UserDto user;
+
+    // Additional user-service fields (for FeignClient compatibility)
+    private List<UserDto> users;
+    private String token;
+    private String role;
+    private String status;
+    private Boolean authenticated;
+    private String expirationTime;
 
     // Blog fields
     private BlogDto blog;

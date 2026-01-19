@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.document.Document;
 
+import com.example.aiservice.dtos.ExtractionResult;
 import com.example.aiservice.dtos.requests.*;
 import com.example.aiservice.dtos.responses.Response;
 import com.example.aiservice.exceptions.OurException;
@@ -33,6 +34,9 @@ public class AIApi extends BaseApi {
     // Engineering
     private final CompactPromptBuilder promptBuilder;
 
+    // Image Preservation
+    private final ImagePreservationService imagePreservationService;
+
     // Supporting Services
     private final ObjectMapper objectMapper;
 
@@ -47,12 +51,14 @@ public class AIApi extends BaseApi {
             ChatClient chatClient, // Inject từ RAGConfig
             EmbeddingService embeddingService,
             CompactPromptBuilder promptBuilder,
+            ImagePreservationService imagePreservationService,
             RedisService redisService,
             RateLimiterService rateLimiterService) {
 
         this.chatClient = chatClient;
         this.embeddingService = embeddingService;
         this.promptBuilder = promptBuilder;
+        this.imagePreservationService = imagePreservationService;
         this.redisService = redisService;
         this.rateLimiterService = rateLimiterService;
         this.objectMapper = new ObjectMapper();
@@ -267,17 +273,21 @@ public class AIApi extends BaseApi {
 
             logger.debug("Getting AI content response");
 
-            // RETRIEVE: Search for relevant content templates
+            // STEP 1: Extract images to prevent base64 corruption
+            ExtractionResult extracted = imagePreservationService.extractImages(content);
+            logger.info("Extracted {} images from content", extracted.getImageMap().size());
+
+            // RETRIEVE: Search for relevant content templates (using clean content)
             List<Document> relevantDocs = embeddingService.searchRelevantTemplates(
-                    content, "content", "blog", "general", 5);
+                    extracted.getCleanContent(), "content", "blog", "general", 5);
 
             // Extract content from documents
             List<String> relevantExamples = relevantDocs.stream()
                     .map(doc -> doc.getContent())
                     .collect(Collectors.toList());
 
-            // AUGMENT: Build prompt with retrieved examples
-            String prompt = promptBuilder.buildContentPrompt(content, relevantExamples);
+            // AUGMENT: Build prompt with retrieved examples (using clean content)
+            String prompt = promptBuilder.buildContentPrompt(extracted.getCleanContent(), relevantExamples);
 
             // GENERATE: Use ChatClient to generate response
             String aiContent = chatClient.prompt()
@@ -287,11 +297,16 @@ public class AIApi extends BaseApi {
 
             logger.info("Generated AI content, length: {}", aiContent.length());
 
-            // Cache result for 1 hour
-            String result = aiContent.trim();
-            redisService.set(cacheKey, result, 1, TimeUnit.HOURS);
+            // STEP 2: Restore original images
+            String contentWithImages = imagePreservationService.restoreImages(
+                    aiContent.trim(), extracted.getImageMap());
 
-            return result;
+            logger.info("Restored images to AI content");
+
+            // Cache result for 1 hour
+            redisService.set(cacheKey, contentWithImages, 1, TimeUnit.HOURS);
+
+            return contentWithImages;
 
         } catch (Exception e) {
             logger.error("Error getting AI content response: {}", e.getMessage(), e);

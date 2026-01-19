@@ -10,7 +10,6 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UpdateUserRequest {
-    private String fullname;
     private String location;
     private String birth;
     private String summary;

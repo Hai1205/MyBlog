@@ -17,7 +17,6 @@ const RegisterClient: React.FC = () => {
   const router = useRouter();
 
   const [formData, setFormData] = useState({
-    fullname: "",
     username: "",
     email: "",
     password: "",
@@ -37,10 +36,6 @@ const RegisterClient: React.FC = () => {
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
-
-    if (!formData.fullname) {
-      newErrors.fullname = "Full name is required";
-    }
 
     if (!formData.username) {
       newErrors.username = "Username is required";
@@ -76,7 +71,6 @@ const RegisterClient: React.FC = () => {
     }
 
     const response = await register(
-      formData.fullname,
       formData.username,
       formData.email,
       formData.password
@@ -107,24 +101,6 @@ const RegisterClient: React.FC = () => {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="fullname">Full Name</Label>
-          <InputWithIcon
-            id="fullname"
-            name="fullname"
-            type="text"
-            placeholder="Enter your full name"
-            value={formData.fullname}
-            onChange={handleChange}
-            leftIcon={Mail}
-          />
-          {errors.fullname && (
-            <Alert variant="destructive">
-              <AlertDescription>{errors.fullname}</AlertDescription>
-            </Alert>
-          )}
-        </div>
-
         <div className="space-y-2">
           <Label htmlFor="username">Username</Label>
           <InputWithIcon

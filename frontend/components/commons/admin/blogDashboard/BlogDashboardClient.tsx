@@ -41,8 +41,8 @@ export default function BlogDashboardClient() {
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 10;
   const totalPages = Math.ceil(filteredBlogs.length / pageSize);
-  const startIndex = (currentPage - 1) * pageSize;
-  const endIndex = startIndex + pageSize;
+  // const startIndex = (currentPage - 1) * pageSize;
+  // const endIndex = startIndex + pageSize;
 
   const paginationState = { page: currentPage, pageSize: pageSize };
   const paginationData = {

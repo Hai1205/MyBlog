@@ -47,10 +47,9 @@ public interface UserCommandRepository extends JpaRepository<User, UUID> {
 
         @Modifying
         @Transactional
-        @Query("UPDATE User u SET u.fullname = :fullname, " +
+        @Query("UPDATE User u SET " +
                         "u.birth = :birth, u.summary = :summary, u.facebook = :facebook, u.linkedin = :linkedin, u.instagram = :instagram, u.updatedAt = :updatedAt WHERE u.id = :userId")
         int updateUserBasicInfo(@Param("userId") UUID userId,
-                        @Param("fullname") String fullname,
                         @Param("birth") String birth,
                         @Param("summary") String summary,
                         @Param("facebook") String facebook,
@@ -82,13 +81,6 @@ public interface UserCommandRepository extends JpaRepository<User, UUID> {
         @Transactional
         @Query("DELETE FROM User u WHERE u.email = :email")
         int deleteUserByEmail(@Param("email") String email);
-
-        @Modifying
-        @Transactional
-        @Query("UPDATE User u SET u.fullname = :fullname, u.updatedAt = :updatedAt WHERE u.id = :userId")
-        int updateUserFullname(@Param("userId") UUID userId,
-                        @Param("fullname") String fullname,
-                        @Param("updatedAt") LocalDateTime updatedAt);
 
         @Modifying
         @Transactional
@@ -127,15 +119,14 @@ public interface UserCommandRepository extends JpaRepository<User, UUID> {
 
         @Modifying
         @Transactional
-        @Query(value = "INSERT INTO users (id, username, email, password, fullname, birth, summary, " +
+        @Query(value = "INSERT INTO users (id, username, email, password, birth, summary, " +
                         "avatar_url, avatar_public_id, role, status, facebook, linkedin, instagram, created_at, updated_at) " +
-                        "VALUES (:id, :username, :email, :password, :fullname, :birth, :summary, " +
+                        "VALUES (:id, :username, :email, :password, :birth, :summary, " +
                         ":avatarUrl, :avatarPublicId, :role, :status, :facebook, :linkedin, :instagram, :createdAt, :updatedAt)", nativeQuery = true)
         int insertUser(@Param("id") UUID id,
                         @Param("username") String username,
                         @Param("email") String email,
                         @Param("password") String password,
-                        @Param("fullname") String fullname,
                         @Param("birth") String birth,
                         @Param("summary") String summary,
                         @Param("avatarUrl") String avatarUrl,
@@ -150,13 +141,12 @@ public interface UserCommandRepository extends JpaRepository<User, UUID> {
 
         @Modifying
         @Transactional
-        @Query("UPDATE User u SET u.fullname = :fullname, u.birth = :birth, u.summary = :summary," +
+        @Query("UPDATE User u SET u.birth = :birth, u.summary = :summary," +
                         "u.avatarUrl = :avatarUrl, u.avatarPublicId = :avatarPublicId, "
                         +
                         "u.role = :role, u.status = :status, u.facebook = :facebook, u.linkedin = :linkedin, u.instagram = :instagram,"
                         + "u.updatedAt = :updatedAt WHERE u.id = :userId")
         int updateUserAllFields(@Param("userId") UUID userId,
-                        @Param("fullname") String fullname,
                         @Param("birth") String birth,
                         @Param("summary") String summary,
                         @Param("avatarUrl") String avatarUrl,

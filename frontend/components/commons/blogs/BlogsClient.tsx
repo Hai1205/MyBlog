@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Loading from "../layout/Loading";
 import { useBlogStore } from "@/stores/blogStore";
 import BlogCard from "./BlogCard";
@@ -10,9 +10,15 @@ import { PaginationControls } from "@/components/commons/layout/pagination/Pagin
 import { blogCategories } from "../admin/blogDashboard/constant";
 
 const BlogsClient = () => {
-  const { isLoading, blogs } = useBlogStore();
+  const { isLoading, blogs, fetchAllBlogsInBackground } = useBlogStore();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+
+  console.log("BlogsClient render: ", { blogs });
+  useEffect(() => {
+    // Fetch in background to update cache
+    fetchAllBlogsInBackground();
+  }, []);
 
   // Pagination
   const { paginationData, paginationState, setPage, updateTotalElements } =
@@ -33,7 +39,9 @@ const BlogsClient = () => {
       const matchesCategory =
         selectedCategory === "all" || blog.category === selectedCategory;
 
-      return matchesSearch && matchesCategory;
+      const isVisible = blog.isVisibility === true;
+
+      return matchesSearch && matchesCategory && isVisible;
     });
 
     // Update total elements for pagination

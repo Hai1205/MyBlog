@@ -153,19 +153,12 @@ public class CommentApi extends BaseApi {
     }
 
     @Transactional
-    public CommentDto handleUpdateComment(UUID commentId, UUID userId, UpdateCommentRequest request) {
-        logger.info("Updating comment={} by user={}", commentId, userId);
-
-        // Validate user
-        validateUser(userId);
+    public CommentDto handleUpdateComment(UUID commentId, UpdateCommentRequest request) {
+        logger.info("Updating comment={}", commentId);
 
         // Validate comment exists and belongs to user
-        Comment existingComment = commentQueryRepository.findCommentById(commentId)
+        commentQueryRepository.findCommentById(commentId)
                 .orElseThrow(() -> new OurException("Comment not found", 404));
-
-        if (!existingComment.getUserId().equals(userId)) {
-            throw new OurException("Unauthorized to update this comment", 403);
-        }
 
         // Update comment
         Instant now = Instant.now();
@@ -182,19 +175,12 @@ public class CommentApi extends BaseApi {
     }
 
     @Transactional
-    public boolean handleDeleteComment(UUID commentId, UUID userId) {
-        logger.info("Deleting comment={} by user={}", commentId, userId);
-
-        // Validate user
-        validateUser(userId);
+    public boolean handleDeleteComment(UUID commentId) {
+        logger.info("Deleting comment={}", commentId);
 
         // Validate comment exists and belongs to user
-        Comment existingComment = commentQueryRepository.findCommentById(commentId)
+        commentQueryRepository.findCommentById(commentId)
                 .orElseThrow(() -> new OurException("Comment not found", 404));
-
-        if (!existingComment.getUserId().equals(userId)) {
-            throw new OurException("Unauthorized to delete this comment", 403);
-        }
 
         // Delete comment
         int deleted = commentCommandRepository.deleteCommentById(commentId);
@@ -426,7 +412,7 @@ public class CommentApi extends BaseApi {
         }
     }
 
-    public Response updateComment(UUID commentId, UUID userId, UpdateCommentRequest request) {
+    public Response updateComment(UUID commentId, UpdateCommentRequest request) {
         Response response = new Response();
 
         try {
@@ -441,7 +427,7 @@ public class CommentApi extends BaseApi {
                 return response;
             }
 
-            CommentDto comment = handleUpdateComment(commentId, userId, request);
+            CommentDto comment = handleUpdateComment(commentId, request);
 
             long endTime = System.currentTimeMillis();
             logger.info("Completed request in {} ms", endTime - startTime);
@@ -463,7 +449,7 @@ public class CommentApi extends BaseApi {
         }
     }
 
-    public Response deleteComment(UUID commentId, UUID userId) {
+    public Response deleteComment(UUID commentId) {
         Response response = new Response();
 
         try {
@@ -478,7 +464,7 @@ public class CommentApi extends BaseApi {
                 return response;
             }
 
-            boolean deleted = handleDeleteComment(commentId, userId);
+            boolean deleted = handleDeleteComment(commentId);
 
             long endTime = System.currentTimeMillis();
             logger.info("Completed request in {} ms", endTime - startTime);

@@ -258,8 +258,8 @@ public class StatsApi extends BaseApi {
                 activities.add(ActivityDto.builder()
                         .id("user-" + user.get("id").toString())
                         .type("user_registered")
-                        .description("New user registered: " + (String) user.get("fullname"))
-                        .timestamp(Instant.now().toString()) // Since we don't have created_at
+                        .description("New user registered: " + (String) user.get("username"))
+                        .timestamp(Instant.now().toString())
                         .userId(user.get("id").toString())
                         .build());
             }

@@ -25,7 +25,7 @@ const BlogCard: React.FC<BlogCardProps> = ({
   };
 
   return (
-    <Link href={`/blog/${blog.id}`}>
+    <Link href={`/blogs/${blog.id}`}>
       <Card className="overflow-hidden rounded-lg shadow-none transition-shadow duration-300 hover:shadow-xl border-none relative group">
         {/* Action buttons overlay */}
         {(onUnsave || onUpdate || onDelete) && (
