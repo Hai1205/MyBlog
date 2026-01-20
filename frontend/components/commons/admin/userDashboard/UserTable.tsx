@@ -52,7 +52,7 @@ export const UserTable = ({
 }: UserTableProps) => {
   const columns = [
     {
-      header: "STT",
+      header: "No",
       accessor: (_: IUser, index: number) => {
         // Calculate correct index based on current page
         const baseIndex = paginationData
@@ -62,7 +62,7 @@ export const UserTable = ({
       },
     },
     {
-      header: "Người dùng",
+      header: "User",
       accessor: (user: IUser) => (
         <div className="flex items-center gap-3 justify-center mx-auto">
           {" "}
@@ -73,16 +73,18 @@ export const UserTable = ({
                 alt={user?.username || "User"}
               />
             )}
-            <AvatarFallback>
-              {user?.username ? user.username.substring(0, 2) : "User"}
+
+            <AvatarFallback className="bg-linear-to-br from-primary to-secondary text-primary-foreground font-bold text-sm">
+              {user?.username?.charAt(0).toUpperCase() || "U"}
             </AvatarFallback>
           </Avatar>
+
           <div className="flex flex-col items-start">
             {" "}
-            <span className="text-sm text-muted-foreground">
+            <span className="text-sm text-primary">
               {user?.username || "unknown"}
             </span>
-            <span className="text-sm text-muted-foreground">
+            <span className="text-sm text-secondary">
               {user?.email || "unknown"}
             </span>
           </div>
@@ -90,7 +92,7 @@ export const UserTable = ({
       ),
     },
     {
-      header: "Vai trò",
+      header: "Role",
       accessor: (user: IUser) => (
         <div className="inline-flex items-center justify-center gap-2">
           <span className={`h-2 w-2 rounded-full ${getRoleColor(user.role)}`} />
@@ -99,16 +101,7 @@ export const UserTable = ({
       ),
     },
     {
-      header: "Vai trò",
-      accessor: (user: IUser) => (
-        <div className="inline-flex items-center justify-center gap-2">
-          <span className={`h-2 w-2 rounded-full ${getRoleColor(user.role)}`} />
-          <span className="capitalize">{user.role}</span>
-        </div>
-      ),
-    },
-    {
-      header: "Trạng thái",
+      header: "Status",
       accessor: (user: IUser) => (
         <div className="inline-flex items-center justify-center gap-2">
           <span

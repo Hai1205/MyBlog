@@ -17,11 +17,12 @@ public interface CommentCommandRepository extends JpaRepository<Comment, UUID> {
 
     @Modifying
     @Transactional
-    @Query(value = "INSERT INTO comments (id, blog_id, user_id, content, created_at, updated_at) " +
-            "VALUES (:id, :blogId, :userId, :content, :createdAt, :updatedAt)", nativeQuery = true)
+    @Query(value = "INSERT INTO comments (id, blog_id, user_id, username, content, created_at, updated_at) " +
+            "VALUES (:id, :blogId, :userId, :username, :content, :createdAt, :updatedAt)", nativeQuery = true)
     int insertComment(@Param("id") UUID id,
             @Param("blogId") UUID blogId,
             @Param("userId") UUID userId,
+            @Param("username") String username,
             @Param("content") String content,
             @Param("createdAt") Instant createdAt,
             @Param("updatedAt") Instant updatedAt);

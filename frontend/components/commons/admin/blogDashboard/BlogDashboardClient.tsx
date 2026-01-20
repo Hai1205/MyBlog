@@ -13,6 +13,7 @@ import { BlogFilter } from "./BlogFilter";
 import { BlogTable } from "./BlogTable";
 import { useAllBlogsQuery } from "@/hooks/api/queries/useBlogQueries";
 import { useDeleteBlogMutation } from "@/hooks/api/mutations/useBlogMutations";
+import { useBlogStore } from "@/stores/blogStore";
 
 export type BlogFilterType = "category" | "visibility";
 export interface IBlogFilter {
@@ -32,6 +33,9 @@ export default function BlogDashboardClient() {
     isLoading: isLoadingBlogs,
     refetch: refetchBlogs,
   } = useAllBlogsQuery();
+
+  const { handleSetBlogToEdit } = useBlogStore();
+
   const blogsTable = blogsResponse?.data?.blogs || [];
 
   const { mutate: deleteBlogMutation } = useDeleteBlogMutation();
@@ -163,6 +167,7 @@ export default function BlogDashboardClient() {
   const [blogToDelete, setBlogToDelete] = useState<IBlog | null>(null);
 
   const handleUpdate = async (blog: IBlog) => {
+    handleSetBlogToEdit(blog);
     router.push(`/blogs/edit/${blog.id}`);
   };
 

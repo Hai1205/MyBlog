@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { DraggingOnPage } from "../layout/Dragging/DraggingOnPage";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "react-toastify";
 import { useAuthStore } from "@/stores/authStore";
 import { useBlogQuery } from "@/hooks/api/queries/useBlogQueries";
 import {
@@ -36,6 +36,7 @@ import {
   useAnalyzeDescriptionMutation,
   useAnalyzeContentMutation,
 } from "@/hooks/api/mutations/useBlogMutations";
+import { useBlogStore } from "@/stores/blogStore";
 
 const JoditEditor = dynamic(() => import("jodit-react"), { ssr: false });
 
@@ -45,13 +46,13 @@ interface EditBlogClientProps {
 
 const EditBlogClient = ({ isCreate }: EditBlogClientProps) => {
   const { userAuth } = useAuthStore();
-  const { toast } = useToast();
+  const { blogToEdit } = useBlogStore();
+
   const router = useRouter();
   const { id } = useParams();
 
-  // ✅ TanStack Query hooks
-  const { data: blogResponse } = useBlogQuery(id as string, {
-    enabled: !isCreate && !!id,
+  const { data: blogResponse } = useBlogQuery(id as string, userAuth?.id, {
+    enabled: !isCreate && !blogToEdit,
   });
   const { mutate: createBlog, isPending: isCreating } = useCreateBlogMutation();
   const { mutate: updateBlog, isPending: isUpdating } = useUpdateBlogMutation();
@@ -97,10 +98,8 @@ const EditBlogClient = ({ isCreate }: EditBlogClientProps) => {
     const file = e.target.files[0];
     if (file) {
       if (!file.type.startsWith("image/")) {
-        toast({
-          title: "Invalid file type",
-          description: "Please select an image file",
-          variant: "destructive",
+        toast.error("Please select an image file", {
+          position: "top-right",
         });
         return;
       }
@@ -153,10 +152,8 @@ const EditBlogClient = ({ isCreate }: EditBlogClientProps) => {
       };
       reader.readAsDataURL(file);
     } else if (file) {
-      toast({
-        title: "Invalid file type",
-        description: "Only image files are accepted!",
-        variant: "destructive",
+      toast.error("Only image files are accepted!", {
+        position: "top-right",
       });
     }
   };
@@ -252,20 +249,23 @@ const EditBlogClient = ({ isCreate }: EditBlogClientProps) => {
   const [existingImage, setExistingImage] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isCreate && blogResponse?.data?.blog) {
-      const blogData = blogResponse.data.blog;
-      setFormData({
-        title: blogData.title,
-        description: blogData.description,
-        category: blogData.category,
-        thumbnail: null,
-        content: blogData.content,
-        isVisibility: blogData.isVisibility,
-      });
-      setContent(blogData.content || "");
-      setExistingImage(blogData.thumbnailUrl || null);
+    if (!isCreate) {
+      // Prioritize blogToEdit over blogResponse
+      const blogData = blogToEdit || blogResponse?.data?.blog;
+      if (blogData) {
+        setFormData({
+          title: blogData.title,
+          description: blogData.description,
+          category: blogData.category,
+          thumbnail: null,
+          content: blogData.content,
+          isVisibility: blogData.isVisibility,
+        });
+        setContent(blogData.content || "");
+        setExistingImage(blogData.thumbnailUrl || null);
+      }
     }
-  }, [blogResponse, isCreate]);
+  }, [blogToEdit, blogResponse, isCreate]);
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
@@ -304,9 +304,8 @@ const EditBlogClient = ({ isCreate }: EditBlogClientProps) => {
         },
         {
           onSuccess: () => {
-            toast({
-              title: "Success",
-              description: "Blog updated successfully",
+            toast.success("Blog updated successfully", {
+              position: "top-right",
             });
             router.push(`/blogs/${id}`);
           },

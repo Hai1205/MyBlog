@@ -9,6 +9,7 @@ Module này tập trung hóa các chức năng liên quan đến Redis, giúp:
 - Tránh duplicate code giữa các service
 - Đảm bảo cấu hình Redis nhất quán
 - Dễ dàng bảo trì và nâng cấp
+- **[MỚI]** Cung cấp các helper classes để giảm boilerplate code trong tất cả services
 
 ## Các thành phần chính
 
@@ -21,7 +22,7 @@ Cấu hình Redis với:
   - Key: `StringRedisSerializer`
   - Value: `GenericJackson2JsonRedisSerializer` (JSON)
 
-### 2. RedisService
+### 2. RedisService (Low-level)
 
 Service cơ bản cho các thao tác Redis:
 
@@ -34,7 +35,106 @@ Service cơ bản cho các thao tác Redis:
 - `getExpire(key)`: Lấy thời gian còn lại
 - `increment(key)`, `decrement(key)`: Tăng/giảm giá trị số
 
-### 3. OtpService
+### 3. 🆕 RedisCacheService (High-level)
+
+**Service mới** - Caching patterns với auto serialization/deserialization:
+
+#### Tính năng:
+
+- ✅ Tự động check cache → nếu miss thì fetch data → cache result
+- ✅ Tự động convert LinkedHashMap từ Redis về POJO
+- ✅ Hỗ trợ single object, list, và primitive types
+- ✅ Custom TTL cho từng operation
+- ✅ Graceful fallback khi Redis lỗi
+
+#### Methods:
+
+```java
+// Single object with default TTL (10 minutes)
+<T> T executeWithCache(String key, Class<T> type, Supplier<T> fetcher)
+
+// Single object with custom TTL
+<T> T executeWithCache(String key, Class<T> type, Supplier<T> fetcher, long ttl, TimeUnit unit)
+
+// List of objects with default TTL
+<T> List<T> executeWithCacheList(String key, Class<T> type, Supplier<List<T>> fetcher)
+
+// List of objects with custom TTL
+<T> List<T> executeWithCacheList(String key, Class<T> type, Supplier<List<T>> fetcher, long ttl, TimeUnit unit)
+
+// Primitives (Long, String, Integer, etc.)
+<T> T executeWithCachePrimitive(String key, Supplier<T> fetcher)
+<T> T executeWithCachePrimitive(String key, Supplier<T> fetcher, long ttl, TimeUnit unit)
+
+// Cache invalidation
+void invalidate(String key)
+void invalidateMultiple(String... keys)
+```
+
+### 4. 🆕 CacheKeyBuilder
+
+**Utility mới** - Xây dựng cache keys nhất quán:
+
+```java
+CacheKeyBuilder keyBuilder = CacheKeyBuilder.forService("blog");
+
+// Pattern: blog:getAllBlogs:all
+String key1 = keyBuilder.forMethod("getAllBlogs");
+
+// Pattern: blog:getBlogById:uuid
+String key2 = keyBuilder.forMethodWithId("getBlogById", blogId);
+
+// Pattern: blog:getRecentBlogs:10
+String key3 = keyBuilder.forMethodWithParam("getRecentBlogs", 10);
+
+// Pattern: blog:getBlogsInRange:startDate:endDate
+String key4 = keyBuilder.forMethodWithParams("getBlogsInRange", startDate, endDate);
+
+// Custom: blog:custom:part1:part2
+String key5 = keyBuilder.custom("custom", "part1", "part2");
+```
+
+### 5. 🆕 ApiResponseHandler<R>
+
+**Generic handler mới** - Xử lý API response với rate limiting & error handling:
+
+#### Tính năng:
+
+- ✅ Tự động check rate limit
+- ✅ Performance timing/logging
+- ✅ Consistent error handling
+- ✅ Tự động extract status code từ custom exceptions
+
+#### Methods:
+
+```java
+// With rate limiting
+<T> R executeWithResponse(
+    String rateLimitKey,
+    int rateLimit,
+    Supplier<T> businessLogic,
+    Supplier<R> responseSupplier,
+    BiConsumer<R, Integer> statusSetter,
+    BiConsumer<R, String> messageSetter,
+    BiConsumer<R, T> resultSetter,
+    String successMessage,
+    int successStatusCode
+)
+
+// Without rate limiting (internal APIs)
+<T> R executeWithoutRateLimit(...)
+
+// Just check rate limit
+boolean checkRateLimit(String key, int limit)
+```
+
+### 6. RateLimiterService
+
+Service rate limiting với Redis:
+
+- `isAllowed(key, maxRequests, windowSeconds)`: Kiểm tra và update rate limit
+
+### 7. OtpService
 
 Service quản lý OTP (One-Time Password):
 

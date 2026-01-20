@@ -1,7 +1,8 @@
 package com.example.statsservice.services.apis;
 
 import com.example.rediscommon.services.RedisService;
-import com.example.rediscommon.services.RateLimiterService;
+import com.example.rediscommon.services.ApiResponseHandler;
+import com.example.rediscommon.utils.CacheKeyBuilder;
 import com.example.statsservice.dtos.ActivityDto;
 import com.example.statsservice.dtos.DashboardStatsDto;
 import com.example.statsservice.services.feigns.UserFeignClient;
@@ -40,7 +41,8 @@ public class StatsApi extends BaseApi {
     private final UserFeignClient userFeignClient;
     private final BlogFeignClient blogFeignClient;
     private final RedisService redisService;
-    private final RateLimiterService rateLimiterService;
+    private final ApiResponseHandler<Response> responseHandler;
+    private final CacheKeyBuilder cacheKeys;
 
     @Value("${LOGO_PATH}")
     private String logoPath;
@@ -49,11 +51,12 @@ public class StatsApi extends BaseApi {
             UserFeignClient userFeignClient,
             BlogFeignClient blogFeignClient,
             RedisService redisService,
-            RateLimiterService rateLimiterService) {
+            ApiResponseHandler<Response> responseHandler) {
         this.userFeignClient = userFeignClient;
         this.blogFeignClient = blogFeignClient;
         this.redisService = redisService;
-        this.rateLimiterService = rateLimiterService;
+        this.responseHandler = responseHandler;
+        this.cacheKeys = CacheKeyBuilder.forService("stats");
     }
 
     /**
@@ -88,65 +91,89 @@ public class StatsApi extends BaseApi {
     }
 
     /**
-     * Compute dashboard statistics from gRPC calls (optimized with parallel
-     * execution)
+     * Compute dashboard statistics (optimized - fetch bulk data and filter locally)
      */
     private DashboardStatsDto computeDashboardStats() {
-        logger.info("Fetching dashboard statistics with parallel execution...");
+        logger.info("Fetching dashboard statistics with optimized approach...");
 
         // Get this month's date range
         YearMonth currentMonth = YearMonth.now();
         Instant startOfMonth = currentMonth.atDay(1).atStartOfDay().toInstant(ZoneOffset.UTC);
         Instant endOfMonth = currentMonth.atEndOfMonth().atTime(23, 59, 59).toInstant(ZoneOffset.UTC);
-        String startDateStr = startOfMonth.toString();
-        String endDateStr = endOfMonth.toString();
 
-        // Execute all Feign calls in parallel
-        CompletableFuture<Response> userStatsFuture = CompletableFuture
-                .supplyAsync(() -> userFeignClient.getUserStats());
+        // Execute only 3 Feign calls in parallel (instead of 7+)
+        CompletableFuture<Response> allUsersFuture = CompletableFuture
+                .supplyAsync(() -> userFeignClient.getAllUsers());
 
-        CompletableFuture<Response> totalBlogsFuture = CompletableFuture
-                .supplyAsync(() -> blogFeignClient.getTotalBlogs());
-
-        CompletableFuture<Response> publicBlogsFuture = CompletableFuture
-                .supplyAsync(() -> blogFeignClient.getBlogsByVisibility(true));
-
-        CompletableFuture<Response> privateBlogsFuture = CompletableFuture
-                .supplyAsync(() -> blogFeignClient.getBlogsByVisibility(false));
-
-        CompletableFuture<Response> usersThisMonthFuture = CompletableFuture
-                .supplyAsync(() -> userFeignClient.getUsersCreatedInRange(startDateStr, endDateStr));
-
-        CompletableFuture<Response> blogsThisMonthFuture = CompletableFuture
-                .supplyAsync(() -> blogFeignClient.getBlogsCreatedInRange(startDateStr, endDateStr));
+        CompletableFuture<Response> allBlogsFuture = CompletableFuture
+                .supplyAsync(() -> blogFeignClient.getAllBlogs());
 
         CompletableFuture<List<ActivityDto>> recentActivitiesFuture = CompletableFuture
                 .supplyAsync(() -> handleGetRecentActivities());
 
-        // Wait for all futures to complete and get results
-        Response userStatsResponse = userStatsFuture.join();
-        Response totalBlogsResponse = totalBlogsFuture.join();
-        Response publicBlogsResponse = publicBlogsFuture.join();
-        Response privateBlogsResponse = privateBlogsFuture.join();
-        Response usersThisMonthResponse = usersThisMonthFuture.join();
-        Response blogsThisMonthResponse = blogsThisMonthFuture.join();
+        // Wait for all futures to complete
+        Response allUsersResponse = allUsersFuture.join();
+        Response allBlogsResponse = allBlogsFuture.join();
         List<ActivityDto> recentActivities = recentActivitiesFuture.join();
+
+        // Filter users locally
+        List<Map<String, Object>> allUsers = allUsersResponse.getUsers();
+        long totalUsers = allUsers != null ? allUsers.size() : 0;
+        long activeUsers = allUsers != null ? allUsers.stream()
+                .filter(u -> "ACTIVE".equals(u.get("status")))
+                .count() : 0;
+        long pendingUsers = allUsers != null ? allUsers.stream()
+                .filter(u -> "PENDING".equals(u.get("status")))
+                .count() : 0;
+        long bannedUsers = allUsers != null ? allUsers.stream()
+                .filter(u -> "BANNED".equals(u.get("status")))
+                .count() : 0;
+        long usersThisMonth = allUsers != null ? allUsers.stream()
+                .filter(u -> {
+                    try {
+                        Instant createdAt = Instant.parse((String) u.get("createdAt"));
+                        return !createdAt.isBefore(startOfMonth) && !createdAt.isAfter(endOfMonth);
+                    } catch (Exception e) {
+                        return false;
+                    }
+                })
+                .count() : 0;
+
+        // Filter blogs locally
+        List<Map<String, Object>> allBlogs = allBlogsResponse.getBlogs();
+        long totalBlogs = allBlogs != null ? allBlogs.size() : 0;
+        long publicBlogs = allBlogs != null ? allBlogs.stream()
+                .filter(b -> Boolean.TRUE.equals(b.get("isVisibility")))
+                .count() : 0;
+        long privateBlogs = allBlogs != null ? allBlogs.stream()
+                .filter(b -> !Boolean.TRUE.equals(b.get("isVisibility")))
+                .count() : 0;
+        long blogsThisMonth = allBlogs != null ? allBlogs.stream()
+                .filter(b -> {
+                    try {
+                        Instant createdAt = Instant.parse((String) b.get("createdAt"));
+                        return !createdAt.isBefore(startOfMonth) && !createdAt.isAfter(endOfMonth);
+                    } catch (Exception e) {
+                        return false;
+                    }
+                })
+                .count() : 0;
 
         // Build dashboard stats
         DashboardStatsDto stats = DashboardStatsDto.builder()
-                .totalUsers(toLong(userStatsResponse.getAdditionalData().get("totalUsers")))
-                .activeUsers(toLong(userStatsResponse.getAdditionalData().get("activeUsers")))
-                .pendingUsers(toLong(userStatsResponse.getAdditionalData().get("pendingUsers")))
-                .bannedUsers(toLong(userStatsResponse.getAdditionalData().get("bannedUsers")))
-                .usersCreatedThisMonth(toLong(usersThisMonthResponse.getAdditionalData().get("count")))
-                .totalBlogs(toLong(totalBlogsResponse.getAdditionalData().get("total")))
-                .publicBlogs(toLong(publicBlogsResponse.getAdditionalData().get("count")))
-                .privateBlogs(toLong(privateBlogsResponse.getAdditionalData().get("count")))
-                .blogsCreatedThisMonth(toLong(blogsThisMonthResponse.getAdditionalData().get("count")))
+                .totalUsers(totalUsers)
+                .activeUsers(activeUsers)
+                .pendingUsers(pendingUsers)
+                .bannedUsers(bannedUsers)
+                .usersCreatedThisMonth(usersThisMonth)
+                .totalBlogs(totalBlogs)
+                .publicBlogs(publicBlogs)
+                .privateBlogs(privateBlogs)
+                .blogsCreatedThisMonth(blogsThisMonth)
                 .recentActivities(recentActivities)
                 .build();
 
-        logger.info("Dashboard statistics fetched successfully");
+        logger.info("Dashboard statistics computed successfully (optimized approach)");
         return stats;
     }
 
@@ -191,59 +218,35 @@ public class StatsApi extends BaseApi {
     }
 
     public Response getDashboardStats() {
-        Response response = new Response();
-
-        try {
-            long startTime = System.currentTimeMillis();
-
-            // Rate limiting: 90 req/min for GET APIs
-            if (!rateLimiterService.isAllowed("stats:getDashboardStats", 90, 60)) {
-                response.setStatusCode(429);
-                response.setMessage("Rate limit exceeded. Please try again later.");
-                return response;
-            }
-
-            DashboardStatsDto stats = getDashboardStatsFromCacheOrCompute();
-
-            long endTime = System.currentTimeMillis();
-            logger.info("Completed request in {} ms", endTime - startTime);
-
-            response.setStatusCode(200);
-            response.setMessage("Dashboard statistics retrieved successfully");
-            response.setDashboardStats(stats);
-            return response;
-        } catch (Exception e) {
-            logger.error("Error fetching dashboard stats: {}", e.getMessage(), e);
-            return buildErrorResponse(500, "Failed to fetch dashboard statistics");
-        }
+        return responseHandler.executeWithResponse(
+                cacheKeys.forMethod("getDashboardStats"),
+                90,
+                this::getDashboardStatsFromCacheOrCompute,
+                Response::new,
+                Response::setStatusCode,
+                Response::setMessage,
+                Response::setDashboardStats,
+                "Dashboard statistics retrieved successfully",
+                200);
     }
 
     public Response getStatsReport() {
-        Response response = new Response();
-
-        try {
-            long startTime = System.currentTimeMillis();
-
-            // Rate limiting: 90 req/min for GET APIs
-            if (!rateLimiterService.isAllowed("stats:getStatsReport", 90, 60)) {
-                response.setStatusCode(429);
-                response.setMessage("Rate limit exceeded. Please try again later.");
-                return response;
-            }
-
-            byte[] report = handleGetStatsReport();
-
-            long endTime = System.currentTimeMillis();
-            logger.info("Completed request in {} ms", endTime - startTime);
-
-            response.setStatusCode(200);
-            response.setMessage("Stats report retrieved successfully");
-            response.setStatsReport(report);
-            return response;
-        } catch (Exception e) {
-            logger.error("Error fetching dashboard stats: {}", e.getMessage(), e);
-            return buildErrorResponse(500, "Failed to fetch dashboard statistics");
-        }
+        return responseHandler.executeWithResponse(
+                cacheKeys.forMethod("getStatsReport"),
+                90,
+                () -> {
+                    try {
+                        return handleGetStatsReport();
+                    } catch (Exception e) {
+                        throw new RuntimeException("Failed to generate report: " + e.getMessage(), e);
+                    }
+                },
+                Response::new,
+                Response::setStatusCode,
+                Response::setMessage,
+                Response::setStatsReport,
+                "Stats report retrieved successfully",
+                200);
     }
 
     private List<ActivityDto> handleGetRecentActivities() {
@@ -295,30 +298,6 @@ public class StatsApi extends BaseApi {
         } catch (Exception e) {
             logger.warn("Error fetching recent activities: {}", e.getMessage());
             return activities; // Return partial results
-        }
-    }
-
-    /**
-     * Safely convert Number to Long
-     */
-    private Long toLong(Object value) {
-        if (value == null) {
-            return 0L;
-        }
-        if (value instanceof Long) {
-            return (Long) value;
-        }
-        if (value instanceof Integer) {
-            return ((Integer) value).longValue();
-        }
-        if (value instanceof Number) {
-            return ((Number) value).longValue();
-        }
-        try {
-            return Long.parseLong(value.toString());
-        } catch (NumberFormatException e) {
-            logger.warn("Cannot convert {} to Long, returning 0", value);
-            return 0L;
         }
     }
 }

@@ -209,7 +209,7 @@ public class JwtService {
         } catch (ExpiredJwtException e) {
             // Token is expired
             return false;
-        } catch (SignatureException e) {
+        } catch (SecurityException e) {
             // Signature is invalid
             return false;
         } catch (MalformedJwtException e) {

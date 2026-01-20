@@ -11,15 +11,16 @@ import {
   Send,
   Trash2,
   Trash2Icon,
-  User2,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { formatDateAgo } from "@/lib/utils";
 import { useAuthStore } from "@/stores/authStore";
+import { useBlogStore } from "@/stores/blogStore";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ConfirmationDialog } from "@/components/commons/layout/ConfirmationDialog";
 import { useBlogQuery } from "@/hooks/api/queries/useBlogQueries";
 import {
   useAddCommentMutation,
@@ -28,15 +29,42 @@ import {
   useSaveBlogMutation,
   useUnsaveBlogMutation,
 } from "@/hooks/api/mutations/useBlogMutations";
+import { BlogDetailSkeleton } from "./BlogDetailSkeleton";
 
 const BlogDetailClient = () => {
   const { userAuth } = useAuthStore();
+  const {
+    commentsByBlogId,
+    setCommentsForBlog,
+    addCommentToBlog,
+    removeCommentFromBlog,
+    handleSetBlogToEdit
+  } = useBlogStore();
 
   const router = useRouter();
   const { id } = useParams();
 
-  const { data: blogResponse, isLoading } = useBlogQuery(id as string);
+  const { data: blogResponse, isLoading } = useBlogQuery(
+    id as string,
+    userAuth?.id,
+  );
   const blog = blogResponse?.data?.blog;
+
+  useEffect(() => {
+    if (blog?.comments && id) {
+      setCommentsForBlog(id as string, blog.comments);
+    }
+  }, [blog?.comments, id, setCommentsForBlog]);
+
+  useEffect(() => {
+    if (blog && userAuth) {
+      const isSaved = blog.isSaved || false;
+      setSaved(isSaved);
+      console.log(isSaved);
+    }
+  }, [blog, userAuth]);
+
+  const comments = id ? commentsByBlogId[id as string] || [] : [];
 
   const { mutate: addCommentMutation } = useAddCommentMutation();
   const { mutate: deleteCommentMutation } = useDeleteCommentMutation();
@@ -46,22 +74,55 @@ const BlogDetailClient = () => {
 
   const [content, setContent] = useState("");
   const [saved, setSaved] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [commentToDelete, setCommentToDelete] = useState<string | null>(null);
 
   const handleAddComment = async () => {
     if (!id || !content.trim() || !userAuth?.id) return;
 
-    addCommentMutation({
-      blogId: id as string,
-      userId: userAuth.id,
-      content,
-    });
+    addCommentMutation(
+      {
+        blogId: id as string,
+        userId: userAuth.id,
+        content,
+      },
+      {
+        onSuccess: (response) => {
+          const newComment = response?.data?.comment;
+          if (newComment && id) {
+            addCommentToBlog(id as string, newComment);
+          }
+        },
+      },
+    );
 
     setContent("");
   };
 
+  const handleUpdate = async (blog: IBlog) => {
+    handleSetBlogToEdit(blog);
+    router.push(`/blogs/edit/${blog.id}`);
+  };
+
   const handleDeleteComment = async (commentId: string) => {
-    if (!commentId || !id) return;
-    deleteCommentMutation({ commentId, blogId: id as string });
+    setCommentToDelete(commentId);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteComment = async () => {
+    if (!commentToDelete || !id) return;
+    deleteCommentMutation(
+      { commentId: commentToDelete, blogId: id as string },
+      {
+        onSuccess: () => {
+          if (id) {
+            removeCommentFromBlog(id as string, commentToDelete);
+          }
+          setDeleteDialogOpen(false);
+          setCommentToDelete(null);
+        },
+      },
+    );
   };
 
   const handleDeleteBlog = async (blogId: string) => {
@@ -115,7 +176,7 @@ const BlogDetailClient = () => {
                 </AvatarFallback>
               </Avatar>
 
-              <span className="text-sm font-medium">
+              <span className="text-sm font-medium text-secondary">
                 {blog?.author?.username}
               </span>
             </Link>
@@ -128,14 +189,18 @@ const BlogDetailClient = () => {
                 disabled={isLoading}
                 onClick={() => handleSaveBlog(id as string)}
               >
-                {saved ? <BookmarkCheck /> : <Bookmark />}
+                {saved ? (
+                  <BookmarkCheck className="text-primary" />
+                ) : (
+                  <Bookmark />
+                )}
               </Button>
             )}
             {blog?.author?.id === userAuth?.id && (
               <>
                 <Button
                   size={"sm"}
-                  onClick={() => router.push(`/blogs/edit/${id}`)}
+                  onClick={() => handleUpdate(blog as IBlog)}
                 >
                   <Edit />
                 </Button>
@@ -153,11 +218,13 @@ const BlogDetailClient = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <img
-            src={blog?.thumbnailUrl}
-            alt=""
-            className="w-full h-64 object-cover rounded-lg mb-4"
-          />
+          {blog?.thumbnailUrl && (
+            <img
+              src={blog?.thumbnailUrl}
+              alt=""
+              className="w-full h-64 object-cover rounded-lg mb-4"
+            />
+          )}
           <p className="text-lg text-secondary font-medium mb-4">
             {blog?.description}
           </p>
@@ -206,18 +273,25 @@ const BlogDetailClient = () => {
           <h3 className="text-lg font-medium">All Comments</h3>
         </CardHeader>
         <CardContent>
-          {blog?.comments && blog.comments.length > 0 ? (
-            blog.comments.map((comment, i) => {
+          {comments && comments.length > 0 ? (
+            comments.map((comment, i) => {
               return (
                 <div key={i} className="border-b py-2 flex items-center gap-3">
                   <div>
                     <p className="font-semibold flex items-center gap-1">
-                      <span className="user border border-gray-400 rounded-full p-1">
-                        <User2 />
+                      <Avatar className="border-2 border-primary/20 shadow-md">
+                        <AvatarFallback className="bg-linear-to-br from-primary to-secondary text-primary-foreground font-bold text-sm">
+                          {comment.username?.charAt(0).toUpperCase() || "U"}
+                        </AvatarFallback>
+                      </Avatar>
+
+                      <span className="text-sm font-medium text-secondary">
+                        {comment.username || "Unknown User"}
                       </span>
-                      {comment.username}
                     </p>
+
                     <p>{comment.content}</p>
+
                     <p className="text-xs text-gray-500">
                       {formatDateAgo(comment.createdAt)}
                     </p>
@@ -239,83 +313,17 @@ const BlogDetailClient = () => {
           )}
         </CardContent>
       </Card>
-    </div>
-  );
-};
 
-const BlogDetailSkeleton = () => {
-  return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
-      {/* Main Blog Card Skeleton */}
-      <Card>
-        <CardHeader>
-          {/* Title Skeleton */}
-          <Skeleton className="h-10 w-3/4 mb-4" />
-
-          {/* Author Section Skeleton */}
-          <div className="flex items-center gap-2 mt-2">
-            <Skeleton className="w-8 h-8 rounded-full" />
-            <Skeleton className="h-4 w-32" />
-            <Skeleton className="h-10 w-10 rounded-md ml-3" />
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Thumbnail Skeleton */}
-          <Skeleton className="w-full h-64 rounded-lg" />
-
-          {/* Description Skeleton */}
-          <div className="space-y-2">
-            <Skeleton className="h-5 w-full" />
-            <Skeleton className="h-5 w-5/6" />
-          </div>
-
-          {/* Content Skeleton */}
-          <div className="space-y-3 mt-4">
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-4/5" />
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-3/4" />
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-5/6" />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Comment Input Card Skeleton */}
-      <Card>
-        <CardHeader>
-          <Skeleton className="h-6 w-48" />
-        </CardHeader>
-        <CardContent>
-          <Skeleton className="h-4 w-32 mb-2" />
-          <div className="flex items-center gap-2">
-            <Skeleton className="h-10 flex-1 rounded-md" />
-            <Skeleton className="h-10 w-10 rounded-md shrink-0" />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Comments List Card Skeleton */}
-      <Card>
-        <CardHeader>
-          <Skeleton className="h-6 w-40" />
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="border-b py-2 flex items-center gap-3">
-              <div className="flex-1 space-y-2">
-                <div className="flex items-center gap-2">
-                  <Skeleton className="w-8 h-8 rounded-full" />
-                  <Skeleton className="h-4 w-24" />
-                </div>
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-3 w-20" />
-              </div>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
+      <ConfirmationDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={confirmDeleteComment}
+        title="Delete Comment"
+        description="Are you sure you want to delete this comment? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        isDestructive
+      />
     </div>
   );
 };

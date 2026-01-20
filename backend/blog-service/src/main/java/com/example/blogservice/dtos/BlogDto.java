@@ -29,6 +29,7 @@ public class BlogDto {
     private String thumbnailPublicId;
 
     private Boolean isVisibility;
+    private Boolean isSaved;
 
     private Instant createdAt;
     private Instant updatedAt;

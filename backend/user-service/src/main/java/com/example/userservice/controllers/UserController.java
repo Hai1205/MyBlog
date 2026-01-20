@@ -35,7 +35,6 @@ public class UserController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAuthority('admin')")
     public ResponseEntity<Response> getAllUsers() {
         Response response = userApi.getAllUsers();
 
@@ -43,7 +42,6 @@ public class UserController {
     }
 
     @GetMapping("/{userId}")
-    // @PreAuthorize("hasAnyAuthority('admin','user')")
     public ResponseEntity<Response> getUserById(@PathVariable("userId") UUID userId) {
         Response response = userApi.getUserById(userId);
 
@@ -74,32 +72,6 @@ public class UserController {
         Response response = new Response();
         response.setStatusCode(200);
         response.setMessage("User Service is running");
-
-        return ResponseEntity.status(response.getStatusCode()).body(response);
-    }
-
-    @GetMapping("/stats")
-    // @PreAuthorize("hasAuthority('admin')")
-    public ResponseEntity<Response> getUserStats() {
-        Response response = userApi.getUserStats();
-
-        return ResponseEntity.status(response.getStatusCode()).body(response);
-    }
-
-    @GetMapping("/stats/status/{status}")
-    // @PreAuthorize("hasAuthority('admin')")
-    public ResponseEntity<Response> getUsersByStatus(@PathVariable("status") String status) {
-        Response response = userApi.getUsersByStatus(status);
-
-        return ResponseEntity.status(response.getStatusCode()).body(response);
-    }
-
-    @GetMapping("/stats/created-range")
-    // @PreAuthorize("hasAuthority('admin')")
-    public ResponseEntity<Response> getUsersCreatedInRange(
-            @RequestParam("startDate") String startDate,
-            @RequestParam("endDate") String endDate) {
-        Response response = userApi.getUsersCreatedInRange(startDate, endDate);
 
         return ResponseEntity.status(response.getStatusCode()).body(response);
     }

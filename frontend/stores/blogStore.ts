@@ -3,13 +3,21 @@ import { createStore, EStorageType, IBaseStore } from "@/lib/initialStore";
 export interface IBlogStore extends IBaseStore {
 	selectedBlogId: string | null;
 	filterCategory: string | null;
+	blogToEdit: IBlog | null;
 	sortBy: 'newest' | 'popular' | 'oldest';
+	commentsByBlogId: Record<string, IComment[]>;
 
 	handleSetSelectedBlog: (blogId: string | null) => void;
 	handleSetFilterCategory: (category: string | null) => void;
 	handleSetSortBy: (sortBy: 'newest' | 'popular' | 'oldest') => void;
-
+	handleSetBlogToEdit: (blog: IBlog | null) => void;
 	getFilteredAndSortedBlogs: (blogs: IBlog[]) => IBlog[];
+
+	// Comment management
+	setCommentsForBlog: (blogId: string, comments: IComment[]) => void;
+	addCommentToBlog: (blogId: string, comment: IComment) => void;
+	removeCommentFromBlog: (blogId: string, commentId: string) => void;
+	getCommentsForBlog: (blogId: string) => IComment[];
 
 	reset: () => void;
 }
@@ -19,6 +27,7 @@ const initialState = {
 	selectedBlogId: null,
 	filterCategory: null,
 	sortBy: 'newest' as const,
+	commentsByBlogId: {} as Record<string, IComment[]>,
 };
 
 export const useBlogStore = createStore<IBlogStore>(
@@ -35,6 +44,10 @@ export const useBlogStore = createStore<IBlogStore>(
 
 		handleSetSortBy: (sortBy: 'newest' | 'popular' | 'oldest'): void => {
 			set({ sortBy });
+		},
+
+		handleSetBlogToEdit: (blog: IBlog | null): void => {
+			set({ blogToEdit: blog });
 		},
 
 		getFilteredAndSortedBlogs: (blogs: IBlog[]): IBlog[] => {
@@ -67,6 +80,44 @@ export const useBlogStore = createStore<IBlogStore>(
 			}
 
 			return filtered;
+		},
+
+		// Comment management functions
+		setCommentsForBlog: (blogId: string, comments: IComment[]): void => {
+			const { commentsByBlogId } = get();
+			set({
+				commentsByBlogId: {
+					...commentsByBlogId,
+					[blogId]: comments,
+				},
+			});
+		},
+
+		addCommentToBlog: (blogId: string, comment: IComment): void => {
+			const { commentsByBlogId } = get();
+			const currentComments = commentsByBlogId[blogId] || [];
+			set({
+				commentsByBlogId: {
+					...commentsByBlogId,
+					[blogId]: [...currentComments, comment],
+				},
+			});
+		},
+
+		removeCommentFromBlog: (blogId: string, commentId: string): void => {
+			const { commentsByBlogId } = get();
+			const currentComments = commentsByBlogId[blogId] || [];
+			set({
+				commentsByBlogId: {
+					...commentsByBlogId,
+					[blogId]: currentComments.filter(comment => comment.id !== commentId),
+				},
+			});
+		},
+
+		getCommentsForBlog: (blogId: string): IComment[] => {
+			const { commentsByBlogId } = get();
+			return commentsByBlogId[blogId] || [];
 		},
 
 		reset: () => {

@@ -27,9 +27,11 @@ export const useCreateUserMutation = (): UseMutationResult<
     return useMutation({
         mutationFn: userService.createUser,
         onSuccess: (response) => {
-            const data = response.data;
-            if (data?.success && data?.user) {
-                toast.success("User created successfully!");
+            const { success, data } = response;
+            const { user, message } = data || {};
+
+            if (success && user) {
+                toast.success(message || "User created successfully!");
 
                 // Invalidate users list
                 invalidateQueries.allUsers();
@@ -56,11 +58,11 @@ export const useUpdateUserMutation = (): UseMutationResult<
     return useMutation({
         mutationFn: ({ userId, data }) => userService.updateUser(userId, data),
         onSuccess: (response, variables) => {
-            const data = response.data;
-            const { success, user } = data || {};
+            const { success, data } = response;
+            const { user, message } = data || {};
 
             if (success && user) {
-                toast.success("User updated successfully!");
+                toast.success(message || "User updated successfully!");
 
                 // Update auth store if updating current user
                 if (userAuth?.id === variables.userId) {
@@ -118,8 +120,11 @@ export const useDeleteUserMutation = (): UseMutationResult<
         },
 
         onSuccess: (response) => {
-            if (response.data?.success) {
-                toast.success(response.message || "User deleted successfully!");
+            const { success, data } = response;
+            const { message } = data || {};
+
+            if (success) {
+                toast.success(message || "User deleted successfully!");
             }
         },
 

@@ -9,6 +9,8 @@ import com.example.authservice.services.OtpService;
 import com.example.authservice.services.feigns.UserFeignClient;
 import com.example.authservice.services.rabbitmqs.producers.AuthProducer;
 import com.example.rediscommon.services.RateLimiterService;
+import com.example.rediscommon.services.ApiResponseHandler;
+import com.example.rediscommon.utils.CacheKeyBuilder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.servlet.http.Cookie;
@@ -30,6 +32,8 @@ public class AuthApi extends BaseApi {
     private OtpService otpService;
     private final ObjectMapper objectMapper;
     private final RateLimiterService rateLimiterService;
+    private final ApiResponseHandler<Response> responseHandler;
+    private final CacheKeyBuilder cacheKeys;
     private static final int ACCESS_TOKEN_EXPIRATION_SECONDS = 5 * 60 * 60; // 5 hours
     private static final int REFRESH_TOKEN_EXPIRATION_SECONDS = 7 * 24 * 60 * 60; // 7 days
 
@@ -37,95 +41,85 @@ public class AuthApi extends BaseApi {
     private String devMode;
 
     public AuthApi(JwtService jwtService, UserFeignClient userFeignClient, AuthProducer authProducer,
-            OtpService otpService, RateLimiterService rateLimiterService) {
+            OtpService otpService, RateLimiterService rateLimiterService,
+            ApiResponseHandler<Response> responseHandler) {
         this.jwtService = jwtService;
         this.userFeignClient = userFeignClient;
         this.authProducer = authProducer;
         this.otpService = otpService;
         this.objectMapper = new ObjectMapper();
         this.rateLimiterService = rateLimiterService;
+        this.responseHandler = responseHandler;
+        this.cacheKeys = CacheKeyBuilder.forService("auth");
     }
 
     public Response login(String dataJson, HttpServletResponse httpServletResponse) {
-        long startTime = System.currentTimeMillis();
-        logger.info("Login attempt");
-        Response response = new Response();
-        LoginRequest request = null;
+        return responseHandler.executeWithoutRateLimit(
+                () -> {
+                    LoginRequest request;
+                    try {
+                        request = objectMapper.readValue(dataJson, LoginRequest.class);
+                    } catch (Exception e) {
+                        throw new OurException("Invalid request format", 400);
+                    }
+                    String identifier = request.getIdentifier();
+                    String password = request.getPassword();
 
-        try {
-            request = objectMapper.readValue(dataJson, LoginRequest.class);
-            String identifier = request.getIdentifier();
-            String password = request.getPassword();
+                    String rateLimitKey = "auth:login:" + identifier;
+                    if (!rateLimiterService.isAllowed(rateLimitKey, 7, 60)) {
+                        throw new OurException("Rate limit exceeded. Please try again later.", 429);
+                    }
 
-            // Rate limiting: 7 req/min for auth service
-            String rateLimitKey = "auth:login:" + identifier;
-            if (!rateLimiterService.isAllowed(rateLimitKey, 7, 60)) {
-                logger.warn("Rate limit exceeded for login attempt: {}", identifier);
-                return buildErrorResponse(429, "Rate limit exceeded. Please try again later.");
-            }
+                    if (identifier == null || identifier.trim().isEmpty()) {
+                        throw new OurException("Identifier is required", 404);
+                    }
 
-            if (identifier == null || identifier.trim().isEmpty()) {
-                logger.warn("Login failed: Identifier is required");
-                throw new OurException("Identifier is required", 404);
-            }
+                    if (password == null || password.trim().isEmpty()) {
+                        throw new OurException("Password is required", 400);
+                    }
 
-            if (password == null || password.trim().isEmpty()) {
-                logger.warn("Login failed: Password is required");
-                throw new OurException("Password is required", 400);
-            }
+                    UserDto user = userFeignClient.authenticateUser(identifier, password).getUser();
 
-            UserDto user = userFeignClient.authenticateUser(identifier, password).getUser();
+                    if (user == null) {
+                        throw new OurException("Invalid credentials", 404);
+                    }
 
-            if (user == null) {
-                logger.warn("Login failed: Invalid credentials for username or email: {}", identifier);
-                throw new OurException("Invalid credentials", 404);
-            }
+                    boolean isPending = user.getStatus().equals("pending");
+                    if (isPending) {
+                        throw new OurException("Account not verified. Please verify your account before logging in.",
+                                403);
+                    }
 
-            boolean isPending = user.getStatus().equals("pending");
-            if (isPending) {
-                logger.warn("Login blocked: Account not verified for username or email: {}", identifier);
-                throw new OurException("Account not verified. Please verify your account before logging in.", 403);
-            }
+                    boolean isBanned = user.getStatus().equals("banned");
+                    if (isBanned) {
+                        throw new OurException("Account is banned. Please contact support.", 405);
+                    }
 
-            boolean isBanned = user.getStatus().equals("banned");
-            if (isBanned) {
-                logger.warn("Login blocked: Account banned for username or email: {}", identifier);
-                throw new OurException("Account is banned. Please contact support.", 405);
-            }
+                    String userId = user.getId().toString();
+                    String email = user.getEmail();
+                    String username = user.getUsername();
+                    String role = user.getRole();
 
-            String userId = user.getId().toString();
-            String email = user.getEmail();
-            String username = user.getUsername();
-            String role = user.getRole();
+                    String accessToken = jwtService.generateAccessToken(userId, email, role, username);
+                    String refreshToken = jwtService.generateRefreshToken(userId, email, username);
 
-            String accessToken = jwtService.generateAccessToken(userId, email, role, username);
-            String refreshToken = jwtService.generateRefreshToken(userId, email, username);
+                    Cookie accessTokenCookie = handleCreateCookie("access_token", accessToken,
+                            ACCESS_TOKEN_EXPIRATION_SECONDS);
+                    Cookie refreshTokenCookie = handleCreateCookie("refresh_token", refreshToken,
+                            REFRESH_TOKEN_EXPIRATION_SECONDS);
+                    httpServletResponse.addCookie(accessTokenCookie);
+                    httpServletResponse.addCookie(refreshTokenCookie);
+                    httpServletResponse.setHeader("X-Access-Token", accessToken);
+                    httpServletResponse.setHeader("X-Refresh-Token", refreshToken);
 
-            Cookie accessTokenCookie = handleCreateCookie("access_token", accessToken, ACCESS_TOKEN_EXPIRATION_SECONDS);
-            Cookie refreshTokenCookie = handleCreateCookie("refresh_token", refreshToken,
-                    REFRESH_TOKEN_EXPIRATION_SECONDS);
-            httpServletResponse.addCookie(accessTokenCookie);
-            httpServletResponse.addCookie(refreshTokenCookie);
-            httpServletResponse.setHeader("X-Access-Token", accessToken);
-            httpServletResponse.setHeader("X-Refresh-Token", refreshToken);
-
-            long endTime = System.currentTimeMillis();
-            logger.info("Completed request in {} ms", endTime - startTime);
-
-            response.setMessage("Login successful");
-            response.setUser(user);
-            logger.info("Login successful for user: {} (ID: {})", email, userId);
-            return response;
-        } catch (OurException e) {
-            logger.error("Login failed with OurException for identifier {}: {}",
-                    request != null ? request.getIdentifier() : "unknown", e.getMessage());
-            return buildErrorResponse(e.getStatusCode(), e.getMessage());
-        } catch (Exception e) {
-            logger.error("Login failed with unexpected error for identifier {}",
-                    request != null ? request.getIdentifier() : "unknown", e);
-            e.printStackTrace();
-            return buildErrorResponse(500, e.getMessage());
-        }
+                    return user;
+                },
+                Response::new,
+                Response::setStatusCode,
+                Response::setMessage,
+                Response::setUser,
+                "Login successful",
+                200);
     }
 
     private Cookie handleCreateCookie(String name, String value, int maxAgeInSeconds) {
@@ -147,340 +141,228 @@ public class AuthApi extends BaseApi {
     }
 
     public Response validateToken(String token, String username) {
-        long startTime = System.currentTimeMillis();
-        logger.debug("Token validation attempt for username: {}", username);
-        Response response = new Response();
-
-        try {
-            // Rate limiting: 7 req/min for auth service
-            String rateLimitKey = "auth:validateToken:" + username;
-            if (!rateLimiterService.isAllowed(rateLimitKey, 7, 60)) {
-                logger.warn("Rate limit exceeded for token validation: {}", username);
-                return buildErrorResponse(429, "Rate limit exceeded. Please try again later.");
-            }
-
-            boolean isValid = jwtService.validateToken(token, username);
-
-            Map<String, Object> additionalData = new HashMap<>();
-            additionalData.put("valid", isValid);
-
-            if (isValid) {
-                logger.debug("Token validation successful for username: {}", username);
-            } else {
-                logger.warn("Token validation failed for username: {}", username);
-            }
-
-            long endTime = System.currentTimeMillis();
-            logger.info("Completed request in {} ms", endTime - startTime);
-
-            response.setMessage("Token validation successful");
-            response.setAdditionalData(additionalData);
-            return response;
-        } catch (OurException e) {
-            logger.error("Token validation failed with OurException for username {}: {}", username, e.getMessage());
-            return buildErrorResponse(e.getStatusCode(), e.getMessage());
-        } catch (Exception e) {
-            logger.error("Token validation failed with unexpected error for username {}", username, e);
-            e.printStackTrace();
-            return buildErrorResponse(500, e.getMessage());
-        }
+        return responseHandler.executeWithResponse(
+                cacheKeys.forMethodWithParam("validateToken", username),
+                7,
+                () -> {
+                    boolean isValid = jwtService.validateToken(token, username);
+                    Map<String, Object> additionalData = new HashMap<>();
+                    additionalData.put("valid", isValid);
+                    return additionalData;
+                },
+                Response::new,
+                Response::setStatusCode,
+                Response::setMessage,
+                Response::setAdditionalData,
+                "Token validation successful",
+                200);
     }
 
     public Response register(String dataJson) {
-        long startTime = System.currentTimeMillis();
-        logger.info("Registration attempt");
-        Response response = new Response();
-
-        try {
-            // Rate limiting: 7 req/min for auth service
-            String rateLimitKey = "auth:register";
-            if (!rateLimiterService.isAllowed(rateLimitKey, 7, 60)) {
-                logger.warn("Rate limit exceeded for registration");
-                return buildErrorResponse(429, "Rate limit exceeded. Please try again later.");
-            }
-
-            // UserDto user = userFeignClient.createUser(dataJson).getUser();
-            // UserCreateRequest userCreateRequest = new UserCreateRequest(dataJson);
-            UserDto user = userFeignClient.registerUser(dataJson).getUser();
-
-            long endTime = System.currentTimeMillis();
-            logger.info("Completed request in {} ms", endTime - startTime);
-
-            response.setMessage("Registration successful");
-            response.setUser(user);
-            logger.info("Registration successful for email: {}", user.getEmail());
-            return response;
-        } catch (OurException e) {
-            logger.error("Registration failed with OurException: {}", e.getMessage());
-            return buildErrorResponse(e.getStatusCode(), e.getMessage());
-        } catch (Exception e) {
-            logger.error("Registration failed with unexpected error: {}", e.getMessage());
-            e.printStackTrace();
-            return buildErrorResponse(500, e.getMessage());
-        }
+        return responseHandler.executeWithResponse(
+                cacheKeys.forMethod("register"),
+                7,
+                () -> userFeignClient.registerUser(dataJson).getUser(),
+                Response::new,
+                Response::setStatusCode,
+                Response::setMessage,
+                Response::setUser,
+                "Registration successful",
+                200);
     }
 
     public Response verifyOTP(String identifier, String dataJson) {
-        long startTime = System.currentTimeMillis();
-        logger.info("OTP verification attempt for identifier: {}", identifier);
-        Response response = new Response();
+        return responseHandler.executeWithResponse(
+                cacheKeys.forMethodWithParam("verifyOTP", identifier),
+                7,
+                () -> {
+                    if (identifier == null || identifier.trim().isEmpty()) {
+                        throw new OurException("Identifier is required", 400);
+                    }
+                    if (dataJson == null || dataJson.trim().isEmpty()) {
+                        throw new OurException("Request data is required", 400);
+                    }
 
-        try {
-            // Rate limiting: 7 req/min for auth service
-            String rateLimitKey = "auth:verifyOTP:" + identifier;
-            if (!rateLimiterService.isAllowed(rateLimitKey, 7, 60)) {
-                logger.warn("Rate limit exceeded for OTP verification: {}", identifier);
-                return buildErrorResponse(429, "Rate limit exceeded. Please try again later.");
-            }
+                    UserDto user = userFeignClient.findUserByIdentifier(identifier).getUser();
+                    if (user == null) {
+                        throw new OurException("User not found.", 404);
+                    }
 
-            // Validate input parameters
-            if (identifier == null || identifier.trim().isEmpty()) {
-                logger.warn("OTP verification failed: Identifier is required");
-                throw new OurException("Identifier is required", 400);
-            }
+                    String email = user.getEmail();
+                    VerifyOtpRequest request;
+                    try {
+                        request = objectMapper.readValue(dataJson, VerifyOtpRequest.class);
+                    } catch (Exception e) {
+                        throw new OurException("Invalid request format", 400);
+                    }
+                    String otp = request.getOtp();
 
-            if (dataJson == null || dataJson.trim().isEmpty()) {
-                logger.warn("OTP verification failed: Request data is required");
-                throw new OurException("Request data is required", 400);
-            }
+                    if (otp == null || otp.trim().isEmpty()) {
+                        throw new OurException("OTP is required", 400);
+                    }
 
-            UserDto user = userFeignClient.findUserByIdentifier(identifier).getUser();
+                    boolean isValid = otpService.validateOtp(email, otp);
+                    if (!isValid) {
+                        throw new OurException("Invalid OTP.");
+                    }
 
-            if (user == null) {
-                logger.warn("OTP verification failed: User not found for identifier: {}", identifier);
-                throw new OurException("User not found.", 404);
-            }
+                    if (request.getIsActivation() != null && request.getIsActivation()) {
+                        userFeignClient.activateUser(email);
+                    }
 
-            String email = user.getEmail();
-
-            VerifyOtpRequest request = objectMapper.readValue(dataJson, VerifyOtpRequest.class);
-            String otp = request.getOtp();
-
-            if (otp == null || otp.trim().isEmpty()) {
-                logger.warn("OTP verification failed: OTP is required");
-                throw new OurException("OTP is required", 400);
-            }
-
-            boolean isValid = otpService.validateOtp(email, otp);
-
-            if (!isValid) {
-                logger.warn("OTP verification failed: Invalid OTP for email: {}", email);
-                throw new OurException("Invalid OTP.");
-            }
-
-            if (request.getIsActivation() != null && request.getIsActivation()) {
-                userFeignClient.activateUser(email);
-                logger.info("User account activated for email: {}", email);
-            }
-
-            long endTime = System.currentTimeMillis();
-            logger.info("Completed request in {} ms", endTime - startTime);
-
-            response.setMessage("Otp verified successfully!");
-            logger.info("OTP verification successful for email: {}", email);
-            return response;
-        } catch (OurException e) {
-            logger.error("OTP verification failed with OurException for identifier {}: {}", identifier, e.getMessage());
-            return buildErrorResponse(e.getStatusCode(), e.getMessage());
-        } catch (Exception e) {
-            logger.error("OTP verification failed with unexpected error for identifier {}", identifier, e);
-            e.printStackTrace();
-            return buildErrorResponse(500, e.getMessage());
-        }
+                    return null;
+                },
+                Response::new,
+                Response::setStatusCode,
+                Response::setMessage,
+                (r, data) -> {
+                },
+                "Otp verified successfully!",
+                200);
     }
 
     public Response sendOTP(String identifier) {
-        long startTime = System.currentTimeMillis();
-        logRequestStart(startTime);
-        logger.info("Sending OTP to identifier: {}", identifier);
-        Response response = new Response();
-
-        try {
-            // Rate limiting: 7 req/min for auth service
-            String rateLimitKey = "auth:sendOTP:" + identifier;
-            if (!rateLimiterService.isAllowed(rateLimitKey, 7, 60)) {
-                logger.warn("Rate limit exceeded for OTP send: {}", identifier);
-                return buildErrorResponse(429, "Rate limit exceeded. Please try again later.");
-            }
-
-            UserDto user = userFeignClient.findUserByIdentifier(identifier).getUser();
-
-            if (user == null) {
-                logger.warn("OTP send failed: User not found for identifier: {}", identifier);
-                throw new OurException("User not found", 404);
-            }
-
-            String email = user.getEmail();
-
-            String otp = otpService.generateOtp(email);
-
-            authProducer.sendMailActivation(email, otp);
-
-            logRequestComplete(startTime);
-
-            response.setMessage("OTP is sent!");
-            logger.info("OTP sent successfully to email: {}", email);
-            return response;
-        } catch (OurException e) {
-            logger.error("OTP send failed with OurException for identifier {}: {}", identifier, e.getMessage());
-            return buildErrorResponse(e.getStatusCode(), e.getMessage());
-        } catch (Exception e) {
-            logger.error("OTP send failed with unexpected error for identifier {}", identifier, e);
-            e.printStackTrace();
-            return buildErrorResponse(500, e.getMessage());
-        }
+        return responseHandler.executeWithResponse(
+                cacheKeys.forMethodWithParam("sendOTP", identifier),
+                7,
+                () -> {
+                    UserDto user = userFeignClient.findUserByIdentifier(identifier).getUser();
+                    if (user == null) {
+                        throw new OurException("User not found", 404);
+                    }
+                    String email = user.getEmail();
+                    String otp = otpService.generateOtp(email);
+                    authProducer.sendMailActivation(email, otp);
+                    return null;
+                },
+                Response::new,
+                Response::setStatusCode,
+                Response::setMessage,
+                (r, data) -> {
+                },
+                "OTP is sent!",
+                200);
     }
 
     public Response changePassword(String identifier, String dataJson) {
-        long startTime = System.currentTimeMillis();
-        logger.info("Password change attempt for identifier: {}", identifier);
-        Response response = new Response();
+        return responseHandler.executeWithResponse(
+                cacheKeys.forMethodWithParam("changePassword", identifier),
+                7,
+                () -> {
+                    ChangePasswordRequest request;
+                    try {
+                        request = objectMapper.readValue(dataJson, ChangePasswordRequest.class);
+                    } catch (Exception e) {
+                        throw new OurException("Invalid request format", 400);
+                    }
+                    String currentPassword = request.getCurrentPassword();
+                    String newPassword = request.getNewPassword();
+                    String confirmPassword = request.getConfirmPassword();
 
-        try {
-            // Rate limiting: 7 req/min for auth service
-            String rateLimitKey = "auth:changePassword:" + identifier;
-            if (!rateLimiterService.isAllowed(rateLimitKey, 7, 60)) {
-                logger.warn("Rate limit exceeded for password change: {}", identifier);
-                return buildErrorResponse(429, "Rate limit exceeded. Please try again later.");
-            }
+                    if (currentPassword == null || currentPassword.trim().isEmpty() ||
+                            newPassword == null || newPassword.trim().isEmpty() ||
+                            confirmPassword == null || confirmPassword.trim().isEmpty()) {
+                        throw new OurException("All password fields are required", 400);
+                    }
 
-            ChangePasswordRequest request = objectMapper.readValue(dataJson, ChangePasswordRequest.class);
-            String currentPassword = request.getCurrentPassword();
-            String newPassword = request.getNewPassword();
-            String confirmPassword = request.getConfirmPassword();
+                    if (!newPassword.equals(confirmPassword)) {
+                        throw new OurException("Password does not match.");
+                    }
 
-            if (currentPassword == null || currentPassword.trim().isEmpty() ||
-                    newPassword == null || newPassword.trim().isEmpty() ||
-                    confirmPassword == null || confirmPassword.trim().isEmpty()) {
-                logger.warn("Password change failed: All password fields are required for identifier: {}", identifier);
-                throw new OurException("All password fields are required", 400);
-            }
+                    UserDto user = userFeignClient.findUserByIdentifier(identifier).getUser();
+                    if (user == null) {
+                        throw new OurException("User not found", 404);
+                    }
 
-            if (!newPassword.equals(confirmPassword)) {
-                logger.warn("Password change failed: Password mismatch for identifier: {}", identifier);
-                throw new OurException("Password does not match.");
-            }
+                    ChangePasswordRequest changePasswordRequest = new ChangePasswordRequest(currentPassword,
+                            newPassword,
+                            confirmPassword);
+                    String requestJson;
+                    try {
+                        requestJson = objectMapper.writeValueAsString(changePasswordRequest);
+                    } catch (Exception e) {
+                        throw new OurException("Failed to process request", 500);
+                    }
+                    UserDto updatedUser = userFeignClient.changePassword(identifier, requestJson).getUser();
+                    if (updatedUser == null) {
+                        throw new OurException("Invalid current password.");
+                    }
 
-            // Check if user exists
-            UserDto user = userFeignClient.findUserByIdentifier(identifier).getUser();
-            if (user == null) {
-                logger.warn("Password change failed: User not found for identifier: {}", identifier);
-                throw new OurException("User not found", 404);
-            }
-
-            ChangePasswordRequest changePasswordRequest = new ChangePasswordRequest(currentPassword, newPassword,
-                    confirmPassword);
-            String requestJson = objectMapper.writeValueAsString(changePasswordRequest);
-            UserDto updatedUser = userFeignClient.changePassword(identifier, requestJson).getUser();
-            if (updatedUser == null) {
-                logger.warn("Password change failed: Invalid current password for identifier: {}", identifier);
-                throw new OurException("Invalid current password.");
-            }
-
-            long endTime = System.currentTimeMillis();
-            logger.info("Completed request in {} ms", endTime - startTime);
-
-            response.setMessage("Password changed successfully!");
-            logger.info("Password changed successfully for identifier: {}", identifier);
-            return response;
-        } catch (OurException e) {
-            logger.error("Password change failed with OurException for identifier {}: {}", identifier, e.getMessage());
-            return buildErrorResponse(e.getStatusCode(), e.getMessage());
-        } catch (Exception e) {
-            logger.error("Password change failed with unexpected error for identifier {}", identifier, e);
-            e.printStackTrace();
-            return buildErrorResponse(500, e.getMessage());
-        }
+                    return null;
+                },
+                Response::new,
+                Response::setStatusCode,
+                Response::setMessage,
+                (r, data) -> {
+                },
+                "Password changed successfully!",
+                200);
     }
 
     public Response resetPassword(String email) {
-        long startTime = System.currentTimeMillis();
-        logger.info("Password reset attempt for email: {}", email);
-        Response response = new Response();
-
-        try {
-            // Rate limiting: 7 req/min for auth service
-            String rateLimitKey = "auth:resetPassword:" + email;
-            if (!rateLimiterService.isAllowed(rateLimitKey, 7, 60)) {
-                logger.warn("Rate limit exceeded for password reset: {}", email);
-                return buildErrorResponse(429, "Rate limit exceeded. Please try again later.");
-            }
-
-            // Validate input parameter
-            if (email == null || email.trim().isEmpty()) {
-                logger.warn("Password reset failed: Email is required");
-                throw new OurException("Email is required", 400);
-            }
-
-            Response resetResponse = userFeignClient.resetPassword(email);
-            String newPassword = (String) resetResponse.getAdditionalData().get("newPassword");
-
-            authProducer.sendMailResetPassword(email, newPassword);
-
-            long endTime = System.currentTimeMillis();
-            logger.info("Completed request in {} ms", endTime - startTime);
-
-            response.setMessage("Password reset email sent successfully!");
-            logger.info("Password reset email sent successfully to: {}", email);
-            return response;
-        } catch (OurException e) {
-            logger.error("Password reset failed with OurException for email {}: {}", email, e.getMessage());
-            return buildErrorResponse(e.getStatusCode(), e.getMessage());
-        } catch (Exception e) {
-            logger.error("Password reset failed with unexpected error for email {}", email, e);
-            e.printStackTrace();
-            return buildErrorResponse(500, e.getMessage());
-        }
+        return responseHandler.executeWithResponse(
+                cacheKeys.forMethodWithParam("resetPassword", email),
+                7,
+                () -> {
+                    if (email == null || email.trim().isEmpty()) {
+                        throw new OurException("Email is required", 400);
+                    }
+                    Response resetResponse = userFeignClient.resetPassword(email);
+                    String newPassword = (String) resetResponse.getAdditionalData().get("newPassword");
+                    authProducer.sendMailResetPassword(email, newPassword);
+                    return null;
+                },
+                Response::new,
+                Response::setStatusCode,
+                Response::setMessage,
+                (r, data) -> {
+                },
+                "Password reset email sent successfully!",
+                200);
     }
 
     public Response forgotPassword(String identifier, String dataJson) {
-        long startTime = System.currentTimeMillis();
-        logger.info("Forgot password attempt for identifier: {}", identifier);
-        Response response = new Response();
+        return responseHandler.executeWithResponse(
+                cacheKeys.forMethodWithParam("forgotPassword", identifier),
+                7,
+                () -> {
+                    UserDto user = userFeignClient.findUserByIdentifier(identifier).getUser();
+                    if (user == null) {
+                        throw new OurException("User not found", 404);
+                    }
 
-        try {
-            // Rate limiting: 7 req/min for auth service
-            String rateLimitKey = "auth:forgotPassword:" + identifier;
-            if (!rateLimiterService.isAllowed(rateLimitKey, 7, 60)) {
-                logger.warn("Rate limit exceeded for forgot password: {}", identifier);
-                return buildErrorResponse(429, "Rate limit exceeded. Please try again later.");
-            }
+                    ForgotPasswordRequest request;
+                    try {
+                        request = objectMapper.readValue(dataJson, ForgotPasswordRequest.class);
+                    } catch (Exception e) {
+                        throw new OurException("Invalid request format", 400);
+                    }
+                    String email = user.getEmail();
+                    String newPassword = request.getPassword();
+                    String rePassword = request.getConfirmPassword();
 
-            UserDto user = userFeignClient.findUserByIdentifier(identifier).getUser();
+                    if (!newPassword.equals(rePassword)) {
+                        throw new OurException("Password does not match.");
+                    }
 
-            if (user == null) {
-                logger.warn("Forgot password failed: User not found for identifier: {}", identifier);
-                throw new OurException("User not found", 404);
-            }
+                    ForgotPasswordRequest forgotPasswordRequest = new ForgotPasswordRequest(newPassword, rePassword);
+                    String requestJson;
+                    try {
+                        requestJson = objectMapper.writeValueAsString(forgotPasswordRequest);
+                    } catch (Exception e) {
+                        throw new OurException("Failed to process request", 500);
+                    }
+                    userFeignClient.forgotPassword(email, requestJson);
 
-            ForgotPasswordRequest request = objectMapper.readValue(dataJson, ForgotPasswordRequest.class);
-            String email = user.getEmail();
-            String newPassword = request.getPassword();
-            String rePassword = request.getConfirmPassword();
-
-            if (!newPassword.equals(rePassword)) {
-                logger.warn("Forgot password failed: Password mismatch for email: {}", email);
-                throw new OurException("Password does not match.");
-            }
-
-            ForgotPasswordRequest forgotPasswordRequest = new ForgotPasswordRequest(newPassword, rePassword);
-            String requestJson = objectMapper.writeValueAsString(forgotPasswordRequest);
-            userFeignClient.forgotPassword(email, requestJson);
-
-            long endTime = System.currentTimeMillis();
-            logger.info("Completed request in {} ms", endTime - startTime);
-
-            response.setMessage("Password updated successfully!");
-            logger.info("Password updated successfully via forgot password for email: {}", email);
-            return response;
-        } catch (OurException e) {
-            logger.error("Forgot password failed with OurException for identifier {}: {}", identifier, e.getMessage());
-            return buildErrorResponse(e.getStatusCode(), e.getMessage());
-        } catch (Exception e) {
-            logger.error("Forgot password failed with unexpected error for identifier {}", identifier, e);
-            e.printStackTrace();
-            return buildErrorResponse(500, e.getMessage());
-        }
+                    return null;
+                },
+                Response::new,
+                Response::setStatusCode,
+                Response::setMessage,
+                (r, data) -> {
+                },
+                "Password updated successfully!",
+                200);
     }
 
     public Response refreshToken(
@@ -489,137 +371,104 @@ public class AuthApi extends BaseApi {
             HttpServletRequest httpRequest,
             HttpServletResponse httpServletResponse) {
 
-        long startTime = System.currentTimeMillis();
-        logger.info("Token refresh attempt");
-        Response response = new Response();
-
-        try {
-            // Rate limiting: 7 req/min for auth service
-            String rateLimitKey = "auth:refreshToken";
-            if (!rateLimiterService.isAllowed(rateLimitKey, 7, 60)) {
-                logger.warn("Rate limit exceeded for token refresh");
-                return buildErrorResponse(429, "Rate limit exceeded. Please try again later.");
-            }
-
-            String refreshToken = null;
-            String source = "unknown";
-
-            // Priority 1: Thử lấy từ cookie (recommended for security)
-            if (httpRequest.getCookies() != null) {
-                for (Cookie cookie : httpRequest.getCookies()) {
-                    if ("refresh_token".equals(cookie.getName()) && cookie.getValue() != null
-                            && !cookie.getValue().isEmpty()) {
-                        refreshToken = cookie.getValue();
-                        source = "cookie";
-                        break;
+        return responseHandler.executeWithoutRateLimit(
+                () -> {
+                    String rateLimitKey = "auth:refreshToken";
+                    if (!rateLimiterService.isAllowed(rateLimitKey, 7, 60)) {
+                        throw new OurException("Rate limit exceeded. Please try again later.", 429);
                     }
-                }
-            }
 
-            // Priority 2: Thử lấy refresh token từ request body
-            if (refreshToken == null && request != null && request.getRefreshToken() != null
-                    && !request.getRefreshToken().isEmpty()) {
-                refreshToken = request.getRefreshToken();
-                source = "request body";
-            }
+                    String refreshToken = null;
 
-            // Priority 3: Thử lấy từ Authorization header
-            if (refreshToken == null && authHeader != null && authHeader.startsWith("Bearer ")) {
-                refreshToken = authHeader.substring(7);
-                source = "Authorization header";
-            }
+                    // Priority 1: Try from cookie (recommended for security)
+                    if (httpRequest.getCookies() != null) {
+                        for (Cookie cookie : httpRequest.getCookies()) {
+                            if ("refresh_token".equals(cookie.getName()) && cookie.getValue() != null
+                                    && !cookie.getValue().isEmpty()) {
+                                refreshToken = cookie.getValue();
+                                break;
+                            }
+                        }
+                    }
 
-            logger.debug("Refresh token source: {}", source);
+                    // Priority 2: Try from request body
+                    if (refreshToken == null && request != null && request.getRefreshToken() != null
+                            && !request.getRefreshToken().isEmpty()) {
+                        refreshToken = request.getRefreshToken();
+                    }
 
-            if (refreshToken == null || refreshToken.isEmpty()) {
-                logger.warn("Token refresh failed: No refresh token provided from any source");
-                throw new OurException("Refresh token is required", 400);
-            }
+                    // Priority 3: Try from Authorization header
+                    if (refreshToken == null && authHeader != null && authHeader.startsWith("Bearer ")) {
+                        refreshToken = authHeader.substring(7);
+                    }
 
-            // Validate refresh token
-            if (!jwtService.validateRefreshToken(refreshToken)) {
-                logger.warn("Token refresh failed: Invalid or expired refresh token from {}", source);
-                throw new OurException("Invalid or expired refresh token", 401);
-            }
+                    if (refreshToken == null || refreshToken.isEmpty()) {
+                        throw new OurException("Refresh token is required", 400);
+                    }
 
-            // Extract user info from refresh token
-            String email = jwtService.extractEmail(refreshToken);
-            String userId = jwtService.extractUserId(refreshToken);
+                    // Validate refresh token
+                    if (!jwtService.validateRefreshToken(refreshToken)) {
+                        throw new OurException("Invalid or expired refresh token", 401);
+                    }
 
-            if (email == null || userId == null) {
-                logger.warn("Token refresh failed: Cannot extract user info from refresh token");
-                throw new OurException("Invalid refresh token format", 401);
-            }
+                    // Extract user info from refresh token
+                    String email = jwtService.extractEmail(refreshToken);
+                    String userId = jwtService.extractUserId(refreshToken);
 
-            // Find user
-            UserDto user = userFeignClient.findUserByEmail(email).getUser();
+                    if (email == null || userId == null) {
+                        throw new OurException("Invalid refresh token format", 401);
+                    }
 
-            if (user == null) {
-                logger.warn("Token refresh failed: User not found for email: {}", email);
-                throw new OurException("User not found", 404);
-            }
+                    // Find user
+                    UserDto user = userFeignClient.findUserByEmail(email).getUser();
 
-            // Generate new access token
-            String newAccessToken = jwtService.generateAccessToken(userId, email, user.getRole(),
-                    user.getUsername());
+                    if (user == null) {
+                        throw new OurException("User not found", 404);
+                    }
 
-            // Set new access token in cookie and header
-            Cookie accessTokenCookie = handleCreateCookie("access_token", newAccessToken,
-                    ACCESS_TOKEN_EXPIRATION_SECONDS);
-            httpServletResponse.addCookie(accessTokenCookie);
-            httpServletResponse.setHeader("X-Access-Token", newAccessToken);
+                    // Generate new access token
+                    String newAccessToken = jwtService.generateAccessToken(userId, email, user.getRole(),
+                            user.getUsername());
 
-            long endTime = System.currentTimeMillis();
-            logger.info("Completed request in {} ms", endTime - startTime);
+                    // Set new access token in cookie and header
+                    Cookie accessTokenCookie = handleCreateCookie("access_token", newAccessToken,
+                            ACCESS_TOKEN_EXPIRATION_SECONDS);
+                    httpServletResponse.addCookie(accessTokenCookie);
+                    httpServletResponse.setHeader("X-Access-Token", newAccessToken);
 
-            response.setMessage("Token refreshed successfully!");
-            response.setUser(user);
-
-            logger.info("Token refreshed successfully for user: {} (source: {})", user.getUsername(), source);
-            return response;
-        } catch (OurException e) {
-            logger.error("Token refresh failed with OurException: {}", e.getMessage());
-            return buildErrorResponse(e.getStatusCode(), e.getMessage());
-        } catch (Exception e) {
-            logger.error("Token refresh failed with unexpected error", e);
-            e.printStackTrace();
-            return buildErrorResponse(500, "Token refresh failed: " + e.getMessage());
-        }
+                    return user;
+                },
+                Response::new,
+                Response::setStatusCode,
+                Response::setMessage,
+                Response::setUser,
+                "Token refreshed successfully!",
+                200);
     }
 
     public Response logout(HttpServletResponse httpServletResponse) {
-        long startTime = System.currentTimeMillis();
-        logger.info("User logout attempt");
-        Response response = new Response();
+        return responseHandler.executeWithoutRateLimit(
+                () -> {
+                    String rateLimitKey = "auth:logout";
+                    if (!rateLimiterService.isAllowed(rateLimitKey, 7, 60)) {
+                        throw new OurException("Rate limit exceeded. Please try again later.", 429);
+                    }
 
-        try {
-            // Rate limiting: 7 req/min for auth service
-            String rateLimitKey = "auth:logout";
-            if (!rateLimiterService.isAllowed(rateLimitKey, 7, 60)) {
-                logger.warn("Rate limit exceeded for logout");
-                return buildErrorResponse(429, "Rate limit exceeded. Please try again later.");
-            }
+                    Cookie accessTokenCookie = handleCreateCookie("access_token", "", 0);
+                    Cookie refreshTokenCookie = handleCreateCookie("refresh_token", "", 0);
+                    httpServletResponse.addCookie(accessTokenCookie);
+                    httpServletResponse.addCookie(refreshTokenCookie);
+                    httpServletResponse.setHeader("X-Access-Token", "");
+                    httpServletResponse.setHeader("X-Refresh-Token", "");
 
-            Cookie accessTokenCookie = handleCreateCookie("access_token", "", 0);
-            Cookie refreshTokenCookie = handleCreateCookie("refresh_token", "", 0);
-            httpServletResponse.addCookie(accessTokenCookie);
-            httpServletResponse.addCookie(refreshTokenCookie);
-            httpServletResponse.setHeader("X-Access-Token", "");
-            httpServletResponse.setHeader("X-Refresh-Token", "");
-
-            long endTime = System.currentTimeMillis();
-            logger.info("Completed request in {} ms", endTime - startTime);
-
-            response.setMessage("Logged out successfully");
-            logger.info("User logged out successfully");
-            return response;
-        } catch (OurException e) {
-            logger.error("Logout failed with OurException: {}", e.getMessage());
-            return buildErrorResponse(e.getStatusCode(), e.getMessage());
-        } catch (Exception e) {
-            logger.error("Logout failed with unexpected error", e);
-            e.printStackTrace();
-            return buildErrorResponse(500, e.getMessage());
-        }
+                    return null;
+                },
+                Response::new,
+                Response::setStatusCode,
+                Response::setMessage,
+                (r, data) -> {
+                },
+                "Logged out successfully",
+                200);
     }
 }

@@ -207,9 +207,7 @@ axiosInstance.interceptors.response.use(
 );
 
 export interface IApiResponse<IData = unknown> {
-  data?: IData & { success: boolean } | null;
-  error?: string;
-  message?: string;
+  data?: (IData & { message: string }) | null;
   status?: number;
   success?: boolean;
 }
@@ -302,7 +300,11 @@ export const handleRequest = async <T = unknown>(
       toast.success(toastMessage);
     }
 
-    return { status: response.status, data: { ...(response.data as T), success: true } };
+    return {
+      status: response.status,
+      data: response.data as (T & { message: string }),
+      success: true
+    };
   } catch (error: unknown) {
     console.error("Error fetching data:", error);
 
@@ -326,11 +328,8 @@ export const handleRequest = async <T = unknown>(
 
       return {
         status: error.response.status,
-        data: responseData?.data && typeof responseData.data === 'object'
-          ? { ...responseData.data, success: !!responseData.success }
-          : null,
-        error: axiosErrorData?.message || error.message,
-        message: axiosErrorData?.message || error.message || "An error occurred"
+        data: responseData as (T & { message: string }),
+        success: false
       };
     }
 
@@ -341,8 +340,6 @@ export const handleRequest = async <T = unknown>(
     return {
       status: 500,
       data: null,
-      error: errorMessage,
-      message: errorMessage
     };
   }
 };

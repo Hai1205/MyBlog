@@ -31,8 +31,11 @@ export const useRegisterMutation = (): UseMutationResult<
     return useMutation({
         mutationFn: authService.register,
         onSuccess: (response) => {
-            if (response.data?.success) {
-                toast.success(response.message || "Registration successful! Please verify your email.");
+            const { success, data } = response;
+            const { message } = data || {};
+
+            if (success) {
+                toast.success(message || "Registration successful! Please verify your email.");
             }
         },
         onError: (error: any) => {
@@ -56,19 +59,15 @@ export const useLoginMutation = (): UseMutationResult<
     return useMutation({
         mutationFn: authService.login,
         onSuccess: (response) => {
-            const data = response.data;
-            const { success, user } = data || {};
+            const { success, data } = response;
+            const { user, message } = data || {};
 
             if (success && user) {
-                // Update Zustand auth state
                 handleSetUserAuth(user);
 
-                toast.success("Login successful!");
+                toast.success(message);
 
-                // Prefetch data for admin users in background
                 if (user.role === EUserRole.ADMIN) {
-                    // TanStack will automatically fetch these when components mount
-                    // We can also prefetch here if needed
                     setTimeout(() => {
                         queryClient.prefetchQuery({
                             queryKey: queryKeys.stats.dashboard(),
@@ -101,6 +100,9 @@ export const useLogoutMutation = (): UseMutationResult<
     return useMutation({
         mutationFn: authService.logout,
         onSuccess: (response) => {
+            const { success, data } = response;
+            const { message } = data || {};
+
             // Clear all auth cookies
             Cookies.remove('access_token');
             Cookies.remove('refresh_token');
@@ -111,8 +113,8 @@ export const useLogoutMutation = (): UseMutationResult<
             // Clear all TanStack Query cache
             queryClient.clear();
 
-            if (response.data?.success) {
-                toast.success(response.message || "Logged out successfully");
+            if (success) {
+                toast.success(message || "Logged out successfully");
             }
         },
         onError: (error: any) => {
@@ -139,8 +141,11 @@ export const useSendOTPMutation = (): UseMutationResult<
     return useMutation({
         mutationFn: authService.sendOTP,
         onSuccess: (response) => {
-            if (response.data?.success) {
-                toast.success(response.message || "OTP sent successfully!");
+            const { success, data } = response;
+            const { message } = data || {};
+
+            if (success) {
+                toast.success(message || "OTP sent successfully!");
             }
         },
         onError: (error: any) => {
@@ -161,8 +166,11 @@ export const useVerifyOTPMutation = (): UseMutationResult<
     return useMutation({
         mutationFn: ({ identifier, data }) => authService.verifyOTP(identifier, data),
         onSuccess: (response) => {
-            if (response.data?.success) {
-                toast.success(response.message || "OTP verified successfully!");
+            const { success, data } = response;
+            const { message } = data || {};
+
+            if (success) {
+                toast.success(message || "OTP verified successfully!");
             }
         },
         onError: (error: any) => {
@@ -183,8 +191,11 @@ export const useResetPasswordMutation = (): UseMutationResult<
     return useMutation({
         mutationFn: authService.resetPassword,
         onSuccess: (response) => {
-            if (response.data?.success) {
-                toast.success(response.message || "Password reset email sent!");
+            const { success, data } = response;
+            const { message } = data || {};
+
+            if (success) {
+                toast.success(message || "Password reset email sent!");
             }
         },
         onError: (error: any) => {
@@ -205,8 +216,11 @@ export const useForgotPasswordMutation = (): UseMutationResult<
     return useMutation({
         mutationFn: ({ identifier, data }) => authService.forgotPassword(identifier, data),
         onSuccess: (response) => {
-            if (response.data?.success) {
-                toast.success(response.message || "Password changed successfully!");
+            const { success, data } = response;
+            const { message } = data || {};
+
+            if (success) {
+                toast.success(message || "Password changed successfully!");
             }
         },
         onError: (error: any) => {
@@ -227,8 +241,11 @@ export const useChangePasswordMutation = (): UseMutationResult<
     return useMutation({
         mutationFn: ({ identifier, data }) => authService.changePassword(identifier, data),
         onSuccess: (response) => {
-            if (response.data?.success) {
-                toast.success(response.message || "Password changed successfully!");
+            const { success, data } = response;
+            const { message } = data || {};
+
+            if (success) {
+                toast.success(message || "Password changed successfully!");
             }
         },
         onError: (error: any) => {

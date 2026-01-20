@@ -10,7 +10,7 @@ import { useAllBlogsQuery } from "@/hooks/api/queries/useBlogQueries";
 import { BlogsSkeleton } from "./BlogsSkeleton";
 
 const BlogsClient = () => {
-  const { data: blogsResponse, isLoading } = useAllBlogsQuery();
+  const { data: blogsResponse, isLoading } = useAllBlogsQuery(true);
   const blogs = blogsResponse?.data?.blogs || [];
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -23,7 +23,6 @@ const BlogsClient = () => {
       initialPageSize: 8,
     });
 
-  // Filter blogs based on search term and category
   const filteredBlogs = useMemo(() => {
     const filtered = blogs.filter((blog: IBlog) => {
       const matchesSearch =
@@ -34,9 +33,7 @@ const BlogsClient = () => {
       const matchesCategory =
         selectedCategory === "all" || blog.category === selectedCategory;
 
-      const isVisible = blog.isVisibility === true;
-
-      return matchesSearch && matchesCategory && isVisible;
+      return matchesSearch && matchesCategory;
     });
 
     return filtered;

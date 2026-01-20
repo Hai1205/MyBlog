@@ -10,6 +10,7 @@ import com.example.aiservice.dtos.requests.*;
 import com.example.aiservice.dtos.responses.Response;
 import com.example.aiservice.exceptions.OurException;
 import com.example.aiservice.services.*;
+import com.example.aiservice.utils.MarkdownCleaner;
 import com.example.rediscommon.services.RateLimiterService;
 import com.example.rediscommon.services.RedisService;
 import com.fasterxml.jackson.databind.*;
@@ -297,9 +298,12 @@ public class AIApi extends BaseApi {
 
             logger.info("Generated AI content, length: {}", aiContent.length());
 
+            // Clean markdown formatting from AI response
+            String cleanedContent = MarkdownCleaner.clean(aiContent.trim());
+
             // STEP 2: Restore original images
             String contentWithImages = imagePreservationService.restoreImages(
-                    aiContent.trim(), extracted.getImageMap());
+                    cleanedContent, extracted.getImageMap());
 
             logger.info("Restored images to AI content");
 

@@ -11,14 +11,17 @@ import { IApiResponse } from "@/lib/axiosInstance";
  * Get all blogs with automatic caching
  */
 export const useAllBlogsQuery = (
+    isVisibility?: boolean,
     options?: {
         enabled?: boolean;
         refetchInterval?: number;
     }
 ): UseQueryResult<IApiResponse<IBlogDataResponse>, Error> => {
     return useQuery({
-        queryKey: queryKeys.blogs.lists(),
-        queryFn: blogService.getAllBlogs,
+        queryKey: isVisibility !== undefined
+            ? queryKeys.blogs.byVisibility(isVisibility)
+            : queryKeys.blogs.lists(),
+        queryFn: () => blogService.getAllBlogs(isVisibility),
         enabled: options?.enabled ?? true,
         staleTime: 3 * 60 * 1000, // 3 minutes
         refetchInterval: options?.refetchInterval,
@@ -64,13 +67,15 @@ export const useSavedBlogsQuery = (
  */
 export const useBlogQuery = (
     blogId: string,
+    userId?: string,
     options?: {
         enabled?: boolean;
     }
 ): UseQueryResult<IApiResponse<IBlogDataResponse>, Error> => {
+    console.log("useBlogQuery called with blogId:", blogId, "and userId:", userId);
     return useQuery({
-        queryKey: queryKeys.blogs.detail(blogId),
-        queryFn: () => blogService.getBlog(blogId),
+        queryKey: queryKeys.blogs.detail(blogId, userId),
+        queryFn: () => blogService.getBlog(blogId, userId),
         enabled: (options?.enabled ?? true) && !!blogId,
         staleTime: 5 * 60 * 1000, // 5 minutes - blog details cached longer
     });
@@ -105,7 +110,7 @@ export const usePrefetchBlogs = () => {
         prefetchAllBlogs: async () => {
             await queryClient.prefetchQuery({
                 queryKey: queryKeys.blogs.lists(),
-                queryFn: blogService.getAllBlogs,
+                queryFn: () => blogService.getAllBlogs(),
             });
         },
         prefetchUserBlogs: async (userId: string) => {

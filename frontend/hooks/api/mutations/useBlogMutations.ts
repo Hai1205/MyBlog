@@ -26,14 +26,14 @@ export const useCreateBlogMutation = (): UseMutationResult<
     Error,
     CreateBlogDTO
 > => {
-    const queryClient = useQueryClient();
-
     return useMutation({
         mutationFn: blogService.createBlog,
         onSuccess: (response, variables) => {
-            const data = response.data;
-            if (data?.success && data?.blog) {
-                toast.success("Blog created successfully!");
+            const { success, data } = response;
+            const { blog, message } = data || {};
+
+            if (success && blog) {
+                toast.success(message || "Blog created successfully!");
 
                 // Invalidate queries to refetch
                 invalidateQueries.allBlogs();
@@ -55,14 +55,14 @@ export const useUpdateBlogMutation = (): UseMutationResult<
     Error,
     { blogId: string; data: UpdateBlogDTO }
 > => {
-    const queryClient = useQueryClient();
-
     return useMutation({
         mutationFn: ({ blogId, data }) => blogService.updateBlog(blogId, data),
         onSuccess: (response, variables) => {
-            const data = response.data;
-            if (data?.success) {
-                toast.success("Blog updated successfully!");
+            const { success, data } = response;
+            const { message } = data || {};
+
+            if (success) {
+                toast.success(message || "Blog updated successfully!");
 
                 // Invalidate specific blog and lists
                 invalidateQueries.blogDetail(variables.blogId);
@@ -135,8 +135,11 @@ export const useDeleteBlogMutation = (): UseMutationResult<
         },
 
         onSuccess: (response) => {
-            if (response.data?.success) {
-                toast.success(response.message || "Blog deleted successfully!");
+            const { success, data } = response;
+            const { message } = data || {};
+
+            if (success) {
+                toast.success(message || "Blog deleted successfully!");
             }
         },
 
@@ -171,14 +174,14 @@ export const useSaveBlogMutation = (): UseMutationResult<
     Error,
     { blogId: string; userId: string }
 > => {
-    const queryClient = useQueryClient();
-
     return useMutation({
         mutationFn: ({ blogId, userId }) => blogService.saveBlog(blogId, userId),
         onSuccess: (response, variables) => {
-            const data = response.data;
-            if (data?.success) {
-                toast.success("Blog saved!");
+            const { success, data } = response;
+            const { message } = data || {};
+
+            if (success) {
+                toast.success(message || "Blog saved!");
                 invalidateQueries.userBlogs(variables.userId);
             }
         },
@@ -230,8 +233,11 @@ export const useUnsaveBlogMutation = (): UseMutationResult<
         },
 
         onSuccess: (response, variables) => {
-            if (response.data?.success) {
-                toast.success(response.message || "Blog unsaved!");
+            const { success, data } = response;
+            const { message } = data || {};
+
+            if (success) {
+                toast.success(message || "Blog unsaved!");
             }
         },
 
@@ -262,9 +268,11 @@ export const useAddCommentMutation = (): UseMutationResult<
     return useMutation({
         mutationFn: blogService.addComment,
         onSuccess: (response, variables) => {
-            const data = response.data;
-            if (data?.success) {
-                toast.success("Comment added!");
+            const { success, data } = response;
+            const { message } = data || {};
+
+            if (success) {
+                toast.success(message || "Comment added!");
 
                 // Invalidate comments for this blog
                 queryClient.invalidateQueries({
@@ -292,9 +300,11 @@ export const useUpdateCommentMutation = (): UseMutationResult<
     return useMutation({
         mutationFn: ({ commentId, data }) => blogService.updateComment(commentId, data),
         onSuccess: (response, variables) => {
-            const data = response.data;
-            if (data?.success) {
-                toast.success("Comment updated!");
+            const { success, data } = response;
+            const { message } = data || {};
+
+            if (success) {
+                toast.success(message || "Comment updated!");
 
                 queryClient.invalidateQueries({
                     queryKey: queryKeys.blogs.comments(variables.blogId),
@@ -350,8 +360,11 @@ export const useDeleteCommentMutation = (): UseMutationResult<
         },
 
         onSuccess: (response) => {
-            if (response.data?.success) {
-                toast.success(response.message || "Comment deleted!");
+            const { success, data } = response;
+            const { message } = data || {};
+
+            if (success) {
+                toast.success(message || "Comment deleted!");
             }
         },
 

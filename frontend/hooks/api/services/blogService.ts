@@ -61,8 +61,9 @@ export const blogService = {
     /**
      * Get all blogs
      */
-    getAllBlogs: async (): Promise<IApiResponse<IBlogDataResponse>> => {
-        return await handleRequest<IBlogDataResponse>(EHttpType.GET, `/blogs`);
+    getAllBlogs: async (isVisibility?: boolean): Promise<IApiResponse<IBlogDataResponse>> => {
+        const params = isVisibility !== undefined ? `?isVisibility=${isVisibility}` : '';
+        return await handleRequest<IBlogDataResponse>(EHttpType.GET, `/blogs${params}`);
     },
 
     /**
@@ -88,10 +89,14 @@ export const blogService = {
     /**
      * Get single blog by ID
      */
-    getBlog: async (blogId: string): Promise<IApiResponse<IBlogDataResponse>> => {
+    getBlog: async (blogId: string, userId?: string): Promise<IApiResponse<IBlogDataResponse>> => {
+        const endpoint = userId
+            ? `/blogs/${blogId}/users/${userId}`
+            : `/blogs/${blogId}`;
+
         return await handleRequest<IBlogDataResponse>(
             EHttpType.GET,
-            `/blogs/${blogId}`
+            endpoint
         );
     },
 

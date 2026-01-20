@@ -9,9 +9,11 @@ import { PageHeader } from "./PageHeader";
 import { BlogsSkeleton } from "./BlogsSkeleton";
 import { useUserBlogsQuery } from "@/hooks/api/queries/useBlogQueries";
 import { useDeleteBlogMutation } from "@/hooks/api/mutations/useBlogMutations";
+import { useBlogStore } from "@/stores/blogStore";
 
 export default function MyBlogsClient() {
   const { userAuth } = useAuthStore();
+  const { handleSetBlogToEdit } = useBlogStore();
 
   const { mutate: deleteBlog } = useDeleteBlogMutation();
   const { data: userBlogsResponse, isLoading } = useUserBlogsQuery(
@@ -57,6 +59,7 @@ export default function MyBlogsClient() {
   };
 
   const handleEdit = (blog: IBlog) => {
+    handleSetBlogToEdit(blog);
     router.push(`/blogs/edit/${blog.id}`);
   };
 

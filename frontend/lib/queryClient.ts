@@ -79,7 +79,12 @@ export const queryKeys = {
         lists: () => [...queryKeys.blogs.all, 'list'] as const,
         list: (filters?: Record<string, any>) =>
             [...queryKeys.blogs.lists(), filters] as const,
-        detail: (id: string) => [...queryKeys.blogs.all, 'detail', id] as const,
+        byVisibility: (isVisibility: boolean) =>
+            [...queryKeys.blogs.all, 'visibility', isVisibility] as const,
+        detail: (id: string, userId?: string) =>
+            userId
+                ? [...queryKeys.blogs.all, 'detail', id, 'user', userId] as const
+                : [...queryKeys.blogs.all, 'detail', id] as const,
         userBlogs: (userId: string) =>
             [...queryKeys.blogs.all, 'user', userId] as const,
         savedBlogs: (userId: string) =>

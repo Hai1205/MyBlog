@@ -13,13 +13,13 @@ import com.example.blogservice.mappers.*;
 import com.example.blogservice.repositories.commentRepositories.*;
 import com.example.blogservice.repositories.blogRepositories.*;
 import com.example.blogservice.services.feigns.UserFeignClient;
-import com.example.rediscommon.services.RedisService;
-import com.example.rediscommon.services.RateLimiterService;
+import com.example.rediscommon.services.RedisCacheService;
+import com.example.rediscommon.services.ApiResponseHandler;
+import com.example.rediscommon.utils.CacheKeyBuilder;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
@@ -29,8 +29,9 @@ public class CommentApi extends BaseApi {
     private final BlogQueryRepository blogQueryRepository;
     private final CommentMapper commentMapper;
     private final UserFeignClient userFeignClient;
-    private final RedisService redisService;
-    private final RateLimiterService rateLimiterService;
+    private final RedisCacheService cacheService;
+    private final ApiResponseHandler<Response> responseHandler;
+    private final CacheKeyBuilder cacheKeys;
 
     public CommentApi(
             CommentQueryRepository commentQueryRepository,
@@ -38,15 +39,16 @@ public class CommentApi extends BaseApi {
             BlogQueryRepository blogQueryRepository,
             CommentMapper commentMapper,
             UserFeignClient userFeignClient,
-            RedisService redisService,
-            RateLimiterService rateLimiterService) {
+            RedisCacheService cacheService,
+            ApiResponseHandler<Response> responseHandler) {
         this.commentQueryRepository = commentQueryRepository;
         this.commentCommandRepository = commentCommandRepository;
         this.blogQueryRepository = blogQueryRepository;
         this.commentMapper = commentMapper;
         this.userFeignClient = userFeignClient;
-        this.redisService = redisService;
-        this.rateLimiterService = rateLimiterService;
+        this.cacheService = cacheService;
+        this.responseHandler = responseHandler;
+        this.cacheKeys = CacheKeyBuilder.forService("comment");
     }
 
     // ========== Private Helper Methods ==========
@@ -77,7 +79,7 @@ public class CommentApi extends BaseApi {
         logger.info("Adding comment to blog={} by user={}", blogId, userId);
 
         // Validate user and blog
-        validateUser(userId);
+        UserDto user = validateUser(userId);
         validateBlog(blogId);
 
         // Create comment
@@ -88,6 +90,7 @@ public class CommentApi extends BaseApi {
                 commentId,
                 blogId,
                 userId,
+                user.getUsername(),
                 request.getContent(),
                 now,
                 now);
@@ -102,54 +105,29 @@ public class CommentApi extends BaseApi {
     @Transactional(readOnly = true)
     public List<CommentDto> handleGetBlogComments(UUID blogId) {
         logger.debug("Fetching comments for blog={}", blogId);
-
-        String cacheKey = "comment:handleGetBlogComments:" + blogId.toString();
-
-        // Check cache first
-        Object cached = redisService.get(cacheKey);
-        if (cached != null) {
-            logger.debug("Cache hit for key: {}", cacheKey);
-            return (List<CommentDto>) cached;
-        }
-
-        // Validate blog exists
         validateBlog(blogId);
 
-        List<CommentDto> comments = commentQueryRepository.findCommentsByBlogId(blogId)
-                .stream()
-                .map(commentMapper::toDto)
-                .collect(Collectors.toList());
-
-        // Store in cache with 10 minutes TTL
-        redisService.set(cacheKey, comments, 10, TimeUnit.MINUTES);
-        logger.debug("Cached result for key: {}", cacheKey);
-
-        return comments;
+        return cacheService.executeWithCacheList(
+                cacheKeys.forMethodWithId("handleGetBlogComments", blogId),
+                CommentDto.class,
+                () -> commentQueryRepository.findCommentsByBlogId(blogId)
+                        .stream()
+                        .map(commentMapper::toDto)
+                        .collect(Collectors.toList()));
     }
 
     @Transactional(readOnly = true)
     public CommentDto handleGetCommentById(UUID commentId) {
         logger.debug("Fetching comment by id={}", commentId);
 
-        String cacheKey = "comment:handleGetCommentById:" + commentId.toString();
-
-        // Check cache first
-        Object cached = redisService.get(cacheKey);
-        if (cached != null) {
-            logger.debug("Cache hit for key: {}", cacheKey);
-            return (CommentDto) cached;
-        }
-
-        Comment comment = commentQueryRepository.findCommentById(commentId)
-                .orElseThrow(() -> new OurException("Comment not found", 404));
-
-        CommentDto commentDto = commentMapper.toDto(comment);
-
-        // Store in cache with 10 minutes TTL
-        redisService.set(cacheKey, commentDto, 10, TimeUnit.MINUTES);
-        logger.debug("Cached result for key: {}", cacheKey);
-
-        return commentDto;
+        return cacheService.executeWithCache(
+                cacheKeys.forMethodWithId("handleGetCommentById", commentId),
+                CommentDto.class,
+                () -> {
+                    Comment comment = commentQueryRepository.findCommentById(commentId)
+                            .orElseThrow(() -> new OurException("Comment not found", 404));
+                    return commentMapper.toDto(comment);
+                });
     }
 
     @Transactional
@@ -191,435 +169,186 @@ public class CommentApi extends BaseApi {
     public List<CommentDto> handleGetAllComments() {
         logger.debug("Fetching all comments");
 
-        String cacheKey = "comment:handleGetAllComments:all";
-
-        // Check cache first
-        Object cached = redisService.get(cacheKey);
-        if (cached != null) {
-            logger.debug("Cache hit for key: {}", cacheKey);
-            return (List<CommentDto>) cached;
-        }
-
-        List<CommentDto> comments = commentQueryRepository.findAllComments()
-                .stream()
-                .map(commentMapper::toDto)
-                .collect(Collectors.toList());
-
-        // Store in cache with 10 minutes TTL
-        redisService.set(cacheKey, comments, 10, TimeUnit.MINUTES);
-        logger.debug("Cached result for key: {}", cacheKey);
-
-        return comments;
+        return cacheService.executeWithCacheList(
+                cacheKeys.forMethod("handleGetAllComments"),
+                CommentDto.class,
+                () -> commentQueryRepository.findAllComments()
+                        .stream()
+                        .map(commentMapper::toDto)
+                        .collect(Collectors.toList()));
     }
 
     @Transactional(readOnly = true)
     public long handleGetTotalComments() {
-        String cacheKey = "comment:handleGetTotalComments:count";
-
-        // Check cache first
-        Object cached = redisService.get(cacheKey);
-        if (cached != null) {
-            logger.debug("Cache hit for key: {}", cacheKey);
-            return Long.parseLong(cached.toString());
-        }
-
-        long count = commentQueryRepository.countTotalComments();
-
-        // Store in cache with 10 minutes TTL
-        redisService.set(cacheKey, count, 10, TimeUnit.MINUTES);
-        logger.debug("Cached result for key: {}", cacheKey);
-
-        return count;
+        return cacheService.executeWithCachePrimitive(
+                cacheKeys.forMethod("handleGetTotalComments"),
+                () -> commentQueryRepository.countTotalComments());
     }
 
     @Transactional(readOnly = true)
     public List<CommentDto> handleGetCommentsCreatedInRange(Instant startDate, Instant endDate) {
-        String cacheKey = "comment:handleGetCommentsCreatedInRange:" + startDate.toString() + ":" + endDate.toString();
-
-        // Check cache first
-        Object cached = redisService.get(cacheKey);
-        if (cached != null) {
-            logger.debug("Cache hit for key: {}", cacheKey);
-            return (List<CommentDto>) cached;
-        }
-
-        List<CommentDto> comments = commentQueryRepository.findCommentsCreatedBetween(startDate, endDate)
-                .stream()
-                .map(commentMapper::toDto)
-                .collect(Collectors.toList());
-
-        // Store in cache with 10 minutes TTL
-        redisService.set(cacheKey, comments, 10, TimeUnit.MINUTES);
-        logger.debug("Cached result for key: {}", cacheKey);
-
-        return comments;
+        return cacheService.executeWithCacheList(
+                cacheKeys.forMethodWithParams("handleGetCommentsCreatedInRange", startDate, endDate),
+                CommentDto.class,
+                () -> commentQueryRepository.findCommentsCreatedBetween(startDate, endDate)
+                        .stream()
+                        .map(commentMapper::toDto)
+                        .collect(Collectors.toList()));
     }
 
     @Transactional(readOnly = true)
     public long handleGetCommentsCountCreatedInRange(Instant startDate, Instant endDate) {
-        String cacheKey = "comment:handleGetCommentsCountCreatedInRange:" + startDate.toString() + ":"
-                + endDate.toString();
-
-        // Check cache first
-        Object cached = redisService.get(cacheKey);
-        if (cached != null) {
-            logger.debug("Cache hit for key: {}", cacheKey);
-            return Long.parseLong(cached.toString());
-        }
-
-        long count = commentQueryRepository.countCommentsCreatedBetween(startDate, endDate);
-
-        // Store in cache with 10 minutes TTL
-        redisService.set(cacheKey, count, 10, TimeUnit.MINUTES);
-        logger.debug("Cached result for key: {}", cacheKey);
-
-        return count;
+        return cacheService.executeWithCachePrimitive(
+                cacheKeys.forMethodWithParams("handleGetCommentsCountCreatedInRange", startDate, endDate),
+                () -> commentQueryRepository.countCommentsCreatedBetween(startDate, endDate));
     }
 
     @Transactional(readOnly = true)
     public List<CommentDto> handleGetRecentComments(int limit) {
-        String cacheKey = "comment:handleGetRecentComments:" + limit;
-
-        // Check cache first
-        Object cached = redisService.get(cacheKey);
-        if (cached != null) {
-            logger.debug("Cache hit for key: {}", cacheKey);
-            return (List<CommentDto>) cached;
-        }
-
-        List<CommentDto> comments = commentQueryRepository.findRecentComments(PageRequest.of(0, limit))
-                .stream()
-                .map(commentMapper::toDto)
-                .collect(Collectors.toList());
-
-        // Store in cache with 10 minutes TTL
-        redisService.set(cacheKey, comments, 10, TimeUnit.MINUTES);
-        logger.debug("Cached result for key: {}", cacheKey);
-
-        return comments;
+        return cacheService.executeWithCacheList(
+                cacheKeys.forMethodWithParam("handleGetRecentComments", limit),
+                CommentDto.class,
+                () -> commentQueryRepository.findRecentComments(PageRequest.of(0, limit))
+                        .stream()
+                        .map(commentMapper::toDto)
+                        .collect(Collectors.toList()));
     }
 
     // ========== Public Response Methods ==========
 
     public Response addComment(UUID blogId, UUID userId, AddCommentRequest request) {
-        Response response = new Response();
-
-        try {
-            long startTime = System.currentTimeMillis();
-
-            // Rate limiting: 45 req/min for Create APIs
-            String rateLimitKey = "comment:addComment:" + userId.toString();
-            if (!rateLimiterService.isAllowed(rateLimitKey, 45, 60)) {
-                logger.warn("Rate limit exceeded for addComment by userId: {}", userId);
-                response.setStatusCode(429);
-                response.setMessage("Rate limit exceeded. Please try again later.");
-                return response;
-            }
-
-            CommentDto comment = handleAddComment(blogId, userId, request);
-
-            long endTime = System.currentTimeMillis();
-            logger.info("Completed request in {} ms", endTime - startTime);
-
-            response.setStatusCode(201);
-            response.setMessage("Comment added successfully");
-            response.setComment(comment);
-            return response;
-        } catch (OurException e) {
-            logger.error("Error in addComment: {}", e.getMessage(), e);
-            response.setStatusCode(e.getStatusCode());
-            response.setMessage(e.getMessage());
-            return response;
-        } catch (Exception e) {
-            logger.error("Error in addComment: {}", e.getMessage(), e);
-            response.setStatusCode(500);
-            response.setMessage("Failed to add comment");
-            return response;
-        }
+        return responseHandler.executeWithResponse(
+                cacheKeys.forMethodWithParams("addComment", userId),
+                45,
+                () -> handleAddComment(blogId, userId, request),
+                Response::new,
+                Response::setStatusCode,
+                Response::setMessage,
+                Response::setComment,
+                "Comment added successfully",
+                201);
     }
 
     public Response getBlogComments(UUID blogId) {
-        Response response = new Response();
-
-        try {
-            long startTime = System.currentTimeMillis();
-
-            // Rate limiting: 90 req/min for GET APIs
-            String rateLimitKey = "comment:getBlogComments:" + blogId.toString();
-            if (!rateLimiterService.isAllowed(rateLimitKey, 90, 60)) {
-                logger.warn("Rate limit exceeded for getBlogComments blogId: {}", blogId);
-                response.setStatusCode(429);
-                response.setMessage("Rate limit exceeded. Please try again later.");
-                return response;
-            }
-
-            List<CommentDto> comments = handleGetBlogComments(blogId);
-
-            long endTime = System.currentTimeMillis();
-            logger.info("Completed request in {} ms", endTime - startTime);
-
-            response.setStatusCode(200);
-            response.setMessage("Blog comments retrieved successfully");
-            response.setComments(comments);
-            return response;
-        } catch (OurException e) {
-            logger.error("Error in getBlogComments: {}", e.getMessage(), e);
-            response.setStatusCode(e.getStatusCode());
-            response.setMessage(e.getMessage());
-            return response;
-        } catch (Exception e) {
-            logger.error("Error in getBlogComments: {}", e.getMessage(), e);
-            response.setStatusCode(500);
-            response.setMessage("Failed to get blog comments");
-            return response;
-        }
+        return responseHandler.executeWithResponse(
+                cacheKeys.forMethodWithId("getBlogComments", blogId),
+                90,
+                () -> handleGetBlogComments(blogId),
+                Response::new,
+                Response::setStatusCode,
+                Response::setMessage,
+                Response::setComments,
+                "Blog comments retrieved successfully",
+                200);
     }
 
     public Response getCommentById(UUID commentId) {
-        Response response = new Response();
-
-        try {
-            long startTime = System.currentTimeMillis();
-
-            // Rate limiting: 90 req/min for GET APIs
-            String rateLimitKey = "comment:getCommentById:" + commentId.toString();
-            if (!rateLimiterService.isAllowed(rateLimitKey, 90, 60)) {
-                logger.warn("Rate limit exceeded for getCommentById commentId: {}", commentId);
-                response.setStatusCode(429);
-                response.setMessage("Rate limit exceeded. Please try again later.");
-                return response;
-            }
-
-            CommentDto comment = handleGetCommentById(commentId);
-
-            long endTime = System.currentTimeMillis();
-            logger.info("Completed request in {} ms", endTime - startTime);
-
-            response.setStatusCode(200);
-            response.setMessage("Comment retrieved successfully");
-            response.setComment(comment);
-            return response;
-        } catch (OurException e) {
-            logger.error("Error in getCommentById: {}", e.getMessage(), e);
-            response.setStatusCode(e.getStatusCode());
-            response.setMessage(e.getMessage());
-            return response;
-        } catch (Exception e) {
-            logger.error("Error in getCommentById: {}", e.getMessage(), e);
-            response.setStatusCode(500);
-            response.setMessage("Failed to get comment");
-            return response;
-        }
+        return responseHandler.executeWithResponse(
+                cacheKeys.forMethodWithId("getCommentById", commentId),
+                90,
+                () -> handleGetCommentById(commentId),
+                Response::new,
+                Response::setStatusCode,
+                Response::setMessage,
+                Response::setComment,
+                "Comment retrieved successfully",
+                200);
     }
 
     public Response updateComment(UUID commentId, UpdateCommentRequest request) {
-        Response response = new Response();
-
-        try {
-            long startTime = System.currentTimeMillis();
-
-            // Rate limiting: 45 req/min for Update APIs
-            String rateLimitKey = "comment:updateComment:" + commentId.toString();
-            if (!rateLimiterService.isAllowed(rateLimitKey, 45, 60)) {
-                logger.warn("Rate limit exceeded for updateComment commentId: {}", commentId);
-                response.setStatusCode(429);
-                response.setMessage("Rate limit exceeded. Please try again later.");
-                return response;
-            }
-
-            CommentDto comment = handleUpdateComment(commentId, request);
-
-            long endTime = System.currentTimeMillis();
-            logger.info("Completed request in {} ms", endTime - startTime);
-
-            response.setStatusCode(200);
-            response.setMessage("Comment updated successfully");
-            response.setComment(comment);
-            return response;
-        } catch (OurException e) {
-            logger.error("Error in updateComment: {}", e.getMessage(), e);
-            response.setStatusCode(e.getStatusCode());
-            response.setMessage(e.getMessage());
-            return response;
-        } catch (Exception e) {
-            logger.error("Error in updateComment: {}", e.getMessage(), e);
-            response.setStatusCode(500);
-            response.setMessage("Failed to update comment");
-            return response;
-        }
+        return responseHandler.executeWithResponse(
+                cacheKeys.forMethodWithId("updateComment", commentId),
+                45,
+                () -> handleUpdateComment(commentId, request),
+                Response::new,
+                Response::setStatusCode,
+                Response::setMessage,
+                Response::setComment,
+                "Comment updated successfully",
+                200);
     }
 
     public Response deleteComment(UUID commentId) {
-        Response response = new Response();
-
-        try {
-            long startTime = System.currentTimeMillis();
-
-            // Rate limiting: 20 req/min for Delete APIs
-            String rateLimitKey = "comment:deleteComment:" + commentId.toString();
-            if (!rateLimiterService.isAllowed(rateLimitKey, 20, 60)) {
-                logger.warn("Rate limit exceeded for deleteComment commentId: {}", commentId);
-                response.setStatusCode(429);
-                response.setMessage("Rate limit exceeded. Please try again later.");
-                return response;
-            }
-
-            boolean deleted = handleDeleteComment(commentId);
-
-            long endTime = System.currentTimeMillis();
-            logger.info("Completed request in {} ms", endTime - startTime);
-
-            if (deleted) {
-                response.setStatusCode(200);
-                response.setMessage("Comment deleted successfully");
-            } else {
-                response.setStatusCode(500);
-                response.setMessage("Failed to delete comment");
-            }
-            return response;
-        } catch (OurException e) {
-            logger.error("Error in deleteComment: {}", e.getMessage(), e);
-            response.setStatusCode(e.getStatusCode());
-            response.setMessage(e.getMessage());
-            return response;
-        } catch (Exception e) {
-            logger.error("Error in deleteComment: {}", e.getMessage(), e);
-            response.setStatusCode(500);
-            response.setMessage("Failed to delete comment");
-            return response;
-        }
+        return responseHandler.executeWithResponse(
+                cacheKeys.forMethodWithId("deleteComment", commentId),
+                20,
+                () -> handleDeleteComment(commentId),
+                Response::new,
+                Response::setStatusCode,
+                Response::setMessage,
+                null,
+                "Comment deleted successfully",
+                200);
     }
 
     public Response getAllComments() {
-        Response response = new Response();
-
-        try {
-            long startTime = System.currentTimeMillis();
-
-            // Rate limiting: 90 req/min for GET APIs
-            String rateLimitKey = "comment:getAllComments:all";
-            if (!rateLimiterService.isAllowed(rateLimitKey, 90, 60)) {
-                logger.warn("Rate limit exceeded for getAllComments");
-                response.setStatusCode(429);
-                response.setMessage("Rate limit exceeded. Please try again later.");
-                return response;
-            }
-
-            List<CommentDto> comments = handleGetAllComments();
-
-            long endTime = System.currentTimeMillis();
-            logger.info("Completed request in {} ms", endTime - startTime);
-
-            response.setStatusCode(200);
-            response.setMessage("All comments retrieved successfully");
-            response.setComments(comments);
-            return response;
-        } catch (Exception e) {
-            logger.error("Error in getAllComments: {}", e.getMessage(), e);
-            response.setStatusCode(500);
-            response.setMessage("Failed to get all comments");
-            return response;
-        }
+        return responseHandler.executeWithResponse(
+                cacheKeys.forMethod("getAllComments"),
+                90,
+                this::handleGetAllComments,
+                Response::new,
+                Response::setStatusCode,
+                Response::setMessage,
+                Response::setComments,
+                "All comments retrieved successfully",
+                200);
     }
 
     public Response getTotalComments() {
-        Response response = new Response();
-
-        try {
-            long startTime = System.currentTimeMillis();
-
-            // Rate limiting: 90 req/min for GET APIs
-            String rateLimitKey = "comment:getTotalComments:all";
-            if (!rateLimiterService.isAllowed(rateLimitKey, 90, 60)) {
-                logger.warn("Rate limit exceeded for getTotalComments");
-                response.setStatusCode(429);
-                response.setMessage("Rate limit exceeded. Please try again later.");
-                return response;
-            }
-
-            long total = handleGetTotalComments();
-
-            long endTime = System.currentTimeMillis();
-            logger.info("Completed request in {} ms", endTime - startTime);
-
-            response.setStatusCode(200);
-            response.setMessage("Total comments retrieved successfully");
-            response.setAdditionalData(java.util.Map.of("total", total));
-            return response;
-        } catch (Exception e) {
-            logger.error("Error in getTotalComments: {}", e.getMessage(), e);
-            response.setStatusCode(500);
-            response.setMessage("Failed to get total comments");
-            return response;
-        }
+        return responseHandler.executeWithResponse(
+                cacheKeys.forMethod("getTotalComments"),
+                90,
+                () -> {
+                    long total = handleGetTotalComments();
+                    return java.util.Map.of("total", total);
+                },
+                Response::new,
+                Response::setStatusCode,
+                Response::setMessage,
+                Response::setAdditionalData,
+                "Total comments retrieved successfully",
+                200);
     }
 
     public Response getCommentsCreatedInRange(String startDate, String endDate) {
-        Response response = new Response();
+        Response response = responseHandler.executeWithResponse(
+                cacheKeys.forMethodWithParams("getCommentsCreatedInRange", startDate, endDate),
+                90,
+                () -> {
+                    Instant start = Instant.parse(startDate);
+                    Instant end = Instant.parse(endDate);
+                    return handleGetCommentsCreatedInRange(start, end);
+                },
+                Response::new,
+                Response::setStatusCode,
+                Response::setMessage,
+                Response::setComments,
+                "Comments in range retrieved successfully",
+                200);
 
+        // Add count separately for complex response
         try {
-            long startTime = System.currentTimeMillis();
-
-            // Rate limiting: 90 req/min for GET APIs
-            String rateLimitKey = "comment:getCommentsCreatedInRange:" + startDate + ":" + endDate;
-            if (!rateLimiterService.isAllowed(rateLimitKey, 90, 60)) {
-                logger.warn("Rate limit exceeded for getCommentsCreatedInRange");
-                response.setStatusCode(429);
-                response.setMessage("Rate limit exceeded. Please try again later.");
-                return response;
-            }
-
             Instant start = Instant.parse(startDate);
             Instant end = Instant.parse(endDate);
-
-            List<CommentDto> comments = handleGetCommentsCreatedInRange(start, end);
             long count = handleGetCommentsCountCreatedInRange(start, end);
-
-            long endTime = System.currentTimeMillis();
-            logger.info("Completed request in {} ms", endTime - startTime);
-
-            response.setStatusCode(200);
-            response.setMessage("Comments in range retrieved successfully");
-            response.setComments(comments);
             response.setAdditionalData(java.util.Map.of("count", count));
-            return response;
         } catch (Exception e) {
-            logger.error("Error in getCommentsCreatedInRange: {}", e.getMessage(), e);
-            response.setStatusCode(500);
-            response.setMessage("Failed to get comments in range");
-            return response;
+            logger.error("Error getting count: {}", e.getMessage());
         }
+
+        return response;
     }
 
     public Response getRecentComments(int limit) {
-        Response response = new Response();
-
-        try {
-            long startTime = System.currentTimeMillis();
-
-            // Rate limiting: 90 req/min for GET APIs
-            String rateLimitKey = "comment:getRecentComments:" + limit;
-            if (!rateLimiterService.isAllowed(rateLimitKey, 90, 60)) {
-                logger.warn("Rate limit exceeded for getRecentComments");
-                response.setStatusCode(429);
-                response.setMessage("Rate limit exceeded. Please try again later.");
-                return response;
-            }
-
-            List<CommentDto> comments = handleGetRecentComments(limit);
-
-            long endTime = System.currentTimeMillis();
-            logger.info("Completed request in {} ms", endTime - startTime);
-
-            response.setStatusCode(200);
-            response.setMessage("Recent comments retrieved successfully");
-            response.setComments(comments);
-            return response;
-        } catch (Exception e) {
-            logger.error("Error in getRecentComments: {}", e.getMessage(), e);
-            response.setStatusCode(500);
-            response.setMessage("Failed to get recent comments");
-            return response;
-        }
+        return responseHandler.executeWithResponse(
+                cacheKeys.forMethodWithParam("getRecentComments", limit),
+                90,
+                () -> handleGetRecentComments(limit),
+                Response::new,
+                Response::setStatusCode,
+                Response::setMessage,
+                Response::setComments,
+                "Recent comments retrieved successfully",
+                200);
     }
 }

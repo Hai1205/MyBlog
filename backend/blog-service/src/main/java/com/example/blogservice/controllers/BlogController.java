@@ -18,8 +18,9 @@ public class BlogController {
     private BlogApi blogApi;
 
     @GetMapping()
-    public ResponseEntity<Response> getAllBlogs() {
-        Response response = blogApi.getAllBlogs();
+    public ResponseEntity<Response> getAllBlogs(
+            @RequestParam(value = "isVisibility", required = false) Boolean isVisibility) {
+        Response response = blogApi.getAllBlogs(isVisibility);
 
         return ResponseEntity.status(response.getStatusCode()).body(response);
     }
@@ -62,7 +63,7 @@ public class BlogController {
         return ResponseEntity.status(response.getStatusCode()).body(response);
     }
 
-    @GetMapping("/users/{userId}/save")
+    @GetMapping("/users/{userId}/saved")
     public ResponseEntity<Response> getUserSavedBlogs(@PathVariable("userId") UUID userId) {
         Response response = blogApi.getUserSavedBlogs(userId);
 
@@ -76,9 +77,9 @@ public class BlogController {
         return ResponseEntity.status(response.getStatusCode()).body(response);
     }
 
-    @GetMapping("/{blogId}")
-    public ResponseEntity<Response> getBlog(@PathVariable("blogId") UUID blogId) {
-        Response response = blogApi.getBlog(blogId);
+    @GetMapping("/{blogId}/users/{userId}")
+    public ResponseEntity<Response> getBlog(@PathVariable("blogId") UUID blogId, @PathVariable("userId") UUID userId) {
+        Response response = blogApi.getBlog(blogId, userId);
 
         return ResponseEntity.status(response.getStatusCode()).body(response);
     }
@@ -94,27 +95,6 @@ public class BlogController {
     public ResponseEntity<Response> health() {
         Response response = new Response(200, "Blog Service is running");
 
-        return ResponseEntity.status(response.getStatusCode()).body(response);
-    }
-
-    // Stats endpoints for StatsService
-    @GetMapping("/stats/total")
-    public ResponseEntity<Response> getTotalBlogs() {
-        Response response = blogApi.getTotalBlogs();
-        return ResponseEntity.status(response.getStatusCode()).body(response);
-    }
-
-    @GetMapping("/stats/visibility/{visibility}")
-    public ResponseEntity<Response> getBlogsByVisibility(@PathVariable("visibility") boolean isVisibility) {
-        Response response = blogApi.getBlogsByVisibility(isVisibility);
-        return ResponseEntity.status(response.getStatusCode()).body(response);
-    }
-
-    @GetMapping("/stats/created-range")
-    public ResponseEntity<Response> getBlogsCreatedInRange(
-            @RequestParam("startDate") String startDate,
-            @RequestParam("endDate") String endDate) {
-        Response response = blogApi.getBlogsCreatedInRange(startDate, endDate);
         return ResponseEntity.status(response.getStatusCode()).body(response);
     }
 

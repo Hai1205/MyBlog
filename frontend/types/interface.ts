@@ -45,7 +45,8 @@ declare global {
         category: ECategory;
         author: IUser;
         comments: IComment[];
-        isVisibility: boolean
+        isVisibility: boolean;
+        isSaved: boolean;
         createdAt: string;
         updatedAt: string;
     }

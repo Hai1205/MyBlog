@@ -16,15 +16,15 @@ import com.example.blogservice.repositories.savedBlogRepositories.SavedBlogComma
 import com.example.blogservice.repositories.savedBlogRepositories.SavedBlogQueryRepository;
 import com.example.cloudinarycommon.CloudinaryService;
 import com.example.blogservice.services.feigns.UserFeignClient;
-import com.example.rediscommon.services.RedisService;
-import com.example.rediscommon.services.RateLimiterService;
+import com.example.rediscommon.services.RedisCacheService;
+import com.example.rediscommon.services.ApiResponseHandler;
+import com.example.rediscommon.utils.CacheKeyBuilder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
@@ -37,9 +37,10 @@ public class BlogApi extends BaseApi {
     private final CloudinaryService cloudinaryService;
     private final UserFeignClient userFeignClient;
     private final ObjectMapper objectMapper;
-    private final RedisService redisService;
-    private final RateLimiterService rateLimiterService;
+    private final RedisCacheService cacheService;
+    private final ApiResponseHandler<Response> responseHandler;
     private final CommentApi commentApi;
+    private final CacheKeyBuilder cacheKeys;
 
     public BlogApi(
             BlogQueryRepository blogQueryRepository,
@@ -50,8 +51,8 @@ public class BlogApi extends BaseApi {
             CloudinaryService cloudinaryService,
             UserFeignClient userFeignClient,
             ObjectMapper redisObjectMapper,
-            RedisService redisService,
-            RateLimiterService rateLimiterService,
+            RedisCacheService cacheService,
+            ApiResponseHandler<Response> responseHandler,
             CommentApi commentApi) {
         this.blogQueryRepository = blogQueryRepository;
         this.blogCommandRepository = blogCommandRepository;
@@ -61,9 +62,10 @@ public class BlogApi extends BaseApi {
         this.cloudinaryService = cloudinaryService;
         this.userFeignClient = userFeignClient;
         this.objectMapper = redisObjectMapper;
-        this.redisService = redisService;
-        this.rateLimiterService = rateLimiterService;
+        this.cacheService = cacheService;
+        this.responseHandler = responseHandler;
         this.commentApi = commentApi;
+        this.cacheKeys = CacheKeyBuilder.forService("blog");
     }
 
     // ========== Private Helper Methods ==========
@@ -142,36 +144,32 @@ public class BlogApi extends BaseApi {
     }
 
     @Transactional(readOnly = true)
-    public List<BlogDto> handleGetAllBlogs() {
+    public List<BlogDto> handleGetAllBlogs(Boolean isVisibility) {
         try {
-            logger.debug("Fetching all blogs");
-            String cacheKey = "blog:handleGetAllBlogs:all";
+            logger.debug("Fetching all blogs with visibility filter: {}", isVisibility);
 
-            // Check cache first
-            Object cached = redisService.get(cacheKey);
-            if (cached != null) {
-                logger.debug("Cache hit for key: {}", cacheKey);
-                // Convert to List<BlogDto> safely
-                if (cached instanceof List) {
-                    List<?> list = (List<?>) cached;
-                    return list.stream()
-                            .map(item -> objectMapper.convertValue(item, BlogDto.class))
-                            .collect(Collectors.toList());
-                }
-            }
+            // If no filter, use simple cache key
+            String cacheKey = isVisibility == null
+                    ? cacheKeys.forMethod("handleGetAllBlogs")
+                    : cacheKeys.forMethodWithParam("handleGetAllBlogs", String.valueOf(isVisibility));
 
-            // Cache miss - fetch from DB
-            List<BlogDto> blogs = blogQueryRepository
-                    .findAllBlogs()
-                    .stream()
-                    .map(blogMapper::toDto)
-                    .collect(Collectors.toList());
+            return cacheService.executeWithCacheList(
+                    cacheKey,
+                    BlogDto.class,
+                    () -> {
+                        List<Blog> blogs = blogQueryRepository.findAllBlogs();
 
-            // Store in cache with 10 minutes TTL
-            redisService.set(cacheKey, blogs, 10, TimeUnit.MINUTES);
-            logger.debug("Cached result for key: {}", cacheKey);
+                        // Filter by visibility if param provided
+                        if (isVisibility != null) {
+                            blogs = blogs.stream()
+                                    .filter(blog -> blog.getIsVisibility().equals(isVisibility))
+                                    .collect(Collectors.toList());
+                        }
 
-            return blogs;
+                        return blogs.stream()
+                                .map(blogMapper::toDto)
+                                .collect(Collectors.toList());
+                    });
         } catch (Exception e) {
             logger.error("Error getting all blogs: {}", e.getMessage(), e);
             throw new OurException("Failed to get blogs", 500);
@@ -179,52 +177,51 @@ public class BlogApi extends BaseApi {
     }
 
     @Transactional(readOnly = true)
-    public BlogDto handleGetBlogById(UUID blogId) {
+    public BlogDto handleGetBlogById(UUID blogId, UUID userId) {
         try {
             logger.debug("Fetching blog by id={}", blogId);
-            String cacheKey = "blog:handleGetBlogById:" + blogId.toString();
+            return cacheService.executeWithCache(
+                    cacheKeys.forMethodWithId("handleGetBlogById", blogId),
+                    BlogDto.class,
+                    () -> {
+                        Blog blog = blogQueryRepository.findBlogById(blogId)
+                                .orElseThrow(() -> new OurException("Blog not found", 404));
+                        BlogDto blogDto = blogMapper.toDto(blog);
 
-            // Check cache first
-            Object cached = redisService.get(cacheKey);
-            if (cached != null) {
-                logger.debug("Cache hit for key: {}", cacheKey);
-                // Convert LinkedHashMap to BlogDto if needed
-                if (cached instanceof BlogDto) {
-                    return (BlogDto) cached;
-                } else {
-                    // Handle case where Redis returns LinkedHashMap
-                    return objectMapper.convertValue(cached, BlogDto.class);
-                }
-            }
+                        try {
+                            logger.debug("Fetching user by id={}", blog.getAuthorId());
+                            Response res = userFeignClient.getUserById(blog.getAuthorId());
+                            UserDto author = res.getUser();
+                            logger.debug("Fetched user {}", author.getUsername());
+                            blogDto.setAuthor(author);
+                        } catch (Exception e) {
+                            logger.error("Error fetching author for blog={}: {}", blogId, e.getMessage());
+                        }
 
-            // Cache miss - fetch from DB
-            Blog blog = blogQueryRepository.findBlogById(blogId)
-                    .orElseThrow(() -> new OurException("Blog not found", 404));
-            BlogDto blogDto = blogMapper.toDto(blog);
+                        try {
+                            List<CommentDto> comments = commentApi.handleGetBlogComments(blogId);
+                            blogDto.setComments(comments);
+                        } catch (Exception e) {
+                            logger.error("Error fetching comments for blog={}: {}", blogId, e.getMessage());
+                        }
 
-            try {
-                logger.debug("Fetching user by id={}", blog.getAuthorId());
-                Response res = userFeignClient.getUserById(blog.getAuthorId());
-                UserDto author = res.getUser();
-                
-                logger.debug("Fetched user {}", author.getUsername());
-                blogDto.setAuthor(author);
-            } catch (Exception e) {
-                logger.error("Error fetching author for blog={}: {}", blogId, e.getMessage());
-            }
+                        if (userId != null) {
+                            try {
+                                boolean isSaved = savedBlogQueryRepository.findSavedBlogsByUserId(userId)
+                                        .stream()
+                                        .anyMatch(sb -> sb.getBlogId().equals(blogId));
+                                blogDto.setIsSaved(isSaved);
+                                logger.debug("Blog saved status for user={}: {}", userId, isSaved);
+                            } catch (Exception e) {
+                                logger.error("Error checking saved status for blog={}: {}", blogId, e.getMessage());
+                                blogDto.setIsSaved(false);
+                            }
+                        } else {
+                            blogDto.setIsSaved(false);
+                        }
 
-            try {
-                List<CommentDto> comments = commentApi.handleGetBlogComments(blogId);
-
-                blogDto.setComments(comments);
-            } catch (Exception e) {
-                logger.error("Error fetching comments for blog={}: {}", blogId, e.getMessage());
-            }
-
-            redisService.set(cacheKey, blogDto, 10, TimeUnit.MINUTES);
-            logger.debug("Cached result for key: {}", cacheKey);
-
-            return blogDto;
+                        return blogDto;
+                    });
         } catch (OurException e) {
             throw e;
         } catch (Exception e) {
@@ -237,35 +234,16 @@ public class BlogApi extends BaseApi {
     public List<BlogDto> handleGetUserBlogs(UUID userId) {
         try {
             logger.debug("Fetching blogs for userId={}", userId);
-            String cacheKey = "blog:handleGetUserBlogs:" + userId.toString();
-
-            // Check cache first
-            Object cached = redisService.get(cacheKey);
-            if (cached != null) {
-                logger.debug("Cache hit for key: {}", cacheKey);
-                // Convert to List<BlogDto> safely
-                if (cached instanceof List) {
-                    List<?> list = (List<?>) cached;
-                    return list.stream()
-                            .map(item -> objectMapper.convertValue(item, BlogDto.class))
-                            .collect(Collectors.toList());
-                }
-            }
-
             validateUser(userId);
 
-            List<BlogDto> blogs = blogQueryRepository
-                    .findBlogsByUserId(userId)
-                    .stream()
-                    .map(blogMapper::toDto)
-                    .sorted((a, b) -> b.getUpdatedAt().compareTo(a.getUpdatedAt()))
-                    .collect(Collectors.toList());
-
-            // Store in cache with 10 minutes TTL
-            redisService.set(cacheKey, blogs, 10, TimeUnit.MINUTES);
-            logger.debug("Cached result for key: {}", cacheKey);
-
-            return blogs;
+            return cacheService.executeWithCacheList(
+                    cacheKeys.forMethodWithId("handleGetUserBlogs", userId),
+                    BlogDto.class,
+                    () -> blogQueryRepository.findBlogsByUserId(userId)
+                            .stream()
+                            .map(blogMapper::toDto)
+                            .sorted((a, b) -> b.getUpdatedAt().compareTo(a.getUpdatedAt()))
+                            .collect(Collectors.toList()));
         } catch (OurException e) {
             throw e;
         } catch (Exception e) {
@@ -397,33 +375,15 @@ public class BlogApi extends BaseApi {
     public List<BlogDto> handleGetUserSavedBlogs(UUID userId) {
         try {
             logger.debug("Fetching saved blogs for userId={}", userId);
-            String cacheKey = "blog:handleGetUserSavedBlogs:" + userId.toString();
-
-            // Check cache first
-            Object cached = redisService.get(cacheKey);
-            if (cached != null) {
-                logger.debug("Cache hit for key: {}", cacheKey);
-                // Convert to List<BlogDto> safely
-                if (cached instanceof List) {
-                    List<?> list = (List<?>) cached;
-                    return list.stream()
-                            .map(item -> objectMapper.convertValue(item, BlogDto.class))
-                            .collect(Collectors.toList());
-                }
-            }
-
             validateUser(userId);
 
-            List<Blog> savedBlogs = savedBlogQueryRepository.findBlogsByUserSaved(userId);
-            List<BlogDto> blogs = savedBlogs.stream()
-                    .map(blogMapper::toDto)
-                    .collect(Collectors.toList());
-
-            // Store in cache with 10 minutes TTL
-            redisService.set(cacheKey, blogs, 10, TimeUnit.MINUTES);
-            logger.debug("Cached result for key: {}", cacheKey);
-
-            return blogs;
+            return cacheService.executeWithCacheList(
+                    cacheKeys.forMethodWithId("handleGetUserSavedBlogs", userId),
+                    BlogDto.class,
+                    () -> savedBlogQueryRepository.findBlogsByUserSaved(userId)
+                            .stream()
+                            .map(blogMapper::toDto)
+                            .collect(Collectors.toList()));
         } catch (OurException e) {
             throw e;
         } catch (Exception e) {
@@ -452,8 +412,7 @@ public class BlogApi extends BaseApi {
             savedBlogCommandRepository.deleteById(savedBlog.getId());
 
             // Invalidate cache
-            String cacheKey = "blog:handleGetUserSavedBlogs:" + userId.toString();
-            redisService.delete(cacheKey);
+            cacheService.invalidate(cacheKeys.forMethodWithId("handleGetUserSavedBlogs", userId));
 
             logger.info("Blog unsaved successfully: savedBlogId={}", savedBlog.getId());
             return true;
@@ -467,58 +426,15 @@ public class BlogApi extends BaseApi {
 
     // ========== Statistics Methods ==========
 
-    public long handleGetTotalBlogs() {
-        try {
-            String cacheKey = "blog:handleGetTotalBlogs:count";
-
-            // Check cache first
-            Object cached = redisService.get(cacheKey);
-            if (cached != null) {
-                logger.debug("Cache hit for key: {}", cacheKey);
-                return Long.parseLong(cached.toString());
-            }
-
-            long count = blogQueryRepository.countTotalBlogs();
-
-            // Store in cache with 10 minutes TTL
-            redisService.set(cacheKey, count, 10, TimeUnit.MINUTES);
-            logger.debug("Cached result for key: {}", cacheKey);
-
-            return count;
-        } catch (Exception e) {
-            logger.error("Error getting total blogs: {}", e.getMessage(), e);
-            throw new OurException("Failed to get total blogs", 500);
-        }
-    }
-
     public List<BlogDto> handleGetBlogsCreatedInRange(Instant startDate, Instant endDate) {
         try {
-            String cacheKey = "blog:handleGetBlogsCreatedInRange:" + startDate.toString() + ":" + endDate.toString();
-
-            // Check cache first
-            Object cached = redisService.get(cacheKey);
-            if (cached != null) {
-                logger.debug("Cache hit for key: {}", cacheKey);
-                // Convert to List<BlogDto> safely
-                if (cached instanceof List) {
-                    List<?> list = (List<?>) cached;
-                    return list.stream()
-                            .map(item -> objectMapper.convertValue(item, BlogDto.class))
-                            .collect(Collectors.toList());
-                }
-            }
-
-            List<BlogDto> blogs = blogQueryRepository
-                    .findBlogsCreatedBetween(startDate, endDate)
-                    .stream()
-                    .map(blogMapper::toDto)
-                    .collect(Collectors.toList());
-
-            // Store in cache with 10 minutes TTL
-            redisService.set(cacheKey, blogs, 10, TimeUnit.MINUTES);
-            logger.debug("Cached result for key: {}", cacheKey);
-
-            return blogs;
+            return cacheService.executeWithCacheList(
+                    cacheKeys.forMethodWithParams("handleGetBlogsCreatedInRange", startDate, endDate),
+                    BlogDto.class,
+                    () -> blogQueryRepository.findBlogsCreatedBetween(startDate, endDate)
+                            .stream()
+                            .map(blogMapper::toDto)
+                            .collect(Collectors.toList()));
         } catch (Exception e) {
             logger.error("Error getting blogs in range: {}", e.getMessage(), e);
             throw new OurException("Failed to get blogs in range", 500);
@@ -527,23 +443,9 @@ public class BlogApi extends BaseApi {
 
     public long handleGetBlogsCountCreatedInRange(Instant startDate, Instant endDate) {
         try {
-            String cacheKey = "blog:handleGetBlogsCountCreatedInRange:" + startDate.toString() + ":"
-                    + endDate.toString();
-
-            // Check cache first
-            Object cached = redisService.get(cacheKey);
-            if (cached != null) {
-                logger.debug("Cache hit for key: {}", cacheKey);
-                return Long.parseLong(cached.toString());
-            }
-
-            long count = blogQueryRepository.countBlogsCreatedBetween(startDate, endDate);
-
-            // Store in cache with 10 minutes TTL
-            redisService.set(cacheKey, count, 10, TimeUnit.MINUTES);
-            logger.debug("Cached result for key: {}", cacheKey);
-
-            return count;
+            return cacheService.executeWithCachePrimitive(
+                    cacheKeys.forMethodWithParams("handleGetBlogsCountCreatedInRange", startDate, endDate),
+                    () -> blogQueryRepository.countBlogsCreatedBetween(startDate, endDate));
         } catch (Exception e) {
             logger.error("Error counting blogs in range: {}", e.getMessage(), e);
             throw new OurException("Failed to count blogs in range", 500);
@@ -552,31 +454,13 @@ public class BlogApi extends BaseApi {
 
     public List<BlogDto> handleGetRecentBlogs(int limit) {
         try {
-            String cacheKey = "blog:handleGetRecentBlogs:" + limit;
-
-            // Check cache first
-            Object cached = redisService.get(cacheKey);
-            if (cached != null) {
-                logger.debug("Cache hit for key: {}", cacheKey);
-                if (cached instanceof List) {
-                    List<?> list = (List<?>) cached;
-                    return list.stream()
-                            .map(item -> objectMapper.convertValue(item, BlogDto.class))
-                            .collect(Collectors.toList());
-                }
-            }
-
-            List<BlogDto> blogs = blogQueryRepository
-                    .findRecentBlogs(PageRequest.of(0, limit))
-                    .stream()
-                    .map(blogMapper::toDto)
-                    .collect(Collectors.toList());
-
-            // Store in cache with 10 minutes TTL
-            redisService.set(cacheKey, blogs, 10, TimeUnit.MINUTES);
-            logger.debug("Cached result for key: {}", cacheKey);
-
-            return blogs;
+            return cacheService.executeWithCacheList(
+                    cacheKeys.forMethodWithParam("handleGetRecentBlogs", limit),
+                    BlogDto.class,
+                    () -> blogQueryRepository.findRecentBlogs(PageRequest.of(0, limit))
+                            .stream()
+                            .map(blogMapper::toDto)
+                            .collect(Collectors.toList()));
         } catch (Exception e) {
             logger.error("Error getting recent blogs: {}", e.getMessage(), e);
             throw new OurException("Failed to get recent blogs", 500);
@@ -586,472 +470,166 @@ public class BlogApi extends BaseApi {
     // ========== Public Response Methods ==========
 
     public Response createBlog(UUID userId, String dataJson, MultipartFile thumbnail) {
-        Response response = new Response();
-
-        try {
-            long startTime = System.currentTimeMillis();
-
-            // Rate limiting: 45 req/min for Create APIs
-            String rateLimitKey = "blog:createBlog:" + userId.toString();
-            if (!rateLimiterService.isAllowed(rateLimitKey, 45, 60)) {
-                logger.warn("Rate limit exceeded for createBlog by userId: {}", userId);
-                response.setStatusCode(429);
-                response.setMessage("Rate limit exceeded. Please try again later.");
-                return response;
-            }
-
-            CreateBlogRequest request = objectMapper.readValue(dataJson, CreateBlogRequest.class);
-
-            BlogDto blog = handleCreateBlog(
-                    userId,
-                    request.getTitle(),
-                    request.getDescription(),
-                    request.getCategory(),
-                    request.getContent(),
-                    request.getIsVisibility(),
-                    thumbnail);
-
-            long endTime = System.currentTimeMillis();
-            logger.info("Completed request in {} ms", endTime - startTime);
-
-            response.setStatusCode(201);
-            response.setMessage("Blog created successfully");
-            response.setBlog(blog);
-            return response;
-        } catch (OurException e) {
-            response.setStatusCode(e.getStatusCode());
-            response.setMessage(e.getMessage());
-            return response;
-        } catch (Exception e) {
-            logger.error("Error in createBlog: {}", e.getMessage(), e);
-            response.setStatusCode(500);
-            response.setMessage("Error creating blog: " + e.getMessage());
-            return response;
-        }
+        return responseHandler.executeWithResponse(
+                cacheKeys.custom("createBlog", userId.toString()),
+                45,
+                () -> {
+                    try {
+                        CreateBlogRequest request = objectMapper.readValue(dataJson, CreateBlogRequest.class);
+                        return handleCreateBlog(
+                                userId,
+                                request.getTitle(),
+                                request.getDescription(),
+                                request.getCategory(),
+                                request.getContent(),
+                                request.getIsVisibility(),
+                                thumbnail);
+                    } catch (Exception e) {
+                        logger.error("Error parsing create blog request: {}", e.getMessage(), e);
+                        throw new OurException("Invalid request data", 400);
+                    }
+                },
+                Response::new,
+                Response::setStatusCode,
+                Response::setMessage,
+                Response::setBlog,
+                "Blog created successfully",
+                201);
     }
 
-    public Response getAllBlogs() {
-        Response response = new Response();
+    public Response getAllBlogs(Boolean isVisibility) {
+        String cacheKey = isVisibility == null
+                ? cacheKeys.forMethod("getAllBlogs")
+                : cacheKeys.forMethodWithParam("getAllBlogs", String.valueOf(isVisibility));
 
-        try {
-            long startTime = System.currentTimeMillis();
-
-            // Rate limiting: 90 req/min for GET APIs
-            String rateLimitKey = "blog:getAllBlogs:all";
-            if (!rateLimiterService.isAllowed(rateLimitKey, 90, 60)) {
-                logger.warn("Rate limit exceeded for getAllBlogs");
-                response.setStatusCode(429);
-                response.setMessage("Rate limit exceeded. Please try again later.");
-                return response;
-            }
-
-            List<BlogDto> blogs = handleGetAllBlogs();
-
-            long endTime = System.currentTimeMillis();
-            logger.info("Completed request in {} ms", endTime - startTime);
-
-            response.setStatusCode(200);
-            response.setMessage("Blogs retrieved successfully");
-            response.setBlogs(blogs);
-            return response;
-        } catch (OurException e) {
-            response.setStatusCode(e.getStatusCode());
-            response.setMessage(e.getMessage());
-            return response;
-        } catch (Exception e) {
-            logger.error("Error in getAllBlogs: {}", e.getMessage(), e);
-            response.setStatusCode(500);
-            response.setMessage("Error getting blogs: " + e.getMessage());
-            return response;
-        }
+        return responseHandler.executeWithResponse(
+                cacheKey,
+                90,
+                () -> handleGetAllBlogs(isVisibility),
+                Response::new,
+                Response::setStatusCode,
+                Response::setMessage,
+                Response::setBlogs,
+                "Blogs retrieved successfully",
+                200);
     }
 
-    public Response getBlog(UUID blogId) {
-        Response response = new Response();
-
-        try {
-            long startTime = System.currentTimeMillis();
-
-            // Rate limiting: 90 req/min for GET APIs
-            String rateLimitKey = "blog:getBlog:" + blogId.toString();
-            if (!rateLimiterService.isAllowed(rateLimitKey, 90, 60)) {
-                logger.warn("Rate limit exceeded for getBlog blogId: {}", blogId);
-                response.setStatusCode(429);
-                response.setMessage("Rate limit exceeded. Please try again later.");
-                return response;
-            }
-
-            BlogDto blog = handleGetBlogById(blogId);
-
-            long endTime = System.currentTimeMillis();
-            logger.info("Completed request in {} ms", endTime - startTime);
-
-            response.setStatusCode(200);
-            response.setMessage("Blog retrieved successfully");
-            response.setBlog(blog);
-            return response;
-        } catch (OurException e) {
-            response.setStatusCode(e.getStatusCode());
-            response.setMessage(e.getMessage());
-            return response;
-        } catch (Exception e) {
-            logger.error("Error in getBlog: {}", e.getMessage(), e);
-            response.setStatusCode(500);
-            response.setMessage("Error getting blog: " + e.getMessage());
-            return response;
-        }
+    public Response getBlog(UUID blogId, UUID userId) {
+        return responseHandler.executeWithResponse(
+                cacheKeys.forMethodWithId("getBlog", blogId),
+                90,
+                () -> handleGetBlogById(blogId, userId),
+                Response::new,
+                Response::setStatusCode,
+                Response::setMessage,
+                Response::setBlog,
+                "Blog retrieved successfully",
+                200);
     }
 
     public Response getUserBlogs(UUID userId) {
-        Response response = new Response();
-
-        try {
-            long startTime = System.currentTimeMillis();
-
-            // Rate limiting: 90 req/min for GET APIs
-            String rateLimitKey = "blog:getUserBlogs:" + userId.toString();
-            if (!rateLimiterService.isAllowed(rateLimitKey, 90, 60)) {
-                logger.warn("Rate limit exceeded for getUserBlogs userId: {}", userId);
-                response.setStatusCode(429);
-                response.setMessage("Rate limit exceeded. Please try again later.");
-                return response;
-            }
-
-            List<BlogDto> blogs = handleGetUserBlogs(userId);
-
-            long endTime = System.currentTimeMillis();
-            logger.info("Completed request in {} ms", endTime - startTime);
-
-            response.setStatusCode(200);
-            response.setMessage("User blogs retrieved successfully");
-            response.setBlogs(blogs);
-            return response;
-        } catch (OurException e) {
-            response.setStatusCode(e.getStatusCode());
-            response.setMessage(e.getMessage());
-            return response;
-        } catch (Exception e) {
-            logger.error("Error in getUserBlogs: {}", e.getMessage(), e);
-            response.setStatusCode(500);
-            response.setMessage("Error getting user blogs: " + e.getMessage());
-            return response;
-        }
+        return responseHandler.executeWithResponse(
+                cacheKeys.forMethodWithId("getUserBlogs", userId),
+                90,
+                () -> handleGetUserBlogs(userId),
+                Response::new,
+                Response::setStatusCode,
+                Response::setMessage,
+                Response::setBlogs,
+                "User blogs retrieved successfully",
+                200);
     }
 
     public Response updateBlog(UUID blogId, String dataJson, MultipartFile thumbnail) {
-        Response response = new Response();
-
-        try {
-            long startTime = System.currentTimeMillis();
-
-            // Rate limiting: 45 req/min for Update APIs
-            String rateLimitKey = "blog:updateBlog:" + blogId.toString();
-            if (!rateLimiterService.isAllowed(rateLimitKey, 45, 60)) {
-                logger.warn("Rate limit exceeded for updateBlog blogId: {}", blogId);
-                response.setStatusCode(429);
-                response.setMessage("Rate limit exceeded. Please try again later.");
-                return response;
-            }
-
-            UpdateBlogRequest request = objectMapper.readValue(dataJson, UpdateBlogRequest.class);
-
-            BlogDto blog = handleUpdateBlog(
-                    blogId,
-                    request.getTitle(),
-                    request.getDescription(),
-                    request.getCategory(),
-                    request.getContent(),
-                    request.getIsVisibility(),
-                    thumbnail);
-
-            long endTime = System.currentTimeMillis();
-            logger.info("Completed request in {} ms", endTime - startTime);
-
-            response.setStatusCode(200);
-            response.setMessage("Blog updated successfully");
-            response.setBlog(blog);
-            return response;
-        } catch (OurException e) {
-            response.setStatusCode(e.getStatusCode());
-            response.setMessage(e.getMessage());
-            return response;
-        } catch (Exception e) {
-            logger.error("Error in updateBlog: {}", e.getMessage(), e);
-            response.setStatusCode(500);
-            response.setMessage("Error updating blog: " + e.getMessage());
-            return response;
-        }
+        return responseHandler.executeWithResponse(
+                cacheKeys.forMethodWithId("updateBlog", blogId),
+                45,
+                () -> {
+                    try {
+                        UpdateBlogRequest request = objectMapper.readValue(dataJson, UpdateBlogRequest.class);
+                        return handleUpdateBlog(
+                                blogId,
+                                request.getTitle(),
+                                request.getDescription(),
+                                request.getCategory(),
+                                request.getContent(),
+                                request.getIsVisibility(),
+                                thumbnail);
+                    } catch (Exception e) {
+                        logger.error("Error parsing update blog request: {}", e.getMessage(), e);
+                        throw new OurException("Invalid request data", 400);
+                    }
+                },
+                Response::new,
+                Response::setStatusCode,
+                Response::setMessage,
+                Response::setBlog,
+                "Blog updated successfully",
+                200);
     }
 
     public Response deleteBlog(UUID blogId) {
-        Response response = new Response();
-
-        try {
-            long startTime = System.currentTimeMillis();
-
-            // Rate limiting: 20 req/min for Delete APIs
-            String rateLimitKey = "blog:deleteBlog:" + blogId.toString();
-            if (!rateLimiterService.isAllowed(rateLimitKey, 20, 60)) {
-                logger.warn("Rate limit exceeded for deleteBlog blogId: {}", blogId);
-                response.setStatusCode(429);
-                response.setMessage("Rate limit exceeded. Please try again later.");
-                return response;
-            }
-
-            handleDeleteBlog(blogId);
-
-            long endTime = System.currentTimeMillis();
-            logger.info("Completed request in {} ms", endTime - startTime);
-
-            response.setStatusCode(200);
-            response.setMessage("Blog deleted successfully");
-            return response;
-        } catch (OurException e) {
-            response.setStatusCode(e.getStatusCode());
-            response.setMessage(e.getMessage());
-            return response;
-        } catch (Exception e) {
-            logger.error("Error in deleteBlog: {}", e.getMessage(), e);
-            response.setStatusCode(500);
-            response.setMessage("Error deleting blog: " + e.getMessage());
-            return response;
-        }
+        return responseHandler.executeWithResponse(
+                cacheKeys.forMethodWithId("deleteBlog", blogId),
+                20,
+                () -> handleDeleteBlog(blogId),
+                Response::new,
+                Response::setStatusCode,
+                Response::setMessage,
+                null,
+                "Blog deleted successfully",
+                200);
     }
 
     public Response saveBlog(UUID userId, UUID blogId) {
-        Response response = new Response();
-
-        try {
-            long startTime = System.currentTimeMillis();
-
-            // Rate limiting: 45 req/min for Create APIs
-            String rateLimitKey = "blog:saveBlog:" + userId.toString();
-            if (!rateLimiterService.isAllowed(rateLimitKey, 45, 60)) {
-                logger.warn("Rate limit exceeded for saveBlog userId: {}", userId);
-                response.setStatusCode(429);
-                response.setMessage("Rate limit exceeded. Please try again later.");
-                return response;
-            }
-
-            BlogDto blog = handleSaveBlog(blogId, userId);
-
-            long endTime = System.currentTimeMillis();
-            logger.info("Completed request in {} ms", endTime - startTime);
-
-            response.setStatusCode(200);
-            response.setMessage("Blog saved successfully");
-            response.setBlog(blog);
-            return response;
-        } catch (OurException e) {
-            response.setStatusCode(e.getStatusCode());
-            response.setMessage(e.getMessage());
-            return response;
-        } catch (Exception e) {
-            logger.error("Error in savedBlog: {}", e.getMessage(), e);
-            response.setStatusCode(500);
-            response.setMessage("Error saving blog: " + e.getMessage());
-            return response;
-        }
+        return responseHandler.executeWithResponse(
+                cacheKeys.forMethodWithId("saveBlog", userId),
+                45,
+                () -> handleSaveBlog(blogId, userId),
+                Response::new,
+                Response::setStatusCode,
+                Response::setMessage,
+                Response::setBlog,
+                "Blog saved successfully",
+                200);
     }
 
     public Response unsaveBlog(UUID userId, UUID blogId) {
-        Response response = new Response();
-
-        try {
-            long startTime = System.currentTimeMillis();
-
-            // Rate limiting: 45 req/min for Delete APIs
-            String rateLimitKey = "blog:unsaveBlog:" + userId.toString();
-            if (!rateLimiterService.isAllowed(rateLimitKey, 45, 60)) {
-                logger.warn("Rate limit exceeded for unsaveBlog userId: {}", userId);
-                response.setStatusCode(429);
-                response.setMessage("Rate limit exceeded. Please try again later.");
-                return response;
-            }
-
-            boolean success = handleUnsaveBlog(blogId, userId);
-
-            long endTime = System.currentTimeMillis();
-            logger.info("Completed request in {} ms", endTime - startTime);
-
-            response.setStatusCode(200);
-            response.setMessage("Blog unsaved successfully");
-            return response;
-        } catch (OurException e) {
-            response.setStatusCode(e.getStatusCode());
-            response.setMessage(e.getMessage());
-            return response;
-        } catch (Exception e) {
-            logger.error("Error in unsaveBlog: {}", e.getMessage(), e);
-            response.setStatusCode(500);
-            response.setMessage("Error unsaving blog: " + e.getMessage());
-            return response;
-        }
+        return responseHandler.executeWithResponse(
+                cacheKeys.forMethodWithId("unsaveBlog", userId),
+                45,
+                () -> handleUnsaveBlog(blogId, userId),
+                Response::new,
+                Response::setStatusCode,
+                Response::setMessage,
+                null,
+                "Blog unsaved successfully",
+                200);
     }
 
     public Response getUserSavedBlogs(UUID userId) {
-        Response response = new Response();
-
-        try {
-            long startTime = System.currentTimeMillis();
-
-            // Rate limiting: 90 req/min for GET APIs
-            String rateLimitKey = "blog:getUserSavedBlogs:" + userId.toString();
-            if (!rateLimiterService.isAllowed(rateLimitKey, 90, 60)) {
-                logger.warn("Rate limit exceeded for getUserSavedBlogs userId: {}", userId);
-                response.setStatusCode(429);
-                response.setMessage("Rate limit exceeded. Please try again later.");
-                return response;
-            }
-
-            List<BlogDto> blogs = handleGetUserSavedBlogs(userId);
-
-            long endTime = System.currentTimeMillis();
-            logger.info("Completed request in {} ms", endTime - startTime);
-
-            response.setStatusCode(200);
-            response.setMessage("Saved blogs retrieved successfully");
-            response.setBlogs(blogs);
-            return response;
-        } catch (OurException e) {
-            response.setStatusCode(e.getStatusCode());
-            response.setMessage(e.getMessage());
-            return response;
-        } catch (Exception e) {
-            logger.error("Error in getSavedBlogs: {}", e.getMessage(), e);
-            response.setStatusCode(500);
-            response.setMessage("Error getting saved blogs: " + e.getMessage());
-            return response;
-        }
-    }
-
-    public Response getTotalBlogs() {
-        Response response = new Response();
-
-        try {
-            long startTime = System.currentTimeMillis();
-
-            // Rate limiting: 90 req/min for GET APIs
-            String rateLimitKey = "blog:getTotalBlogs:all";
-            if (!rateLimiterService.isAllowed(rateLimitKey, 90, 60)) {
-                logger.warn("Rate limit exceeded for getTotalBlogs");
-                response.setStatusCode(429);
-                response.setMessage("Rate limit exceeded. Please try again later.");
-                return response;
-            }
-
-            long total = handleGetTotalBlogs();
-
-            long endTime = System.currentTimeMillis();
-            logger.info("Completed request in {} ms", endTime - startTime);
-
-            response.setStatusCode(200);
-            response.setMessage("Total blogs retrieved successfully");
-            response.setAdditionalData(Map.of("total", total));
-            return response;
-        } catch (Exception e) {
-            logger.error("Error in getTotalBlogs: {}", e.getMessage(), e);
-            response.setStatusCode(500);
-            response.setMessage("Failed to get total blogs");
-            return response;
-        }
-    }
-
-    public Response getBlogsByVisibility(boolean isVisibility) {
-        Response response = new Response();
-
-        try {
-            long startTime = System.currentTimeMillis();
-
-            // Rate limiting: 90 req/min for GET APIs
-            String rateLimitKey = "blog:getBlogsByVisibility:" + isVisibility;
-            if (!rateLimiterService.isAllowed(rateLimitKey, 90, 60)) {
-                logger.warn("Rate limit exceeded for getBlogsByVisibility");
-                response.setStatusCode(429);
-                response.setMessage("Rate limit exceeded. Please try again later.");
-                return response;
-            }
-
-            long count = blogQueryRepository.countByVisibility(isVisibility);
-
-            long endTime = System.currentTimeMillis();
-            logger.info("Completed request in {} ms", endTime - startTime);
-
-            response.setStatusCode(200);
-            response.setMessage("get Blogs count by visibility retrieved successfully");
-            response.setAdditionalData(Map.of("count", count));
-            return response;
-        } catch (Exception e) {
-            logger.error("Error in getBlogsCreatedInRange: {}", e.getMessage(), e);
-            response.setStatusCode(500);
-            response.setMessage("Failed to get blogs in range");
-            return response;
-        }
-    }
-
-    public Response getBlogsCreatedInRange(String startDate, String endDate) {
-        Response response = new Response();
-
-        try {
-            long startTime = System.currentTimeMillis();
-
-            // Rate limiting: 90 req/min for GET APIs
-            String rateLimitKey = "blog:getBlogsCreatedInRange:" + startDate + ":" + endDate;
-            if (!rateLimiterService.isAllowed(rateLimitKey, 90, 60)) {
-                logger.warn("Rate limit exceeded for getBlogsCreatedInRange");
-                response.setStatusCode(429);
-                response.setMessage("Rate limit exceeded. Please try again later.");
-                return response;
-            }
-
-            Instant start = Instant.parse(startDate);
-            Instant end = Instant.parse(endDate);
-            long count = handleGetBlogsCountCreatedInRange(start, end);
-
-            long endTime = System.currentTimeMillis();
-            logger.info("Completed request in {} ms", endTime - startTime);
-
-            response.setStatusCode(200);
-            response.setMessage("Blogs count in range retrieved successfully");
-            response.setAdditionalData(Map.of("count", count));
-            return response;
-        } catch (Exception e) {
-            logger.error("Error in getBlogsCreatedInRange: {}", e.getMessage(), e);
-            response.setStatusCode(500);
-            response.setMessage("Failed to get blogs in range");
-            return response;
-        }
+        return responseHandler.executeWithResponse(
+                cacheKeys.forMethodWithId("getUserSavedBlogs", userId),
+                90,
+                () -> handleGetUserSavedBlogs(userId),
+                Response::new,
+                Response::setStatusCode,
+                Response::setMessage,
+                Response::setBlogs,
+                "Saved blogs retrieved successfully",
+                200);
     }
 
     public Response getRecentBlogs(int limit) {
-        Response response = new Response();
-
-        try {
-            long startTime = System.currentTimeMillis();
-
-            // Rate limiting: 90 req/min for GET APIs
-            String rateLimitKey = "blog:getRecentBlogs:" + limit;
-            if (!rateLimiterService.isAllowed(rateLimitKey, 90, 60)) {
-                logger.warn("Rate limit exceeded for getRecentBlogs");
-                response.setStatusCode(429);
-                response.setMessage("Rate limit exceeded. Please try again later.");
-                return response;
-            }
-
-            List<BlogDto> blogs = handleGetRecentBlogs(limit);
-
-            long endTime = System.currentTimeMillis();
-            logger.info("Completed request in {} ms", endTime - startTime);
-
-            response.setStatusCode(200);
-            response.setMessage("Recent blogs retrieved successfully");
-            response.setBlogs(blogs);
-            return response;
-        } catch (Exception e) {
-            logger.error("Error in getRecentBlogs: {}", e.getMessage(), e);
-            response.setStatusCode(500);
-            response.setMessage("Failed to get recent blogs");
-            return response;
-        }
+        return responseHandler.executeWithResponse(
+                cacheKeys.forMethodWithParam("getRecentBlogs", limit),
+                90,
+                () -> handleGetRecentBlogs(limit),
+                Response::new,
+                Response::setStatusCode,
+                Response::setMessage,
+                Response::setBlogs,
+                "Recent blogs retrieved successfully",
+                200);
     }
 }

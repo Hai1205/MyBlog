@@ -41,10 +41,10 @@ export const BlogFilter = ({
     },
     {
       key: "visibility",
-      label: "Chế độ hiển thị",
+      label: "Visibility mode",
       options: [
-        { label: "Công khai", value: "true" },
-        { label: "Riêng tư", value: "false" },
+        { label: "Public", value: "true" },
+        { label: "Private", value: "false" },
       ],
     },
   ];

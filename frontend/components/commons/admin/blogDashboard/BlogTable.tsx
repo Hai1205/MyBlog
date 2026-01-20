@@ -70,12 +70,16 @@ export const BlogTable = ({
       header: "Description",
       accessor: (blog: IBlog) => (
         <div className="inline-flex items-center justify-center gap-2">
-          <span className="capitalize">{blog.description}</span>
+          <span className="capitalize">
+            {blog.description.length > 30
+              ? blog.description.slice(0, 30) + "..."
+              : blog.description}
+          </span>
         </div>
       ),
     },
     {
-      header: "Visibility",
+      header: "Visibility mode",
       accessor: (blog: IBlog) => (
         <div className="inline-flex items-center justify-center gap-2">
           <span
