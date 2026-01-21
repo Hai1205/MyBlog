@@ -43,8 +43,8 @@ declare global {
         content: string;
         thumbnailUrl: string;
         category: ECategory;
-        author: IUser;
-        comments: IComment[];
+        author?: IUser;
+        comments?: IComment[];
         isVisibility: boolean;
         isSaved: boolean;
         createdAt: string;

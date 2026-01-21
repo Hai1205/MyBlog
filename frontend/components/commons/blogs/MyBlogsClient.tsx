@@ -55,6 +55,7 @@ export default function MyBlogsClient() {
   }, [userBlogs, userBlogsStartIndex, userBlogsEndIndex]);
 
   const handleCreate = async () => {
+    handleSetBlogToEdit(null);
     router.push("/blogs/new");
   };
 

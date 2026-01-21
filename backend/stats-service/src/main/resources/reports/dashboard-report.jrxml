@@ -15,10 +15,10 @@
     <parameter name="PENDING_USERS" class="java.lang.Integer"/>
     <parameter name="BANNED_USERS" class="java.lang.Integer"/>
     <parameter name="USERS_CREATED_THIS_MONTH" class="java.lang.Integer"/>
-    <parameter name="TOTAL_CVS" class="java.lang.Integer"/>
-    <parameter name="PUBLIC_CVS" class="java.lang.Integer"/>
-    <parameter name="PRIVATE_CVS" class="java.lang.Integer"/>
-    <parameter name="CVS_CREATED_THIS_MONTH" class="java.lang.Integer"/>
+    <parameter name="TOTAL_BLOGS" class="java.lang.Integer"/>
+    <parameter name="PUBLIC_BLOGS" class="java.lang.Integer"/>
+    <parameter name="PRIVATE_BLOGS" class="java.lang.Integer"/>
+    <parameter name="BLOGS_CREATED_THIS_MONTH" class="java.lang.Integer"/>
 
     <!-- Fields from ActivityDto -->
     <field name="type" class="java.lang.String"/>
@@ -145,7 +145,7 @@
         </band>
     </pageHeader>
 
-    <!-- Column Header for CVs Section -->
+    <!-- Column Header for Blogs Section -->
     <columnHeader>
         <band height="200">
             <staticText>
@@ -153,10 +153,10 @@
                 <textElement>
                     <font size="16" isBold="true"/>
                 </textElement>
-                <text><![CDATA[CV Statistics]]></text>
+                <text><![CDATA[Blog Statistics]]></text>
             </staticText>
 
-            <!-- Total CVs Box -->
+            <!-- Total Blogs Box -->
             <rectangle>
                 <reportElement x="0" y="40" width="250" height="70" backcolor="#BBDEFB"/>
             </rectangle>
@@ -165,17 +165,17 @@
                 <textElement>
                     <font size="12" isBold="true"/>
                 </textElement>
-                <text><![CDATA[Total CVs]]></text>
+                <text><![CDATA[Total Blogs]]></text>
             </staticText>
             <textField>
                 <reportElement x="10" y="70" width="230" height="35"/>
                 <textElement>
                     <font size="24" isBold="true"/>
                 </textElement>
-                <textFieldExpression><![CDATA[$P{TOTAL_CVS}]]></textFieldExpression>
+                <textFieldExpression><![CDATA[$P{TOTAL_BLOGS}]]></textFieldExpression>
             </textField>
 
-            <!-- Public CVs Box -->
+            <!-- Public Blogs Box -->
             <rectangle>
                 <reportElement x="265" y="40" width="250" height="70" backcolor="#E1BEE7"/>
             </rectangle>
@@ -184,30 +184,30 @@
                 <textElement>
                     <font size="12" isBold="true"/>
                 </textElement>
-                <text><![CDATA[Public CVs]]></text>
+                <text><![CDATA[Public Blogs]]></text>
             </staticText>
             <textField>
                 <reportElement x="275" y="70" width="230" height="35"/>
                 <textElement>
                     <font size="24" isBold="true"/>
                 </textElement>
-                <textFieldExpression><![CDATA[$P{PUBLIC_CVS}]]></textFieldExpression>
+                <textFieldExpression><![CDATA[$P{PUBLIC_BLOGS}]]></textFieldExpression>
             </textField>
 
-            <!-- CV Details -->
+            <!-- Blog Details -->
             <staticText>
                 <reportElement x="10" y="120" width="100" height="20"/>
                 <textElement>
                     <font size="10" isBold="true"/>
                 </textElement>
-                <text><![CDATA[Private CVs:]]></text>
+                <text><![CDATA[Private Blogs:]]></text>
             </staticText>
             <textField>
                 <reportElement x="120" y="120" width="100" height="20"/>
                 <textElement>
                     <font size="10"/>
                 </textElement>
-                <textFieldExpression><![CDATA[$P{PRIVATE_CVS}]]></textFieldExpression>
+                <textFieldExpression><![CDATA[$P{PRIVATE_BLOGS}]]></textFieldExpression>
             </textField>
 
             <staticText>
@@ -215,14 +215,14 @@
                 <textElement>
                     <font size="10" isBold="true"/>
                 </textElement>
-                <text><![CDATA[CVs Created This Month:]]></text>
+                <text><![CDATA[Blogs Created This Month:]]></text>
             </staticText>
             <textField>
                 <reportElement x="170" y="145" width="100" height="20"/>
                 <textElement>
                     <font size="10"/>
                 </textElement>
-                <textFieldExpression><![CDATA[$P{CVS_CREATED_THIS_MONTH}]]></textFieldExpression>
+                <textFieldExpression><![CDATA[$P{BLOGS_CREATED_THIS_MONTH}]]></textFieldExpression>
             </textField>
 
             <!-- Recent Activities Header -->

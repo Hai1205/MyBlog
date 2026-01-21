@@ -16,6 +16,11 @@ const BlogsClient = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
 
+  const categories = [
+    { value: "all", label: "All Categories" },
+    ...blogCategories,
+  ];
+
   // Pagination
   const { paginationData, paginationState, setPage, updateTotalElements } =
     usePagination({
@@ -79,7 +84,7 @@ const BlogsClient = () => {
                   onChange={(e) => setSelectedCategory(e.target.value)}
                   className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-card text-card-foreground"
                 >
-                  {blogCategories.map((category) => (
+                  {categories.map((category) => (
                     <option key={category.value} value={category.value}>
                       {category.label}
                     </option>

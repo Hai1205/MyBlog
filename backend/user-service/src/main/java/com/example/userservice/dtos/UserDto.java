@@ -24,6 +24,9 @@ public class UserDto {
     private String avatarUrl;
     private String avatarPublicId;
 
+    private String createdAt;
+    private String updatedAt;
+
     // Constructor with all fields for MapStruct
     @Builder
     public UserDto(UUID id, String username, String password, String email,

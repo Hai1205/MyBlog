@@ -287,11 +287,15 @@ public class BlogApi extends BaseApi {
                 thumbnailPublicId = (String) uploadResult.get("publicId");
             }
 
+            Blog.Category categoryEnum = category != null
+                    ? Blog.Category.valueOf(category.toLowerCase())
+                    : existingBlog.getCategory();
+
             blogCommandRepository.updateBlog(
                     blogId,
                     title != null ? title : existingBlog.getTitle(),
                     description != null ? description : existingBlog.getDescription(),
-                    category != null ? category : existingBlog.getCategory().name(),
+                    categoryEnum,
                     content != null ? content : existingBlog.getContent(),
                     thumbnailUrl,
                     thumbnailPublicId,

@@ -68,44 +68,37 @@ export default function BlogDashboardClient() {
     setCurrentPage(page);
   };
 
-  const filterData = useCallback(
-    (query: string, filters: IBlogFilter) => {
-      let results = [...blogsTable];
-
-      if (query.trim()) {
-        const searchTerms = query.toLowerCase().trim();
-        results = results.filter(
-          (blog) =>
-            blog.title.toLowerCase().includes(searchTerms) ||
-            blog.description.toLowerCase().includes(searchTerms),
-        );
-      }
-
-      if (filters.category.length > 0) {
-        results = results.filter((blog) =>
-          filters.category.includes(blog.category || ""),
-        );
-      }
-
-      if (filters.visibility && filters.visibility.length > 0) {
-        results = results.filter((blog) => {
-          const isVisibility = blog.isVisibility;
-          return filters.visibility!.some((filterValue) => {
-            if (filterValue === "true") return isVisibility === true;
-            if (filterValue === "false") return isVisibility === false;
-            return false;
-          });
-        });
-      }
-
-      setFilteredBlogs(results);
-    },
-    [blogsTable],
-  );
-
   useEffect(() => {
-    filterData(searchQuery, activeFilters);
-  }, [blogsTable, searchQuery, activeFilters, filterData]);
+    let results = [...blogsTable];
+
+    if (searchQuery.trim()) {
+      const searchTerms = searchQuery.toLowerCase().trim();
+      results = results.filter(
+        (blog) =>
+          blog.title.toLowerCase().includes(searchTerms) ||
+          blog.description.toLowerCase().includes(searchTerms),
+      );
+    }
+
+    if (activeFilters.category.length > 0) {
+      results = results.filter((blog) =>
+        activeFilters.category.includes(blog.category || ""),
+      );
+    }
+
+    if (activeFilters.visibility && activeFilters.visibility.length > 0) {
+      results = results.filter((blog) => {
+        const isVisibility = blog.isVisibility;
+        return activeFilters.visibility!.some((filterValue) => {
+          if (filterValue === "true") return isVisibility === true;
+          if (filterValue === "false") return isVisibility === false;
+          return false;
+        });
+      });
+    }
+
+    setFilteredBlogs(results);
+  }, [blogsTable, searchQuery, activeFilters]);
 
   // Update pagination when filtered blogsTable change
   useEffect(() => {
@@ -121,14 +114,10 @@ export default function BlogDashboardClient() {
     paginationState.page * paginationState.pageSize,
   );
 
-  const handleSearch = useCallback(
-    (e: React.FormEvent) => {
-      e.preventDefault();
-
-      filterData(searchQuery, activeFilters);
-    },
-    [searchQuery, activeFilters, filterData],
-  );
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Filter logic is now handled by useEffect
+  };
 
   const toggleFilter = (value: string, type: BlogFilterType) => {
     setActiveFilters((prev) => {
@@ -150,7 +139,7 @@ export default function BlogDashboardClient() {
   };
 
   const applyFilters = () => {
-    filterData(searchQuery, activeFilters);
+    // Filter logic is now handled by useEffect
     closeMenuMenuFilters();
   };
 
@@ -172,6 +161,7 @@ export default function BlogDashboardClient() {
   };
 
   const handleCreate = async () => {
+    handleSetBlogToEdit(null);
     router.push("/blogs/new");
   };
 

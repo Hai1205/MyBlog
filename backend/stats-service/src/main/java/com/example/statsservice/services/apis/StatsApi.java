@@ -120,20 +120,29 @@ public class StatsApi extends BaseApi {
         List<Map<String, Object>> allUsers = allUsersResponse.getUsers();
         long totalUsers = allUsers != null ? allUsers.size() : 0;
         long activeUsers = allUsers != null ? allUsers.stream()
-                .filter(u -> "ACTIVE".equals(u.get("status")))
+                .filter(u -> "active".equalsIgnoreCase(String.valueOf(u.get("status"))))
                 .count() : 0;
         long pendingUsers = allUsers != null ? allUsers.stream()
-                .filter(u -> "PENDING".equals(u.get("status")))
+                .filter(u -> "pending".equalsIgnoreCase(String.valueOf(u.get("status"))))
                 .count() : 0;
         long bannedUsers = allUsers != null ? allUsers.stream()
-                .filter(u -> "BANNED".equals(u.get("status")))
+                .filter(u -> "banned".equalsIgnoreCase(String.valueOf(u.get("status"))))
                 .count() : 0;
         long usersThisMonth = allUsers != null ? allUsers.stream()
                 .filter(u -> {
                     try {
-                        Instant createdAt = Instant.parse((String) u.get("createdAt"));
-                        return !createdAt.isBefore(startOfMonth) && !createdAt.isAfter(endOfMonth);
+                        String createdAtStr = (String) u.get("createdAt");
+                        if (createdAtStr == null)
+                            return false;
+
+                        // Parse LocalDateTime (format: 2026-01-21T09:37:20)
+                        LocalDateTime createdAt = LocalDateTime.parse(createdAtStr);
+                        LocalDateTime startOfMonthLocal = currentMonth.atDay(1).atStartOfDay();
+                        LocalDateTime endOfMonthLocal = currentMonth.atEndOfMonth().atTime(23, 59, 59);
+
+                        return !createdAt.isBefore(startOfMonthLocal) && !createdAt.isAfter(endOfMonthLocal);
                     } catch (Exception e) {
+                        logger.warn("Failed to parse createdAt: {}", u.get("createdAt"), e);
                         return false;
                     }
                 })
@@ -151,9 +160,15 @@ public class StatsApi extends BaseApi {
         long blogsThisMonth = allBlogs != null ? allBlogs.stream()
                 .filter(b -> {
                     try {
-                        Instant createdAt = Instant.parse((String) b.get("createdAt"));
-                        return !createdAt.isBefore(startOfMonth) && !createdAt.isAfter(endOfMonth);
+                        String createdAtStr = (String) b.get("createdAt");
+                        if (createdAtStr == null)
+                            return false;
+
+                        // Try to parse as Instant first (for blogs using Instant)
+                        Instant createdAtInstant = Instant.parse(createdAtStr);
+                        return !createdAtInstant.isBefore(startOfMonth) && !createdAtInstant.isAfter(endOfMonth);
                     } catch (Exception e) {
+                        logger.warn("Failed to parse blog createdAt: {}", b.get("createdAt"), e);
                         return false;
                     }
                 })
@@ -197,10 +212,10 @@ public class StatsApi extends BaseApi {
         parameters.put("PENDING_USERS", (int) dashboardStats.getPendingUsers());
         parameters.put("BANNED_USERS", (int) dashboardStats.getBannedUsers());
         parameters.put("USERS_CREATED_THIS_MONTH", (int) dashboardStats.getUsersCreatedThisMonth());
-        parameters.put("TOTAL_BlogS", (int) dashboardStats.getTotalBlogs());
-        parameters.put("PUBLIC_BlogS", (int) dashboardStats.getPublicBlogs());
-        parameters.put("PRIVATE_BlogS", (int) dashboardStats.getPrivateBlogs());
-        parameters.put("BlogS_CREATED_THIS_MONTH", (int) dashboardStats.getBlogsCreatedThisMonth());
+        parameters.put("TOTAL_BLOGS", (int) dashboardStats.getTotalBlogs());
+        parameters.put("PUBLIC_BLOGS", (int) dashboardStats.getPublicBlogs());
+        parameters.put("PRIVATE_BLOGS", (int) dashboardStats.getPrivateBlogs());
+        parameters.put("BLOGS_CREATED_THIS_MONTH", (int) dashboardStats.getBlogsCreatedThisMonth());
 
         // Create JRBeanCollectionDataSource from activities
         JRDataSource dataSource = new JRBeanCollectionDataSource(
@@ -275,9 +290,9 @@ public class StatsApi extends BaseApi {
                 activities.add(ActivityDto.builder()
                         .id("blog-" + blog.get("id").toString())
                         .type("blog_created")
-                        .description("New Blog created: " + (String) blog.get("title"))
+                        .description("New blog created: " + (String) blog.get("title"))
                         .timestamp((String) blog.get("createdAt"))
-                        .userId(blog.get("userId").toString())
+                        .userId(blog.get("authorId") != null ? blog.get("authorId").toString() : null)
                         .build());
             }
 

@@ -5,11 +5,15 @@ import { Button } from "@/components/ui/button";
 import { FileText, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Typewriter from "typewriter-effect";
+import { useBlogStore } from "@/stores/blogStore";
 
 export const HeroSection = () => {
+  const { handleSetBlogToEdit } = useBlogStore();
+  
   const router = useRouter();
 
   const handleCreate = async () => {
+    handleSetBlogToEdit(null);
     router.push("/blogs/new");
   };
 
@@ -41,12 +45,11 @@ export const HeroSection = () => {
       </div>
 
       <div className="flex flex-col gap-4 sm:flex-row">
-        <Link href="/blogs/new">
-          <Button size="lg" className="gap-2" onClick={handleCreate}>
-            <Sparkles className="h-5 w-5" />
-            Write Blog Now
-          </Button>
-        </Link>
+        <Button size="lg" className="gap-2" onClick={handleCreate}>
+          <Sparkles className="h-5 w-5" />
+          Write Blog Now
+        </Button>
+
         <Link href="/blogs/my-blogs">
           <Button size="lg" variant="outline" className="gap-2 bg-transparent">
             <FileText className="h-5 w-5" />

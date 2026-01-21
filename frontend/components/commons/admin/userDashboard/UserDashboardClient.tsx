@@ -85,47 +85,32 @@ export default function UserDashboardClient() {
     setCurrentPage(page);
   };
 
-  const filterData = useCallback(
-    (query: string, filters: { status: string[]; role: string[] }) => {
-      let results = [...usersTable];
-
-      if (query.trim()) {
-        const searchTerms = query.toLowerCase().trim();
-        results = results.filter(
-          (user) =>
-            user.email.toLowerCase().includes(searchTerms) ||
-            user.username.toLowerCase().includes(searchTerms),
-        );
-      }
-
-      if (filters.status.length > 0) {
-        results = results.filter((user) =>
-          filters.status.includes(user.status || ""),
-        );
-      }
-
-      if (filters.role.length > 0) {
-        results = results.filter((user) =>
-          filters.role.includes(user.role || ""),
-        );
-      }
-
-      setFilteredUsers(results);
-    },
-    [usersTable],
-  );
-
   useEffect(() => {
-    filterData(searchQuery, activeFilters);
-  }, [usersTable, searchQuery, activeFilters, filterData]);
+    let results = [...usersTable];
 
-  // Update pagination when filtered usersTable change
-  useEffect(() => {
-    paginationData.totalElements = filteredUsers.length;
-    paginationData.totalPages = Math.ceil(
-      filteredUsers.length / paginationState.pageSize,
-    );
-  }, [filteredUsers.length, paginationState.pageSize]);
+    if (searchQuery.trim()) {
+      const searchTerms = searchQuery.toLowerCase().trim();
+      results = results.filter(
+        (user) =>
+          user.email.toLowerCase().includes(searchTerms) ||
+          user.username.toLowerCase().includes(searchTerms),
+      );
+    }
+
+    if (activeFilters.status.length > 0) {
+      results = results.filter((user) =>
+        activeFilters.status.includes(user.status || ""),
+      );
+    }
+
+    if (activeFilters.role.length > 0) {
+      results = results.filter((user) =>
+        activeFilters.role.includes(user.role || ""),
+      );
+    }
+
+    setFilteredUsers(results);
+  }, [usersTable, searchQuery, activeFilters]);
 
   // Paginate filtered usersTable
   const paginatedUsers = filteredUsers.slice(
@@ -133,14 +118,10 @@ export default function UserDashboardClient() {
     paginationState.page * paginationState.pageSize,
   );
 
-  const handleSearch = useCallback(
-    (e: React.FormEvent) => {
-      e.preventDefault();
-
-      filterData(searchQuery, activeFilters);
-    },
-    [searchQuery, activeFilters, filterData],
-  );
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Filter logic is now handled by useEffect
+  };
 
   const toggleFilter = (value: string, type: UserFilterType) => {
     setActiveFilters((prev) => {
@@ -162,7 +143,7 @@ export default function UserDashboardClient() {
   };
 
   const applyFilters = () => {
-    filterData(searchQuery, activeFilters);
+    // Filter logic is now handled by useEffect
     closeMenuMenuFilters();
   };
 
@@ -307,7 +288,7 @@ export default function UserDashboardClient() {
     } else if (!isDeleteDialog && userToResetPassword) {
       resetPassword(userToResetPassword.email, {
         onSuccess: () => {
-          toast.success("Đã gửi mật khẩu mới về email của người dùng!");
+          toast.success("A new password has been sent to the user's email!");
         },
       });
       setResetPasswordDialogOpen(false);
@@ -426,16 +407,16 @@ export default function UserDashboardClient() {
       <ConfirmationDialog
         open={deleteDialogOpen || resetPasswordDialogOpen}
         onOpenChange={handleDialogClose}
-        title={isDeleteDialog ? "Delete User" : "Đặt lại mật khẩu"}
+        title={isDeleteDialog ? "Delete User" : "Reset Password"}
         description={
           isDeleteDialog
-            ? "Hành động này không thể hoàn tác. Điều này sẽ xóa vĩnh viễn người dùng và loại bỏ nó khỏi máy chủ của chúng tôi."
-            : `Bạn có muốn gửi email đặt lại mật khẩu cho ${
+            ? "This action cannot be undone. This will permanently delete the user and remove it from our servers."
+            : `Do you want to send a password reset email to ${
                 userToResetPassword?.email
               }?`
         }
-        confirmText={isDeleteDialog ? "Delete" : "Gửi email"}
-        cancelText="Hủy"
+        confirmText={isDeleteDialog ? "Delete" : "Send Email"}
+        cancelText="Cancel"
         isDestructive={isDeleteDialog}
         onConfirm={handleDialogConfirm}
       />

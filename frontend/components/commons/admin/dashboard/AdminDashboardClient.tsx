@@ -1,13 +1,19 @@
 "use client";
 
+import { useState } from "react";
 import { DashboardHeader } from "@/components/commons/admin/dashboard/DashboardHeader";
 import { StatsCard } from "@/components/commons/admin/dashboard/StatsCard";
 import { RecentActivity } from "@/components/commons/admin/dashboard/RecentActivity";
+import { ReportViewerDialog } from "@/components/commons/admin/dialog/ReportViewerDialog";
 import { Button } from "@/components/ui/button";
 import { Eye, Users, FileText } from "lucide-react";
 import { useDashboardStatsQuery } from "@/hooks/api/queries/useStatsQueries";
+import { AdminDashboardSkeleton } from "./AdminDashboardSkeleton";
+import { AdminDashboardError } from "./AdminDashboardError";
 
 export default function AdminDashboardClient() {
+  const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
+
   const {
     data: dashboardStatsResponse,
     isLoading,
@@ -16,28 +22,11 @@ export default function AdminDashboardClient() {
   const dashboardStats = dashboardStatsResponse?.data?.dashboardStats;
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <p className="text-muted-foreground mb-4">
-            Loading dashboard statistics...
-          </p>
-        </div>
-      </div>
-    );
+    return <AdminDashboardSkeleton />;
   }
 
   if (error || !dashboardStats) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <p className="text-muted-foreground mb-4">
-            Failed to load dashboard statistics.
-          </p>
-          <Button onClick={() => window.location.reload()}>Retry</Button>
-        </div>
-      </div>
-    );
+    return <AdminDashboardError />;
   }
 
   return (
@@ -46,6 +35,7 @@ export default function AdminDashboardClient() {
         <Button
           className="gap-2 bg-linear-to-br from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 shadow-lg shadow-blue-500/30 transition-all duration-200 hover:shadow-xl hover:shadow-blue-500/40 hover:scale-105"
           size="sm"
+          onClick={() => setIsReportDialogOpen(true)}
         >
           <Eye className="h-4 w-4" />
           View Report
@@ -89,6 +79,12 @@ export default function AdminDashboardClient() {
 
       {/* Recent Activity */}
       <RecentActivity activities={dashboardStats.recentActivities} />
+
+      {/* Report Viewer Dialog */}
+      <ReportViewerDialog
+        open={isReportDialogOpen}
+        onOpenChange={setIsReportDialogOpen}
+      />
     </div>
   );
 }

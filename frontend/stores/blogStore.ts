@@ -27,6 +27,7 @@ const initialState = {
 	selectedBlogId: null,
 	filterCategory: null,
 	sortBy: 'newest' as const,
+	blogToEdit: null as IBlog | null,
 	commentsByBlogId: {} as Record<string, IComment[]>,
 };
 

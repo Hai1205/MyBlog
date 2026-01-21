@@ -34,8 +34,8 @@ export const AdminSidebar = ({
 
   const menuItems = [
     { icon: Home, label: "Dashboard", href: "/admin" },
-    { icon: FileText, label: "Blog Dashboard", href: "/admin/blog-dashboard" },
     { icon: Users, label: "User Dashboard", href: "/admin/user-dashboard" },
+    { icon: FileText, label: "Blog Dashboard", href: "/admin/blog-dashboard" },
   ];
 
   return (

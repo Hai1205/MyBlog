@@ -4,6 +4,7 @@ import { EUserRole, EUserStatus } from "@/types/enum";
 import { SharedFilter } from "../adminTable/SharedFilter";
 import { capitalizeFirstLetter } from "@/lib/utils";
 import { IUserFilter, UserFilterType } from "./UserDashboardClient";
+import { userRole, userStatus } from "./constant";
 
 interface UserFilterProps {
   openMenuFilters: boolean;
@@ -33,19 +34,13 @@ export const UserFilter = ({
   const filterSections: UserFilterSection[] = [
     {
       key: "status",
-      label: "Trạng thái",
-      options: Object.values(EUserStatus).map((status) => ({
-        label: capitalizeFirstLetter(status),
-        value: status,
-      })),
+      label: "Status",
+      options: userStatus,
     },
     {
       key: "role",
-      label: "Vai trò",
-      options: Object.values(EUserRole).map((role) => ({
-        label: capitalizeFirstLetter(role),
-        value: role,
-      })),
+      label: "Role",
+      options: userRole,
     },
   ];
 

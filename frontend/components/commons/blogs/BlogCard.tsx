@@ -26,7 +26,7 @@ export const BlogCard: React.FC<BlogCardProps> = ({
 
   return (
     <Link href={`/blogs/${blog.id}`}>
-      <Card className="overflow-hidden rounded-lg shadow-none transition-shadow duration-300 hover:shadow-xl border-none relative group">
+      <Card className="overflow-hidden rounded-lg shadow-none transition-all duration-300 hover:shadow-2xl hover:scale-105 hover:-translate-y-2 border border-gray-100 hover:border-primary/20 relative group">
         {/* Action buttons overlay */}
         {(onUnsave || onUpdate || onDelete) && (
           <div className="absolute top-2 right-2 z-10 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
@@ -66,11 +66,11 @@ export const BlogCard: React.FC<BlogCardProps> = ({
           </div>
         )}
 
-        <div className="w-full h-50">
+        <div className="w-full h-50 overflow-hidden">
           <img
-            src={blog.thumbnailUrl}
+            src={blog.thumbnailUrl || "/svgs/placeholder.svg"}
             alt={blog.title}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
           />
         </div>
 
@@ -80,10 +80,10 @@ export const BlogCard: React.FC<BlogCardProps> = ({
               <Calendar size={16} />
               <span>{formatDateAgo(blog.createdAt)}</span>
             </p>
-            <h2 className="text-lg font-semibold mt-1 line-clamp-1 text-center">
+            <h2 className="text-lg text-primary font-semibold mt-1 line-clamp-1 text-center">
               {blog.title}
             </h2>
-            <p className="text-center">{blog.description.slice(0, 30)}...</p>
+            <p className="text-center text-secondary">{blog.description.slice(0, 30)}...</p>
           </div>
         </div>
       </Card>

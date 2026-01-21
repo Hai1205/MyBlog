@@ -77,7 +77,7 @@ export function DataTable<T>({
                 ))}
                 {actions && actions.length > 0 && (
                   <TableHead className="text-right font-bold text-foreground/90">
-                    Hành động
+                    Activities
                   </TableHead>
                 )}
               </TableRow>
@@ -97,7 +97,7 @@ export function DataTable<T>({
                     className={cn(
                       "transition-all duration-200 hover:bg-linear-to-br hover:from-primary/5 hover:to-secondary/5",
                       onRowClick &&
-                        "cursor-pointer hover:shadow-md hover:shadow-primary/10"
+                        "cursor-pointer hover:shadow-md hover:shadow-primary/10",
                     )}
                     onClick={() => onRowClick?.(item)}
                   >
@@ -128,7 +128,7 @@ export function DataTable<T>({
                             className="bg-card/95 backdrop-blur-sm border border-border/50 shadow-xl"
                           >
                             <DropdownMenuLabel className="text-foreground font-semibold bg-linear-to-br from-primary/10 to-secondary/10">
-                              Hành động
+                              Activities
                             </DropdownMenuLabel>
 
                             <DropdownMenuSeparator className="bg-border/50" />

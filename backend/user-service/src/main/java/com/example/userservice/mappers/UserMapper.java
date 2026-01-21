@@ -30,6 +30,8 @@ public class UserMapper {
         dto.setFacebook(user.getFacebook());
         dto.setLinkedin(user.getLinkedin());
         dto.setInstagram(user.getInstagram());
+        dto.setCreatedAt(user.getCreatedAt() != null ? user.getCreatedAt().toString() : null);
+        dto.setUpdatedAt(user.getUpdatedAt() != null ? user.getUpdatedAt().toString() : null);
         return dto;
     }
 

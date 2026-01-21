@@ -108,6 +108,14 @@ export const BlogTable = ({
 
   const actions = [];
 
+  if (onView) {
+    actions.push({
+      label: "View",
+      onClick: onView,
+      icon: Eye,
+    });
+  }
+  
   if (onUpdate) {
     actions.push({
       label: "Update",
@@ -122,14 +130,6 @@ export const BlogTable = ({
       onClick: onDelete,
       icon: Trash2,
       className: "hover:bg-destructive/10 hover:text-destructive",
-    });
-  }
-
-  if (onView) {
-    actions.push({
-      label: "View",
-      onClick: onView,
-      icon: Eye,
     });
   }
 

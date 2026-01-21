@@ -4,6 +4,7 @@ import { SharedFilter } from "../adminTable/SharedFilter";
 import { capitalizeFirstLetter } from "@/lib/utils";
 import { IBlogFilter, BlogFilterType } from "./BlogDashboardClient";
 import { ECategory } from "@/types/enum";
+import { blogCategories } from "./constant";
 
 interface BlogFilterProps {
   openMenuFilters: boolean;
@@ -34,10 +35,7 @@ export const BlogFilter = ({
     {
       key: "category",
       label: "Category",
-      options: Object.values(ECategory).map((status) => ({
-        label: capitalizeFirstLetter(status),
-        value: status,
-      })),
+      options: blogCategories,
     },
     {
       key: "visibility",

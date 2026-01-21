@@ -21,7 +21,7 @@ export const DashboardHeader = ({
           {title}
         </h2>
         <p className="text-sm text-muted-foreground">
-          Quản lý và theo dõi dữ liệu của bạn
+          Manage and monitor your data
         </p>
       </div>
 

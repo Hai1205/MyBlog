@@ -4,8 +4,19 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Home, Search, ShoppingBag, ArrowLeft } from "lucide-react";
+import { useBlogStore } from "@/stores/blogStore";
+import { useRouter } from "next/navigation";
 
 export default function NotFoundClient() {
+  const { handleSetBlogToEdit } = useBlogStore();
+
+  const router = useRouter();
+
+  const handleCreate = async () => {
+    handleSetBlogToEdit(null);
+    router.push("/blogs/new");
+  };
+
   return (
     <div className="min-h-screen bg-linear-to-br from-background to-muted">
       <div className="container mx-auto px-4 py-16">
@@ -47,15 +58,13 @@ export default function NotFoundClient() {
                 </Button>
 
                 <Button
-                  asChild
                   variant="outline"
                   size="lg"
                   className="w-full sm:w-auto bg-transparent"
+                  onClick={handleCreate}
                 >
-                  <Link href="/blogs/new" className="flex items-center gap-2">
-                    <ShoppingBag className="h-4 w-4" />
-                    Create Blog
-                  </Link>
+                  <ShoppingBag className="h-4 w-4 mr-2" />
+                  Create Blog
                 </Button>
               </div>
 

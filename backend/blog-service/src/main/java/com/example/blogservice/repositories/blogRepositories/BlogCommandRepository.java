@@ -58,7 +58,7 @@ public interface BlogCommandRepository extends JpaRepository<Blog, UUID> {
        int updateBlog(@Param("blogId") UUID blogId,
                      @Param("title") String title,
                      @Param("description") String description,
-                     @Param("category") String category,
+                     @Param("category") Blog.Category category,
                      @Param("content") String content,
                      @Param("thumbnailUrl") String thumbnailUrl,
                      @Param("thumbnailPublicId") String thumbnailPublicId,

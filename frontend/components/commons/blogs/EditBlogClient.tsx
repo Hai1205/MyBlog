@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useParams, useRouter } from "next/navigation";
 import { blogCategories } from "../admin/blogDashboard/constant";
@@ -82,12 +82,12 @@ const EditBlogClient = ({ isCreate }: EditBlogClientProps) => {
     content: string;
     isVisibility: boolean;
   }>({
-    title: "",
-    description: "",
-    category: "technology",
+    title: blogToEdit?.title || "",
+    description: blogToEdit?.description || "",
+    category: blogToEdit?.category || "technology",
     thumbnail: null,
-    content: "",
-    isVisibility: true,
+    content: blogToEdit?.content || "",
+    isVisibility: blogToEdit?.isVisibility || true,
   });
 
   const handleInputChange = (e: any) => {
@@ -98,9 +98,7 @@ const EditBlogClient = ({ isCreate }: EditBlogClientProps) => {
     const file = e.target.files[0];
     if (file) {
       if (!file.type.startsWith("image/")) {
-        toast.error("Please select an image file", {
-          position: "top-right",
-        });
+        toast.error("Please select an image file");
         return;
       }
       setFormData({ ...formData, thumbnail: file });
@@ -152,9 +150,7 @@ const EditBlogClient = ({ isCreate }: EditBlogClientProps) => {
       };
       reader.readAsDataURL(file);
     } else if (file) {
-      toast.error("Only image files are accepted!", {
-        position: "top-right",
-      });
+      toast.error("Only image files are accepted!");
     }
   };
 
@@ -390,6 +386,7 @@ const EditBlogClient = ({ isCreate }: EditBlogClientProps) => {
                         <span className="w-1.5 h-6 bg-primary rounded-full"></span>
                         Blog Details
                       </h3>
+
                       <Button
                         type="button"
                         variant="ghost"
@@ -403,11 +400,13 @@ const EditBlogClient = ({ isCreate }: EditBlogClientProps) => {
                       </Button>
                     </div>
                   </CardHeader>
+
                   {isDetailsOpen && (
                     <CardContent className="space-y-5 animate-in fade-in slide-in-from-top-2 duration-300">
                       {/* Title */}
                       <div className="space-y-2">
                         <Label className="text-sm font-medium">Title</Label>
+
                         <div className="flex gap-2">
                           <Input
                             name="title"
@@ -421,7 +420,8 @@ const EditBlogClient = ({ isCreate }: EditBlogClientProps) => {
                             }
                             required
                           />
-                          {isCreate && formData.title === "" ? null : (
+
+                          {formData.title === "" ? null : (
                             <Button
                               type="button"
                               onClick={handleAITitleResponse}
@@ -448,10 +448,12 @@ const EditBlogClient = ({ isCreate }: EditBlogClientProps) => {
                           >
                             Description
                           </Label>
+
                           <span className="text-xs text-muted-foreground">
                             {formData.description?.length || 0}/2000
                           </span>
                         </div>
+
                         <ScrollArea className="h-40 w-full border border-border rounded-md bg-background/50">
                           <textarea
                             id="description"
@@ -472,7 +474,8 @@ const EditBlogClient = ({ isCreate }: EditBlogClientProps) => {
                             }}
                           />
                         </ScrollArea>
-                        {isCreate && formData.description === "" ? null : (
+
+                        {formData.description === "" ? null : (
                           <Button
                             onClick={handleAIDescriptionResponse}
                             type="button"
@@ -495,6 +498,7 @@ const EditBlogClient = ({ isCreate }: EditBlogClientProps) => {
                       {/* Category */}
                       <div className="space-y-2">
                         <Label className="text-sm font-medium">Category</Label>
+
                         <Select
                           value={formData.category}
                           onValueChange={(value: any) =>
@@ -508,6 +512,7 @@ const EditBlogClient = ({ isCreate }: EditBlogClientProps) => {
                               }
                             />
                           </SelectTrigger>
+
                           <SelectContent>
                             {blogCategories?.map((e, i) => (
                               <SelectItem key={i} value={e.value}>
@@ -528,6 +533,7 @@ const EditBlogClient = ({ isCreate }: EditBlogClientProps) => {
                             Visibility Mode
                           </Label>
                         </div>
+
                         <Switch
                           id="visibility-toggle"
                           checked={formData.isVisibility || false}
@@ -569,6 +575,7 @@ const EditBlogClient = ({ isCreate }: EditBlogClientProps) => {
                                 className="w-full h-full object-cover"
                                 alt="Thumbnail preview"
                               />
+
                               <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-2">
                                 <Button
                                   type="button"
@@ -580,8 +587,10 @@ const EditBlogClient = ({ isCreate }: EditBlogClientProps) => {
                                   }}
                                 >
                                   <Upload size={16} />
+
                                   <span className="ml-2">Change</span>
                                 </Button>
+
                                 {previewImage && (
                                   <Button
                                     type="button"
@@ -593,6 +602,7 @@ const EditBlogClient = ({ isCreate }: EditBlogClientProps) => {
                                     }}
                                   >
                                     <X size={16} />
+
                                     <span className="ml-2">Remove</span>
                                   </Button>
                                 )}
@@ -607,12 +617,14 @@ const EditBlogClient = ({ isCreate }: EditBlogClientProps) => {
                                   <ImageIcon className="w-8 h-8 text-primary" />
                                 )}
                               </div>
+
                               <div className="text-center">
                                 <p className="text-sm font-medium text-foreground">
                                   {isDraggingOnThumbnail
                                     ? "Drop image here"
                                     : "Click to upload or drag & drop"}
                                 </p>
+
                                 <p className="text-xs text-muted-foreground mt-1">
                                   PNG, JPG, GIF up to 10MB
                                 </p>
@@ -670,10 +682,12 @@ const EditBlogClient = ({ isCreate }: EditBlogClientProps) => {
                         <span className="w-1.5 h-6 bg-primary rounded-full"></span>
                         Blog Content
                       </h3>
+
                       <p className="text-sm text-muted-foreground mt-1">
                         Write your blog content with rich text formatting
                       </p>
                     </div>
+
                     <div className="flex items-center gap-2">
                       {!isDetailsOpen && (
                         <Button
@@ -687,7 +701,8 @@ const EditBlogClient = ({ isCreate }: EditBlogClientProps) => {
                           <span>Show Details</span>
                         </Button>
                       )}
-                      {isCreate && (
+
+                      {formData.content === "" ? null : (
                         <Button
                           type="button"
                           size="sm"
@@ -705,6 +720,7 @@ const EditBlogClient = ({ isCreate }: EditBlogClientProps) => {
                     </div>
                   </div>
                 </CardHeader>
+
                 <CardContent className="flex-1 flex flex-col">
                   <div
                     className="flex-1 bg-white rounded-md overflow-hidden"

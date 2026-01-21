@@ -78,7 +78,6 @@ export const UserTable = ({
               {user?.username?.charAt(0).toUpperCase() || "U"}
             </AvatarFallback>
           </Avatar>
-
           <div className="flex flex-col items-start">
             {" "}
             <span className="text-sm text-primary">
@@ -115,6 +114,14 @@ export const UserTable = ({
 
   const actions = [];
 
+  if (onView) {
+    actions.push({
+      label: "View",
+      onClick: onView,
+      icon: Eye,
+    });
+  }
+
   if (onUpdate) {
     actions.push({
       label: "Update",
@@ -136,15 +143,6 @@ export const UserTable = ({
       label: "Delete",
       onClick: onDelete,
       icon: Trash2,
-      className: "hover:bg-destructive/10 hover:text-destructive",
-    });
-  }
-
-  if (onView) {
-    actions.push({
-      label: "View",
-      onClick: onView,
-      icon: Eye,
       className: "hover:bg-destructive/10 hover:text-destructive",
     });
   }
