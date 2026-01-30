@@ -4,7 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import type React from "react";
-import { useEffect, useRef, useState } from "react";
+import {
+  ClipboardEvent,
+  FormEvent,
+  KeyboardEvent,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import {
@@ -19,12 +26,14 @@ interface VerificationClientProps {
   isActivation: boolean;
 }
 
-const VerificationClient: React.FC<VerificationClientProps> = ({
+const VerificationClient = ({
   identifier,
   isActivation,
-}) => {
-  const verifyOTPMutation = useVerifyOTPMutation();
-  const sendOTPMutation = useSendOTPMutation();
+}: VerificationClientProps) => {
+  const { mutateAsync: verifyOTPMutateAsync, isPending: isVerifying } =
+    useVerifyOTPMutation();
+  const { mutateAsync: sendOTPMutateAsync, isPending: isSendingOTP } =
+    useSendOTPMutation();
 
   const router = useRouter();
   const [otp, setOtp] = useState<string[]>(Array(6).fill(""));
@@ -33,7 +42,7 @@ const VerificationClient: React.FC<VerificationClientProps> = ({
   const [timeLeft, setTimeLeft] = useState(300);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  const isLoading = verifyOTPMutation.isPending || sendOTPMutation.isPending;
+  const isLoading = isVerifying || isSendingOTP;
 
   useEffect(() => {
     if (timeLeft <= 0) {
@@ -60,7 +69,7 @@ const VerificationClient: React.FC<VerificationClientProps> = ({
     }
   };
 
-  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+  const handlePaste = (e: ClipboardEvent<HTMLInputElement>) => {
     e.preventDefault();
     const pastedData = e.clipboardData.getData("text/plain").trim();
 
@@ -71,10 +80,7 @@ const VerificationClient: React.FC<VerificationClientProps> = ({
     }
   };
 
-  const handleKeyDown = (
-    index: number,
-    e: React.KeyboardEvent<HTMLInputElement>,
-  ) => {
+  const handleKeyDown = (index: number, e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Backspace") {
       if (otp[index] === "" && index > 0) {
         const newOtp = [...otp];
@@ -111,7 +117,7 @@ const VerificationClient: React.FC<VerificationClientProps> = ({
     return true;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
     if (!validate() || !identifier) {
@@ -119,33 +125,29 @@ const VerificationClient: React.FC<VerificationClientProps> = ({
     }
 
     try {
-      const res = await verifyOTPMutation.mutateAsync({
-        identifier,
-        data: {
-          otp: otp.join(""),
-          isActivation,
+      await verifyOTPMutateAsync(
+        {
+          identifier,
+          data: {
+            otp: otp.join(""),
+            isActivation,
+          },
         },
-      });
-
-      if (isExpired) {
-        setOtp(Array(6).fill(""));
-        return;
-      }
-
-      if (res?.status && res.status !== 200) {
-        return;
-      }
-
-      if (!isActivation) {
-        router.push(
-          `/auth/reset-password/?identifier=${encodeURIComponent(identifier)}`,
-        );
-      } else {
-        toast.success("Account verified successfully");
-        router.push("/auth/login");
-      }
+        {
+          onSuccess: () => {
+            if (!isActivation) {
+              router.push(
+                `/auth/reset-password/?identifier=${encodeURIComponent(identifier)}`,
+              );
+            } else {
+              router.push("/auth/login");
+            }
+          },
+        },
+      );
     } catch (error) {
       console.error("OTP verification failed:", error);
+    } finally {
       setOtp(Array(6).fill(""));
     }
   };
@@ -154,10 +156,9 @@ const VerificationClient: React.FC<VerificationClientProps> = ({
     if (!identifier) return;
 
     try {
-      const result = await sendOTPMutation.mutateAsync(identifier);
+      const result = await sendOTPMutateAsync(identifier);
 
       if (result) {
-        toast.success("OTP code has been resent");
         setOtp(Array(6).fill(""));
         setTimeLeft(300);
         setIsExpired(false);

@@ -72,7 +72,6 @@ export const useBlogQuery = (
         enabled?: boolean;
     }
 ): UseQueryResult<IApiResponse<IBlogDataResponse>, Error> => {
-    console.log("useBlogQuery called with blogId:", blogId, "and userId:", userId);
     return useQuery({
         queryKey: queryKeys.blogs.detail(blogId, userId),
         queryFn: () => blogService.getBlog(blogId, userId),

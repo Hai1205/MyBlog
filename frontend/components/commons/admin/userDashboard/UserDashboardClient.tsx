@@ -1,19 +1,17 @@
 "use client";
 
-import { useCallback, useState, useEffect } from "react";
+import { useState, useEffect, ChangeEvent } from "react";
 import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { EUserRole, EUserStatus } from "@/types/enum";
-import { useAuthStore } from "@/stores/authStore";
 import { toast } from "react-toastify";
-import { DashboardHeader } from "@/components/commons/admin/dashboard/DashboardHeader";
+import { DashboardHeader } from "@/components/commons/admin/layout/dashboard/DashboardHeader";
 import { CreateUserDialog } from "@/components/commons/admin/userDashboard/CreateUserDialog";
 import { UpdateUserDialog } from "@/components/commons/admin/userDashboard/UpdateUserDialog";
 import { TableSearch } from "@/components/commons/admin/adminTable/TableSearch";
 import { UserFilter } from "@/components/commons/admin/userDashboard/UserFilter";
 import { UserTable } from "@/components/commons/admin/userDashboard/UserTable";
-import { ExtendedUserData } from "@/components/commons/admin/userDashboard/constant";
 import { ConfirmationDialog } from "@/components/commons/layout/ConfirmationDialog";
 import { TableDashboardSkeleton } from "../adminTable/TableDashboardSkeleton";
 import { useRouter } from "next/navigation";
@@ -24,35 +22,60 @@ import {
   useDeleteUserMutation,
 } from "@/hooks/api/mutations/useUserMutations";
 import { useResetPasswordMutation } from "@/hooks/api/mutations/useAuthMutations";
+import { capitalizeFirstLetter } from "@/lib/utils";
+import { useUserStore } from "@/stores/userStore";
 
-export type UserFilterType = "status" | "role" | "plan";
+export type UserFilterType = "status" | "role";
+export const statusSelection = Object.values(EUserStatus).map((value) => ({
+  value,
+  label: capitalizeFirstLetter(value),
+}));
+export const roleSelection = Object.values(EUserRole).map((value) => ({
+  value,
+  label: capitalizeFirstLetter(value),
+}));
+export type ExtendedUserData = Omit<IUser, "status"> & {
+  status: EUserStatus;
+  role: EUserRole;
+  planExpiration?: string;
+  password?: string;
+};
 export interface IUserFilter {
   status: string[];
   role: string[];
-  plan: string[];
   [key: string]: string[];
 }
-
 const userInitialFilters: IUserFilter = {
   status: [],
   role: [],
-  plan: [],
 };
 
 export default function UserDashboardClient() {
+  const {
+    adminUsers,
+    setAdminUsers,
+    removeFromAdminUsers,
+    addToAdminUsers,
+    updateInAdminUsers,
+  } = useUserStore();
+
   const {
     data: usersResponse,
     isLoading: isLoadingUsers,
     refetch: refetchUsers,
   } = useAllUsersQuery();
-  const usersTable = usersResponse?.data?.users || [];
 
-  const { mutate: createUser } = useCreateUserMutation();
-  const { mutate: updateUser } = useUpdateUserMutation();
-  const { mutate: deleteUser } = useDeleteUserMutation();
-  const { mutate: resetPassword } = useResetPasswordMutation();
+  const { mutateAsync: createUserAsync } = useCreateUserMutation();
+  const { mutateAsync: updateUserAsync } = useUpdateUserMutation();
+  const { mutateAsync: deleteUserAsync } = useDeleteUserMutation();
+  const { mutateAsync: resetPasswordAsync } = useResetPasswordMutation();
 
   const router = useRouter();
+
+  useEffect(() => {
+    const users = usersResponse?.data?.users;
+    setAdminUsers(users || []);
+  }, [usersResponse?.data?.users, setAdminUsers]);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -86,7 +109,7 @@ export default function UserDashboardClient() {
   };
 
   useEffect(() => {
-    let results = [...usersTable];
+    let results = [...adminUsers];
 
     if (searchQuery.trim()) {
       const searchTerms = searchQuery.toLowerCase().trim();
@@ -110,18 +133,13 @@ export default function UserDashboardClient() {
     }
 
     setFilteredUsers(results);
-  }, [usersTable, searchQuery, activeFilters]);
+  }, [adminUsers, searchQuery, activeFilters]);
 
-  // Paginate filtered usersTable
+  // Paginate filtered adminUsers
   const paginatedUsers = filteredUsers.slice(
     (paginationState.page - 1) * paginationState.pageSize,
     paginationState.page * paginationState.pageSize,
   );
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Filter logic is now handled by useEffect
-  };
 
   const toggleFilter = (value: string, type: UserFilterType) => {
     setActiveFilters((prev) => {
@@ -138,13 +156,12 @@ export default function UserDashboardClient() {
   const clearFilters = () => {
     setActiveFilters(userInitialFilters);
     setSearchQuery("");
-    setFilteredUsers(usersTable);
-    closeMenuMenuFilters();
+    setFilteredUsers(adminUsers);
+    closeMenuFilters();
   };
 
   const applyFilters = () => {
-    // Filter logic is now handled by useEffect
-    closeMenuMenuFilters();
+    closeMenuFilters();
   };
 
   const handleRefresh = () => {
@@ -154,7 +171,7 @@ export default function UserDashboardClient() {
   };
 
   const [openMenuFilters, setOpenMenuFilters] = useState(false);
-  const closeMenuMenuFilters = () => setOpenMenuFilters(false);
+  const closeMenuFilters = () => setOpenMenuFilters(false);
 
   const [dialogKey, setDialogKey] = useState(0);
 
@@ -199,7 +216,7 @@ export default function UserDashboardClient() {
     });
   };
 
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setAvatarFile(file);
@@ -210,22 +227,18 @@ export default function UserDashboardClient() {
   const handleUpdate = async () => {
     if (!data) return;
 
-    updateUser(
+    updateUserAsync(
       {
         userId: data.id,
-        data: {
-          birth: data.birth || "",
-          summary: data.summary || "",
-          avatar: avatarFile,
-          role: data.role,
-          status: data.status,
-          instagram: data.instagram || "",
-          facebook: data.facebook || "",
-          linkedin: data.linkedin || "",
-        },
+        data: data,
       },
       {
-        onSuccess: () => {
+        onSuccess: (response) => {
+          const user = response?.data?.user;
+          if (user) {
+            updateInAdminUsers(user);
+          }
+
           setIsUpdateUserOpen(false);
         },
       },
@@ -235,26 +248,16 @@ export default function UserDashboardClient() {
   const handleCreate = async () => {
     if (!data) return;
 
-    createUser(
-      {
-        email: data.email,
-        password: data.password || "",
-        username: data.username,
-        birth: data.birth || "",
-        summary: data.summary || "",
-        avatar: avatarFile,
-        role: data.role,
-        status: data.status,
-        instagram: data.instagram || "",
-        facebook: data.facebook || "",
-        linkedin: data.linkedin || "",
+    createUserAsync(data, {
+      onSuccess: (response) => {
+        const user = response?.data?.user;
+        if (user) {
+          addToAdminUsers(user);
+        }
+
+        setIsCreateUserOpen(false);
       },
-      {
-        onSuccess: () => {
-          setIsCreateUserOpen(false);
-        },
-      },
-    );
+    });
   };
 
   const onDelete = (user: IUser) => {
@@ -282,17 +285,21 @@ export default function UserDashboardClient() {
 
   const handleDialogConfirm = async () => {
     if (isDeleteDialog && userToDelete) {
-      deleteUser(userToDelete.id);
-      setDeleteDialogOpen(false);
-      setUserToDelete(null);
-    } else if (!isDeleteDialog && userToResetPassword) {
-      resetPassword(userToResetPassword.email, {
+      deleteUserAsync(userToDelete.id, {
         onSuccess: () => {
-          toast.success("A new password has been sent to the user's email!");
+          removeFromAdminUsers(userToDelete.id);
+          setDeleteDialogOpen(false);
+          setUserToDelete(null);
         },
       });
-      setResetPasswordDialogOpen(false);
-      setUserToResetPassword(null);
+    } else if (!isDeleteDialog && userToResetPassword) {
+      resetPasswordAsync(userToResetPassword.email, {
+        onSuccess: () => {
+          toast.success("A new password has been sent to the user's email!");
+          setResetPasswordDialogOpen(false);
+          setUserToResetPassword(null);
+        },
+      });
     }
   };
 
@@ -359,7 +366,6 @@ export default function UserDashboardClient() {
 
               <div className="flex items-center gap-3">
                 <TableSearch
-                  handleSearch={handleSearch}
                   searchQuery={searchQuery}
                   setSearchQuery={setSearchQuery}
                   placeholder="Search Users..."
@@ -384,7 +390,7 @@ export default function UserDashboardClient() {
                   toggleFilter={toggleFilter}
                   clearFilters={clearFilters}
                   applyFilters={applyFilters}
-                  closeMenuMenuFilters={closeMenuMenuFilters}
+                  closeMenuFilters={closeMenuFilters}
                 />
               </div>
             </div>

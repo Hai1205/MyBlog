@@ -44,7 +44,7 @@ export default function BannedPage() {
         <p className="text-sm text-muted-foreground">
           Contact us at{" "}
           <a
-            href="https://mail.google.com/mail/?view=cm&fs=1&to=hainguyenhoang1205@gmail.com"
+            href="https://mail.google.com/mail/?isView=cm&fs=1&to=hainguyenhoang1205@gmail.com"
             target="_blank"
             rel="noopener noreferrer"
             className="text-primary hover:underline font-medium"

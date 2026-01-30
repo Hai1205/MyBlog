@@ -1,6 +1,5 @@
 package com.example.authservice.controllers;
 
-import com.example.authservice.dtos.requests.*;
 import com.example.authservice.dtos.responses.*;
 import com.example.authservice.services.apis.AuthApi;
 
@@ -18,11 +17,12 @@ public class AuthController {
     @Autowired
     private AuthApi authApi;
 
-    @PostMapping("/login")
+    @PostMapping("/login/{identifier}")
     public ResponseEntity<Response> login(
+            @PathVariable("identifier") String identifier,
             @RequestPart("data") String dataJson,
             HttpServletResponse httpServletResponse) {
-        Response response = authApi.login(dataJson, httpServletResponse);
+        Response response = authApi.login(identifier, dataJson, httpServletResponse);
 
         return ResponseEntity.status(response.getStatusCode()).body(response);
     }
@@ -82,27 +82,28 @@ public class AuthController {
 
     @PostMapping("/refresh-token")
     public ResponseEntity<Response> refreshToken(
-            @RequestBody(required = false) RefreshTokenRequest refreshTokenRequest,
             @RequestHeader(value = "Authorization", required = false) String authorizationHeader,
             jakarta.servlet.http.HttpServletRequest httpServletRequest,
             HttpServletResponse httpServletResponse) {
-        Response response = authApi.refreshToken(refreshTokenRequest, authorizationHeader, httpServletRequest,
+        Response response = authApi.refreshToken(authorizationHeader, httpServletRequest,
                 httpServletResponse);
 
         return ResponseEntity.status(response.getStatusCode()).body(response);
     }
 
-    @PostMapping("/logout")
+    @PostMapping("/logout/{identifier}")
     @PreAuthorize("hasAnyAuthority('admin','user')")
-    public ResponseEntity<Response> logout(HttpServletResponse httpServletResponse) {
-        Response response = authApi.logout(httpServletResponse);
+    public ResponseEntity<Response> logout(
+            @PathVariable("identifier") String identifier,
+            HttpServletResponse httpServletResponse) {
+        Response response = authApi.logout(identifier, httpServletResponse);
 
         return ResponseEntity.status(response.getStatusCode()).body(response);
     }
 
     @GetMapping("/health")
     public ResponseEntity<Response> health() {
-        Response response = new Response(200, "Auth Service is running");
+        Response response = new Response("Auth Service is running", 200);
 
         return ResponseEntity.status(response.getStatusCode()).body(response);
     }

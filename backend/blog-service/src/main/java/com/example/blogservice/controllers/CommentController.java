@@ -6,24 +6,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import com.example.blogservice.dtos.requests.AddCommentRequest;
-import com.example.blogservice.dtos.requests.UpdateCommentRequest;
 import com.example.blogservice.dtos.responses.Response;
 import com.example.blogservice.services.apis.CommentApi;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-
 @RestController
 @RequestMapping("/api/v1/comments")
 public class CommentController {
 
     @Autowired
     private CommentApi commentApi;
-
-    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @GetMapping()
     public ResponseEntity<Response> getAllComments() {
@@ -37,14 +31,9 @@ public class CommentController {
             @PathVariable("userId") UUID userId,
             @PathVariable("blogId") UUID blogId,
             @RequestPart("data") String dataJson) {
-        try {
-            AddCommentRequest request = objectMapper.readValue(dataJson, AddCommentRequest.class);
-            Response response = commentApi.addComment(blogId, userId, request);
-            return ResponseEntity.status(response.getStatusCode()).body(response);
-        } catch (Exception e) {
-            log.error("Error parsing add comment request: {}", e.getMessage(), e);
-            return ResponseEntity.status(400).body(new Response(400, "Invalid request data"));
-        }
+        Response response = commentApi.addComment(blogId, userId, dataJson);
+
+        return ResponseEntity.status(response.getStatusCode()).body(response);
     }
 
     @GetMapping("/blogs/{blogId}")
@@ -59,14 +48,9 @@ public class CommentController {
     public ResponseEntity<Response> updateComment(
             @PathVariable("commentId") UUID commentId,
             @RequestPart("data") String dataJson) {
-        try {
-            UpdateCommentRequest request = objectMapper.readValue(dataJson, UpdateCommentRequest.class);
-            Response response = commentApi.updateComment(commentId, request);
-            return ResponseEntity.status(response.getStatusCode()).body(response);
-        } catch (Exception e) {
-            log.error("Error parsing update comment request: {}", e.getMessage(), e);
-            return ResponseEntity.status(400).body(new Response(400, "Invalid request data"));
-        }
+        Response response = commentApi.updateComment(commentId, dataJson);
+
+        return ResponseEntity.status(response.getStatusCode()).body(response);
     }
 
     @DeleteMapping("/{commentId}")
@@ -78,7 +62,7 @@ public class CommentController {
 
     @GetMapping("/health")
     public ResponseEntity<Response> health() {
-        Response response = new Response(200, "Comment Service is running");
+        Response response = new Response("Comment Service is running", 200);
 
         return ResponseEntity.status(response.getStatusCode()).body(response);
     }

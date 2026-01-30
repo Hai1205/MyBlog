@@ -1,17 +1,21 @@
 "use client";
 
-import { EmptyState } from "@/components/commons/blogs/EmptyState";
+import { BlogEmptyState } from "@/components/commons/blogs/BlogEmptyState";
 import {
   GridPagination,
   PaginationData,
 } from "@/components/commons/layout/pagination/GridPagination";
 import { BlogCard } from "./BlogCard";
 
-interface Props {
-  userBlogs: IBlog[];
-  onCreateNew: () => void;
-  onUpdate: (blog: IBlog) => void;
-  onDelete: (blogId: string) => void;
+interface UserBlogsSectionProps {
+  blogs: IBlog[];
+  isMyBlogs?: boolean;
+  onGoHome?: () => void;
+  onUnsave?: (blogId: string) => void;
+  onCreateNew?: () => void;
+  onUpdate?: (blog: IBlog) => void;
+  onDuplicate?: (blogId: string) => Promise<void>;
+  onDelete?: (blogId: string) => void;
   isLoading?: boolean;
   paginationData?: PaginationData;
   onPageChange?: (page: number) => void;
@@ -20,16 +24,20 @@ interface Props {
 }
 
 export const UserBlogsSection = ({
-  userBlogs,
+  blogs,
+  isMyBlogs = false,
+  onGoHome,
+  onUnsave,
   onCreateNew,
   onUpdate,
+  onDuplicate,
   onDelete,
   isLoading = false,
   paginationData,
   onPageChange,
   onPageSizeChange,
   showPagination = false,
-}: Props) => {
+}: UserBlogsSectionProps) => {
   return (
     <div className="space-y-6">
       {/* Loading state */}
@@ -40,22 +48,31 @@ export const UserBlogsSection = ({
       )}
 
       {/* Empty state */}
-      {!isLoading && userBlogs.length === 0 && (
-        <EmptyState onCreateNew={onCreateNew} />
-      )}
+      {!isLoading &&
+        blogs.length === 0 &&
+        (isMyBlogs ? (
+          <BlogEmptyState isMyBlogs={isMyBlogs} onProcess={onCreateNew!} />
+        ) : (
+          <BlogEmptyState onProcess={onGoHome!} />
+        ))}
 
       {/* Blog Grid */}
-      {!isLoading && userBlogs.length > 0 && (
+      {!isLoading && blogs.length > 0 && (
         <>
           <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {userBlogs.map((blog) => (
-              <BlogCard
-                key={blog.id}
-                blog={blog}
-                onUpdate={onUpdate}
-                onDelete={onDelete}
-              />
-            ))}
+            {blogs.map((blog) =>
+              isMyBlogs ? (
+                <BlogCard
+                  key={blog.id}
+                  blog={blog}
+                  onUpdate={onUpdate}
+                  onDuplicate={onDuplicate}
+                  onDelete={onDelete}
+                />
+              ) : (
+                <BlogCard key={blog.id} blog={blog} onUnsave={onUnsave} />
+              ),
+            )}
           </div>
 
           {/* Pagination Controls */}

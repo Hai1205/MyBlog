@@ -2,7 +2,6 @@ import { EHttpType, handleRequest, IApiResponse } from "@/lib/axiosInstance";
 
 // DTO interfaces
 export interface CreateBlogDTO {
-    userId: string;
     title: string;
     description: string;
     category: string;
@@ -21,8 +20,6 @@ export interface UpdateBlogDTO {
 }
 
 export interface AddCommentDTO {
-    blogId: string;
-    userId: string;
     content: string;
 }
 
@@ -103,7 +100,7 @@ export const blogService = {
     /**
      * Create new blog
      */
-    createBlog: async (data: CreateBlogDTO): Promise<IApiResponse<IBlogDataResponse>> => {
+    createBlog: async (userId: string, data: CreateBlogDTO): Promise<IApiResponse<IBlogDataResponse>> => {
         const formData = new FormData();
         formData.append("data", JSON.stringify({
             title: data.title,
@@ -118,9 +115,18 @@ export const blogService = {
 
         return await handleRequest<IBlogDataResponse>(
             EHttpType.POST,
-            `/blogs/users/${data.userId}`,
+            `/blogs/users/${userId}`,
             formData
         );
+    },
+
+    /**
+     * Duplicate blog
+     */
+    duplicateBlog: async (blogId: string, userId: string): Promise<IApiResponse<IBlogDataResponse>> => {
+        return await handleRequest<IBlogDataResponse>(
+            EHttpType.POST,
+            `/blogs/${blogId}/users/${userId}/duplicate`);
     },
 
     /**
@@ -196,7 +202,7 @@ export const blogService = {
     /**
      * Add comment to blog
      */
-    addComment: async (data: AddCommentDTO): Promise<IApiResponse<IBlogDataResponse>> => {
+    addComment: async (blogId: string, userId: string, data: AddCommentDTO): Promise<IApiResponse<IBlogDataResponse>> => {
         const formData = new FormData();
         formData.append("data", JSON.stringify({
             content: data.content,
@@ -204,7 +210,7 @@ export const blogService = {
 
         return await handleRequest<IBlogDataResponse>(
             EHttpType.POST,
-            `/comments/blogs/${data.blogId}/users/${data.userId}`,
+            `/comments/blogs/${blogId}/users/${userId}`,
             formData
         );
     },

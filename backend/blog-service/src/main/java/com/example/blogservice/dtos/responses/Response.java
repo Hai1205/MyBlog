@@ -5,7 +5,8 @@ import java.util.Map;
 
 import com.example.blogservice.dtos.BlogDto;
 import com.example.blogservice.dtos.CommentDto;
-import com.example.blogservice.dtos.UserDto;
+import com.example.blogservice.dtos.responses.views.BlogView;
+import com.example.blogservice.dtos.responses.views.UserView;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
@@ -19,17 +20,10 @@ import lombok.*;
 public class Response {
     private int statusCode;
     private String message;
+    private Map<String, Object> additionalData;
 
-    // User field
-    private UserDto user;
-
-    // Additional user-service fields (for FeignClient compatibility)
-    private List<UserDto> users;
-    private String token;
-    private String role;
-    private String status;
-    private Boolean authenticated;
-    private String expirationTime;
+    private UserView userView;
+    private List<BlogView> blogViews;
 
     // Blog fields
     private BlogDto blog;
@@ -39,15 +33,13 @@ public class Response {
     private CommentDto comment;
     private List<CommentDto> comments;
 
-    // Pagination and stats
-    private Object pagination;
-    private Map<String, Object> stats;
-
-    // Generic data container for any other service-specific data
-    private Map<String, Object> additionalData;
-
-    public Response(int statusCode, String message) {
+    public Response(String message, int statusCode) {
         this.statusCode = statusCode;
+        this.message = message;
+    }
+
+    public Response(String message) {
+        this.statusCode = 200;
         this.message = message;
     }
 

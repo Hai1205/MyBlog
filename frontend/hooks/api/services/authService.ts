@@ -1,28 +1,27 @@
 import { EHttpType, handleRequest, IApiResponse } from "@/lib/axiosInstance";
 
 // DTO interfaces
-export interface RegisterDTO {
+export interface Register {
     username: string;
     email: string;
     password: string;
 }
 
-export interface LoginDTO {
-    identifier: string;
+export interface Login {
     password: string;
 }
 
-export interface VerifyOTPDTO {
+export interface VerifyOTP {
     otp: string;
     isActivation: boolean;
 }
 
-export interface ForgotPasswordDTO {
+export interface ForgotPassword {
     password: string;
     confirmPassword: string;
 }
 
-export interface ChangePasswordDTO {
+export interface ChangePassword {
     currentPassword: string;
     newPassword: string;
     confirmPassword: string;
@@ -30,8 +29,8 @@ export interface ChangePasswordDTO {
 
 // Response interfaces
 export interface IAuthDataResponse {
-    user: IUser;
     isActive: boolean;
+    user: IUser;
 }
 
 /**
@@ -42,7 +41,7 @@ export const authService = {
     /**
      * Register a new user
      */
-    register: async (data: RegisterDTO): Promise<IApiResponse<IAuthDataResponse>> => {
+    register: async (data: Register): Promise<IApiResponse<IAuthDataResponse>> => {
         const formData = new FormData();
         formData.append("data", JSON.stringify(data));
 
@@ -56,13 +55,13 @@ export const authService = {
     /**
      * Login user
      */
-    login: async (data: LoginDTO): Promise<IApiResponse<IAuthDataResponse>> => {
+    login: async (identifier: string, data: Login): Promise<IApiResponse<IAuthDataResponse>> => {
         const formData = new FormData();
         formData.append("data", JSON.stringify(data));
 
         return await handleRequest<IAuthDataResponse>(
             EHttpType.POST,
-            `/auth/login`,
+            `/auth/login/${identifier}`,
             formData
         );
     },
@@ -70,8 +69,8 @@ export const authService = {
     /**
      * Logout user
      */
-    logout: async (): Promise<IApiResponse> => {
-        return await handleRequest(EHttpType.POST, `/auth/logout`);
+    logout: async (identifier: string): Promise<IApiResponse> => {
+        return await handleRequest(EHttpType.POST, `/auth/logout/${identifier}`);
     },
 
     /**
@@ -96,7 +95,7 @@ export const authService = {
      */
     verifyOTP: async (
         identifier: string,
-        data: VerifyOTPDTO
+        data: VerifyOTP
     ): Promise<IApiResponse> => {
         const formData = new FormData();
         formData.append("data", JSON.stringify(data));
@@ -124,7 +123,7 @@ export const authService = {
      */
     forgotPassword: async (
         identifier: string,
-        data: ForgotPasswordDTO
+        data: ForgotPassword
     ): Promise<IApiResponse> => {
         const formData = new FormData();
         formData.append("data", JSON.stringify(data));
@@ -141,7 +140,7 @@ export const authService = {
      */
     changePassword: async (
         identifier: string,
-        data: ChangePasswordDTO
+        data: ChangePassword
     ): Promise<IApiResponse> => {
         const formData = new FormData();
         formData.append("data", JSON.stringify(data));

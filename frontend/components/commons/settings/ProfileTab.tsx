@@ -8,6 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Camera, Loader2 } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 import { EUserRole, EUserStatus } from "@/types/enum";
+import { ChangeEvent } from "react";
 
 type ExtendedUserData = Omit<IUser, "status"> & {
   status: EUserStatus;
@@ -26,7 +27,7 @@ interface ProfileTabProps {
   ) => void;
   onUpdate: () => void;
   previewAvatar: string;
-  onAvatarChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onAvatarChange: (e: ChangeEvent<HTMLInputElement>) => void;
   isLoading?: boolean;
 }
 

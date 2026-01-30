@@ -5,7 +5,7 @@ import { InputWithIcon } from "@/components/ui/input-with-icon";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import type React from "react";
-import { useState } from "react";
+import { useState, useEffect, ChangeEvent, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import {
   useLoginMutation,
@@ -13,11 +13,17 @@ import {
 } from "@/hooks/api/mutations/useAuthMutations";
 import Link from "next/link";
 import { Loader2, Mail, Lock, EyeOff, Eye } from "lucide-react";
+import { useUserQuery } from "@/hooks/api/queries/useUserQueries";
+import { useAuthStore } from "@/stores/authStore";
 
-const LoginClient: React.FC = () => {
-  const loginMutation = useLoginMutation();
-  const sendOTPMutation = useSendOTPMutation();
-  
+const LoginClient = () => {
+  const { handleSetUserAuth } = useAuthStore();
+
+  const { mutateAsync: loginMutateAsync, isPending: isLogging } =
+    useLoginMutation();
+  const { mutateAsync: sendOTPMutateAsync, isPending: isSendingOTP } =
+    useSendOTPMutation();
+
   const router = useRouter();
 
   const [showPassword, setShowPassword] = useState(false);
@@ -27,9 +33,9 @@ const LoginClient: React.FC = () => {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const isLoading = loginMutation.isPending || sendOTPMutation.isPending;
+  const isLoading = isLogging || isSendingOTP;
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
 
@@ -53,36 +59,44 @@ const LoginClient: React.FC = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
 
     try {
-      const response = await loginMutation.mutateAsync({
-        identifier: formData.identifier,
-        password: formData.password,
-      });
+      const response = await loginMutateAsync(
+        {
+          identifier: formData.identifier,
+          data: {
+            password: formData.password,
+          },
+        },
+        {
+          onSuccess: (response) => {
+            const user = response?.data?.user;
+            if (user) {
+              handleSetUserAuth(user);
+            }
 
-      if (response?.status === 403) {
+            router.push(`/`);
+          },
+        },
+      );
+
+      const status = response?.status;
+      if (!status) return;
+      if (status === 403) {
         router.push(
           `/auth/verification?identifier=${encodeURIComponent(
             formData.identifier,
           )}&isActivation=true`,
         );
-        await sendOTPMutation.mutateAsync(formData.identifier);
-        return;
-      }
 
-      if (response?.status && response?.status === 451) {
+        await sendOTPMutateAsync(formData.identifier);
+      } else if (status === 451) {
         router.push(`/auth/banned`);
-        return;
-      }
-
-      if (response?.status === 200) {
-        router.push(`/`);
       }
     } catch (error) {
-      // Error handling is done by TanStack Query + toast
       console.error("Login failed:", error);
     }
   };

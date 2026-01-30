@@ -1,6 +1,7 @@
 package com.example.blogservice.mappers;
 
 import com.example.blogservice.dtos.BlogDto;
+import com.example.blogservice.dtos.responses.views.BlogView;
 import com.example.blogservice.entities.Blog;
 
 import org.springframework.stereotype.Component;
@@ -14,20 +15,27 @@ public class BlogMapper {
     public BlogDto toDto(Blog blog) {
         if (blog == null)
             return null;
-        
-        return BlogDto.builder()
-                .id(blog.getId())
-                .authorId(blog.getAuthorId())
-                .title(blog.getTitle())
-                .category(blog.getCategory() != null ? blog.getCategory().name() : null)
-                .description(blog.getDescription())
-                .content(blog.getContent())
-                .thumbnailUrl(blog.getThumbnailUrl())
-                .thumbnailPublicId(blog.getThumbnailPublicId())
-                .isVisibility(blog.getIsVisibility())
-                .createdAt(blog.getCreatedAt())
-                .updatedAt(blog.getUpdatedAt())
-                .build();
+
+        BlogDto dto = new BlogDto();
+        dto.setId(blog.getId());
+        dto.setAuthorId(blog.getAuthorId());
+        dto.setTitle(blog.getTitle());
+
+        if (blog.getCategory() != null) {
+            dto.setCategory(blog.getCategory().name());
+        } else {
+            dto.setCategory(Blog.Category.technology.name());
+        }
+
+        dto.setDescription(blog.getDescription());
+        dto.setContent(blog.getContent());
+        dto.setThumbnailUrl(blog.getThumbnailUrl());
+        dto.setThumbnailPublicId(blog.getThumbnailPublicId());
+        dto.setIsVisibility(blog.getIsVisibility());
+        dto.setCreatedAt(blog.getCreatedAt());
+        dto.setUpdatedAt(blog.getUpdatedAt());
+
+        return dto;
     }
 
     /**
@@ -36,12 +44,18 @@ public class BlogMapper {
     public Blog toEntity(BlogDto dto) {
         if (dto == null)
             return null;
-            
+
         Blog blog = new Blog();
         blog.setId(dto.getId());
         blog.setAuthorId(dto.getAuthorId());
         blog.setTitle(dto.getTitle());
-        blog.setCategory(dto.getCategory() != null ? Blog.Category.valueOf(dto.getCategory()) : null);
+
+        if (dto.getCategory() != null) {
+            blog.setCategory(Blog.Category.valueOf(dto.getCategory()));
+        } else {
+            blog.setCategory(Blog.Category.technology);
+        }
+
         blog.setDescription(dto.getDescription());
         blog.setContent(dto.getContent());
         blog.setThumbnailUrl(dto.getThumbnailUrl());
@@ -49,7 +63,32 @@ public class BlogMapper {
         blog.setIsVisibility(dto.getIsVisibility());
         blog.setCreatedAt(dto.getCreatedAt());
         blog.setUpdatedAt(dto.getUpdatedAt());
-        
+
         return blog;
+    }
+
+    /**
+     * Convert Blog entity to BlogView
+     */
+    public BlogView toView(BlogDto dto) {
+        if (dto == null)
+            return null;
+
+        BlogView view = new BlogView();
+        view.setId(dto.getId());
+        view.setAuthorId(dto.getAuthorId());
+        view.setTitle(dto.getTitle());
+
+        if (dto.getCategory() != null) {
+            view.setCategory(dto.getCategory());
+        } else {
+            view.setCategory(Blog.Category.technology.name());
+        }
+
+        view.setThumbnailUrl(dto.getThumbnailUrl());
+        view.setIsVisibility(dto.getIsVisibility());
+        view.setCreatedAt(dto.getCreatedAt());
+
+        return view;
     }
 }

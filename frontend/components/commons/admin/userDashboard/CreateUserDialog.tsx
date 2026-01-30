@@ -1,7 +1,8 @@
 import { UserCog } from "lucide-react";
-import { AdminDialog } from "../dialog/AdminDialog";
+import { AdminDialog } from "../layout/dialog/AdminDialog";
 import { UserForm } from "./UserForm";
-import { ExtendedUserData } from "./constant";
+import { ExtendedUserData } from "./UserDashboardClient";
+import { ChangeEvent } from "react";
 
 interface CreateUserDialogProps {
   isOpen: boolean;
@@ -10,7 +11,7 @@ interface CreateUserDialogProps {
   data: IUser | null;
   onUserCreated: () => void;
   previewAvatar: string;
-  handleAvatarChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handleAvatarChange: (e: ChangeEvent<HTMLInputElement>) => void;
 }
 
 export const CreateUserDialog = ({

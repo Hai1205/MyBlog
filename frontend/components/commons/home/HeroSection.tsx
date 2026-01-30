@@ -8,12 +8,12 @@ import Typewriter from "typewriter-effect";
 import { useBlogStore } from "@/stores/blogStore";
 
 export const HeroSection = () => {
-  const { handleSetBlogToEdit } = useBlogStore();
-  
+  const { setBlogToEdit } = useBlogStore();
+
   const router = useRouter();
 
   const handleCreate = async () => {
-    handleSetBlogToEdit(null);
+    setBlogToEdit(null);
     router.push("/blogs/new");
   };
 

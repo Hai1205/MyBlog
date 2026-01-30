@@ -24,19 +24,20 @@ import {
   PaginationControls,
   PaginationData,
 } from "@/components/commons/layout/pagination/PaginationControls";
+import { ComponentType, ReactNode } from "react";
 
 interface DataTableProps<T> {
   data: T[];
   isLoading: boolean;
   columns: {
     header: string;
-    accessor: (item: T, index: number) => React.ReactNode;
+    accessor: (item: T, index: number) => ReactNode;
     className?: string;
   }[];
   actions?: {
     label: string;
     onClick: (item: T) => void;
-    icon?: React.ComponentType<{ className?: string }>;
+    icon?: ComponentType<{ className?: string }>;
     className?: string;
   }[];
   onRowClick?: (item: T) => void;

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import React from "react";
-import { Calendar, BookmarkX, Edit, Trash2 } from "lucide-react";
+import { Calendar, BookmarkX, Edit, Trash2, Copy } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { formatDateAgo } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -9,15 +9,17 @@ interface BlogCardProps {
   blog: IBlog;
   onUnsave?: (blogId: string) => void;
   onUpdate?: (blog: IBlog) => void;
+  onDuplicate?: (blogId: string) => void;
   onDelete?: (blogId: string) => void;
 }
 
-export const BlogCard: React.FC<BlogCardProps> = ({
+export const BlogCard = ({
   blog,
   onUnsave,
   onUpdate,
+  onDuplicate,
   onDelete,
-}) => {
+}: BlogCardProps) => {
   const handleAction = (e: React.MouseEvent, action: () => void) => {
     e.preventDefault();
     e.stopPropagation();
@@ -41,6 +43,7 @@ export const BlogCard: React.FC<BlogCardProps> = ({
                 <BookmarkX size={16} />
               </Button>
             )}
+
             {onUpdate && (
               <Button
                 size="icon"
@@ -52,6 +55,19 @@ export const BlogCard: React.FC<BlogCardProps> = ({
                 <Edit size={16} />
               </Button>
             )}
+
+            {onDuplicate && (
+              <Button
+                size="icon"
+                variant="secondary"
+                className="h-8 w-8 bg-white/90 hover:bg-blue-500 hover:text-white shadow-md"
+                onClick={(e) => handleAction(e, () => onDuplicate(blog.id))}
+                title="Duplicate blog"
+              >
+                <Copy size={16} />
+              </Button>
+            )}
+
             {onDelete && (
               <Button
                 size="icon"
@@ -83,7 +99,9 @@ export const BlogCard: React.FC<BlogCardProps> = ({
             <h2 className="text-lg text-primary font-semibold mt-1 line-clamp-1 text-center">
               {blog.title}
             </h2>
-            <p className="text-center text-secondary">{blog.description.slice(0, 30)}...</p>
+            <p className="text-center text-secondary">
+              {blog.description.slice(0, 30)}...
+            </p>
           </div>
         </div>
       </Card>

@@ -1,12 +1,8 @@
 package com.example.aiservice.controllers;
 
-import java.util.UUID;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 import com.example.aiservice.dtos.responses.Response;
 import com.example.aiservice.services.apis.AIApi;
@@ -44,9 +40,7 @@ public class AIController {
 
     @GetMapping("/health")
     public ResponseEntity<Response> health() {
-        Response response = new Response();
-        response.setStatusCode(200);
-        response.setMessage("AI Service is running");
+        Response response = new Response("AI Service is running", 200);
 
         return ResponseEntity.status(response.getStatusCode()).body(response);
     }

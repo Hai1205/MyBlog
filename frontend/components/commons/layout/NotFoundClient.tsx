@@ -8,12 +8,12 @@ import { useBlogStore } from "@/stores/blogStore";
 import { useRouter } from "next/navigation";
 
 export default function NotFoundClient() {
-  const { handleSetBlogToEdit } = useBlogStore();
+  const { setBlogToEdit } = useBlogStore();
 
   const router = useRouter();
 
   const handleCreate = async () => {
-    handleSetBlogToEdit(null);
+    setBlogToEdit(null);
     router.push("/blogs/new");
   };
 

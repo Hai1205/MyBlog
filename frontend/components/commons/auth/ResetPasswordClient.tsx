@@ -4,10 +4,8 @@ import { Button } from "@/components/ui/button";
 import { InputWithIcon } from "@/components/ui/input-with-icon";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import type React from "react";
-import { useEffect, useState } from "react";
+import { ChangeEvent, FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "react-toastify";
 import Link from "next/link";
 import { Loader2, Lock, Eye, EyeOff, ArrowLeft, KeyRound } from "lucide-react";
 import { useForgotPasswordMutation } from "@/hooks/api/mutations/useAuthMutations";
@@ -16,10 +14,10 @@ interface ResetPasswordClientProps {
   identifier: string | null;
 }
 
-const ResetPasswordClient: React.FC<ResetPasswordClientProps> = ({
+const ResetPasswordClient = ({
   identifier: initialIdentifier,
-}) => {
-  const { mutate: forgotPassword, isPending } = useForgotPasswordMutation();
+}: ResetPasswordClientProps) => {
+  const { mutateAsync: forgotPasswordAsync, isPending } = useForgotPasswordMutation();
 
   const router = useRouter();
   const identifier = initialIdentifier || "";
@@ -32,7 +30,7 @@ const ResetPasswordClient: React.FC<ResetPasswordClientProps> = ({
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) {
@@ -58,14 +56,14 @@ const ResetPasswordClient: React.FC<ResetPasswordClientProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
     if (!validate()) {
       return;
     }
 
-    forgotPassword(
+    await forgotPasswordAsync(
       {
         identifier,
         data: {

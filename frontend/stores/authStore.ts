@@ -1,6 +1,7 @@
 import { createStore, EStorageType, IBaseStore } from "@/lib/initialStore";
 import { EUserRole } from "../types/enum";
 import { useBlogStore } from "./blogStore";
+import { useUserStore } from "./userStore";
 
 export interface IAuthStore extends IBaseStore {
 	userAuth: IUser | null;
@@ -62,6 +63,7 @@ export const useAuthStore = createStore<IAuthStore>(
 		reset: () => {
 			set({ ...initialState });
 			useBlogStore.getState().reset();
+			useUserStore.getState().reset();
 		},
 	}),
 	{ storageType: EStorageType.COOKIE }

@@ -1,9 +1,8 @@
 package com.example.userservice.mappers;
 
 import com.example.userservice.dtos.UserDto;
+import com.example.userservice.dtos.responses.views.UserView;
 import com.example.userservice.entities.User;
-import com.example.userservice.entities.User.UserRole;
-import com.example.userservice.entities.User.UserStatus;
 
 import org.springframework.stereotype.Component;
 
@@ -24,14 +23,24 @@ public class UserMapper {
         dto.setEmail(user.getEmail());
         dto.setBirth(user.getBirth());
         dto.setSummary(user.getSummary());
-        dto.setRole(user.getRole() != null ? user.getRole().name() : null);
-        dto.setStatus(user.getStatus() != null ? user.getStatus().name() : null);
+
+        if (user.getRole() != null) {
+            dto.setRole(user.getRole().name());
+        } else {
+            dto.setRole(User.UserRole.user.name());
+        }
+
+        if (user.getStatus() != null) {
+            dto.setStatus(user.getStatus().name());
+        } else {
+            dto.setStatus(User.UserStatus.pending.name());
+        }
         dto.setAvatarUrl(user.getAvatarUrl());
         dto.setFacebook(user.getFacebook());
         dto.setLinkedin(user.getLinkedin());
         dto.setInstagram(user.getInstagram());
-        dto.setCreatedAt(user.getCreatedAt() != null ? user.getCreatedAt().toString() : null);
-        dto.setUpdatedAt(user.getUpdatedAt() != null ? user.getUpdatedAt().toString() : null);
+        dto.setCreatedAt(user.getCreatedAt());
+        dto.setUpdatedAt(user.getUpdatedAt());
         return dto;
     }
 
@@ -53,17 +62,17 @@ public class UserMapper {
 
         if (dto.getRole() != null) {
             try {
-                user.setRole(UserRole.valueOf(dto.getRole()));
+                user.setRole(User.UserRole.valueOf(dto.getRole()));
             } catch (IllegalArgumentException e) {
-                user.setRole(UserRole.user);
+                user.setRole(User.UserRole.user);
             }
         }
 
         if (dto.getStatus() != null) {
             try {
-                user.setStatus(UserStatus.valueOf(dto.getStatus()));
+                user.setStatus(User.UserStatus.valueOf(dto.getStatus()));
             } catch (IllegalArgumentException e) {
-                user.setStatus(UserStatus.pending);
+                user.setStatus(User.UserStatus.pending);
             }
         }
 
@@ -74,5 +83,68 @@ public class UserMapper {
         user.setInstagram(dto.getInstagram());
 
         return user;
+    }
+
+    /**
+     * Maps UserDto to User View
+     */
+    public UserView dtoToView(UserDto dto) {
+        if (dto == null) {
+            return null;
+        }
+
+        UserView user = new UserView();
+        user.setId(dto.getId());
+        user.setUsername(dto.getUsername());
+        user.setEmail(dto.getEmail());
+
+        if (dto.getRole() != null) {
+            user.setRole(dto.getRole());
+        } else {
+            user.setRole(User.UserRole.user.name());
+        }
+
+        if (dto.getStatus() != null) {
+            user.setStatus(dto.getStatus());
+        } else {
+            user.setStatus(User.UserStatus.pending.name());
+        }
+
+        user.setAvatarUrl(dto.getAvatarUrl());
+        user.setCreatedAt(dto.getCreatedAt());
+
+        return user;
+
+    }
+
+    /**
+     * Maps User Entity to User View
+     */
+    public UserView entityToView(User user) {
+        if (user == null) {
+            return null;
+        }
+
+        UserView userView = new UserView();
+        userView.setId(user.getId());
+        userView.setUsername(user.getUsername());
+        userView.setEmail(user.getEmail());
+
+        if (user.getRole() != null) {
+            userView.setRole(user.getRole().name());
+        } else {
+            userView.setRole(User.UserRole.user.name());
+        }
+
+        if (user.getStatus() != null) {
+            userView.setStatus(user.getStatus().name());
+        } else {
+            userView.setStatus(User.UserStatus.pending.name());
+        }
+
+        userView.setAvatarUrl(user.getAvatarUrl());
+        userView.setCreatedAt(user.getCreatedAt());
+
+        return userView;
     }
 }

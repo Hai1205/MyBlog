@@ -1,10 +1,7 @@
 "use client";
 
-import { EUserRole, EUserStatus } from "@/types/enum";
 import { SharedFilter } from "../adminTable/SharedFilter";
-import { capitalizeFirstLetter } from "@/lib/utils";
-import { IUserFilter, UserFilterType } from "./UserDashboardClient";
-import { userRole, userStatus } from "./constant";
+import { IUserFilter, UserFilterType, roleSelection, statusSelection } from "./UserDashboardClient";
 
 interface UserFilterProps {
   openMenuFilters: boolean;
@@ -13,7 +10,7 @@ interface UserFilterProps {
   toggleFilter: (value: string, type: UserFilterType) => void;
   clearFilters: () => void;
   applyFilters: () => void;
-  closeMenuMenuFilters: () => void;
+  closeMenuFilters: () => void;
 }
 
 interface UserFilterSection {
@@ -29,18 +26,18 @@ export const UserFilter = ({
   toggleFilter,
   clearFilters,
   applyFilters,
-  closeMenuMenuFilters,
+  closeMenuFilters,
 }: UserFilterProps) => {
   const filterSections: UserFilterSection[] = [
     {
       key: "status",
       label: "Status",
-      options: userStatus,
+      options: statusSelection,
     },
     {
       key: "role",
       label: "Role",
-      options: userRole,
+      options: roleSelection,
     },
   ];
 
@@ -52,7 +49,7 @@ export const UserFilter = ({
       toggleFilter={toggleFilter}
       clearFilters={clearFilters}
       applyFilters={applyFilters}
-      closeMenuMenuFilters={closeMenuMenuFilters}
+      closeMenuFilters={closeMenuFilters}
       filterSections={filterSections}
     />
   );

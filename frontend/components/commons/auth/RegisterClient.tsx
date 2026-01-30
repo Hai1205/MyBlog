@@ -5,7 +5,7 @@ import { InputWithIcon } from "@/components/ui/input-with-icon";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import type React from "react";
-import { useState } from "react";
+import { ChangeEvent, FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   useRegisterMutation,
@@ -15,13 +15,15 @@ import Link from "next/link";
 import { Loader2, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { toast } from "react-toastify";
 
-const RegisterClient: React.FC = () => {
-  const registerMutation = useRegisterMutation();
-  const sendOTPMutation = useSendOTPMutation();
-  
+const RegisterClient = () => {
+  const { mutateAsync: registerMutateAsync, isPending: isRegistering } =
+    useRegisterMutation();
+  const { mutateAsync: sendOTPMutateAsync, isPending: isSendingOTP } =
+    useSendOTPMutation();
+
   const router = useRouter();
 
-  const isLoading = registerMutation.isPending || sendOTPMutation.isPending;
+  const isLoading = isRegistering || isSendingOTP;
 
   const [formData, setFormData] = useState({
     username: "",
@@ -33,7 +35,7 @@ const RegisterClient: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) {
@@ -70,7 +72,7 @@ const RegisterClient: React.FC = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
     if (!validate()) {
@@ -78,7 +80,7 @@ const RegisterClient: React.FC = () => {
     }
 
     try {
-      const response = await registerMutation.mutateAsync({
+      const response = await registerMutateAsync({
         username: formData.username,
         email: formData.email,
         password: formData.password,
@@ -95,7 +97,7 @@ const RegisterClient: React.FC = () => {
           )}&isActivation=true`,
         );
 
-        await sendOTPMutation.mutateAsync(formData.email);
+        await sendOTPMutateAsync(formData.email);
       }
     } catch (error) {
       // Error handling is done by TanStack Query + toast

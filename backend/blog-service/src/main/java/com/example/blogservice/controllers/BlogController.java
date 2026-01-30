@@ -19,8 +19,9 @@ public class BlogController {
 
     @GetMapping()
     public ResponseEntity<Response> getAllBlogs(
-            @RequestParam(value = "isVisibility", required = false) Boolean isVisibility) {
-        Response response = blogApi.getAllBlogs(isVisibility);
+            @RequestParam(value = "isVisibility", required = false) Boolean isVisibility,
+            @RequestParam(value = "isView", required = false) Boolean isView) {
+        Response response = blogApi.getAllBlogs(isVisibility, isView);
 
         return ResponseEntity.status(response.getStatusCode()).body(response);
     }
@@ -31,6 +32,15 @@ public class BlogController {
             @RequestPart("data") String dataJson,
             @RequestPart(value = "thumbnail", required = false) MultipartFile thumbnail) {
         Response response = blogApi.createBlog(userId, dataJson, thumbnail);
+
+        return ResponseEntity.status(response.getStatusCode()).body(response);
+    }
+
+    @PostMapping("/{blogId}/users/{userId}/duplicate")
+    public ResponseEntity<Response> duplicateBlog(
+            @PathVariable("blogId") UUID blogId,
+            @PathVariable("userId") UUID userId) {
+        Response response = blogApi.duplicateBlog(blogId, userId);
 
         return ResponseEntity.status(response.getStatusCode()).body(response);
     }
@@ -83,6 +93,13 @@ public class BlogController {
 
         return ResponseEntity.status(response.getStatusCode()).body(response);
     }
+    
+    @GetMapping("/{blogId}")
+    public ResponseEntity<Response> getBlog(@PathVariable("blogId") UUID blogId) {
+        Response response = blogApi.getBlog(blogId, null);
+
+        return ResponseEntity.status(response.getStatusCode()).body(response);
+    }
 
     @DeleteMapping("/{blogId}")
     public ResponseEntity<Response> deleteBlog(@PathVariable("blogId") UUID blogId) {
@@ -93,14 +110,8 @@ public class BlogController {
 
     @GetMapping("/health")
     public ResponseEntity<Response> health() {
-        Response response = new Response(200, "Blog Service is running");
+        Response response = new Response("Blog Service is running", 200);
 
-        return ResponseEntity.status(response.getStatusCode()).body(response);
-    }
-
-    @GetMapping("/recent")
-    public ResponseEntity<Response> getRecentBlogs(@RequestParam("limit") int limit) {
-        Response response = blogApi.getRecentBlogs(limit);
         return ResponseEntity.status(response.getStatusCode()).body(response);
     }
 }

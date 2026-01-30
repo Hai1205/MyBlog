@@ -1,19 +1,19 @@
 package com.example.userservice.initializers;
 
-import com.example.userservice.dtos.UserDto;
-import com.example.userservice.services.apis.UserApi;
+import com.example.userservice.exceptions.OurException;
+import com.example.userservice.services.apis.handlers.UserHandler;
 
-import org.slf4j.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @Component
 public class RootUserInitializer implements CommandLineRunner {
 
-    private static final Logger log = LoggerFactory.getLogger(RootUserInitializer.class);
-
-    private final UserApi userService;
+    private final UserHandler userHandler;
 
     @Value("${ROOT_EMAIL}")
     private String rootEmail;
@@ -30,26 +30,28 @@ public class RootUserInitializer implements CommandLineRunner {
     @Value("${ROOT_STATUS}")
     private String rootStatus;
 
-    public RootUserInitializer(UserApi userService) {
-        this.userService = userService;
+    public RootUserInitializer(UserHandler userHandler) {
+        this.userHandler = userHandler;
     }
 
     @Override
     public void run(String... args) throws Exception {
         log.info("Checking if root user exists...");
 
-        // Check if root user exists by email
-        UserDto existingUser = userService.handleFindByEmail(rootEmail);
-
-        if (existingUser == null) {
-            log.info("Root user not found. Creating root user: {}", rootEmail);
-
-            userService.handleCreateUser(rootUsername, rootEmail, rootPassword, null, null, null,
-                    rootRole, rootStatus, null, null, null, null);
-
-            log.info("Root user created successfully");
-        } else {
+        try {
+            userHandler.handleGetUserByEmail(rootEmail);
             log.info("Root user already exists. Skipping creation.");
+        } catch (OurException e) {
+            if ("User not found".equals(e.getMessage())) {
+                log.info("Root user not found. Creating root user: {}", rootEmail);
+
+                userHandler.handleCreateUser(rootUsername, rootEmail, rootPassword, null, null, null,
+                        rootRole, rootStatus, null, null, null, null);
+
+                log.info("Root user created successfully");
+            } else {
+                throw e;
+            }
         }
     }
 }

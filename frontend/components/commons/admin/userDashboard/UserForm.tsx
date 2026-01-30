@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { ChangeEvent, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,26 +13,30 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Eye, EyeOff, Lock, Save, UserIcon } from "lucide-react";
-import { ExtendedUserData, userRole, userStatus } from "./constant";
 import { EUserRole, EUserStatus } from "@/types/enum";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  ExtendedUserData,
+  roleSelection,
+  statusSelection,
+} from "./UserDashboardClient";
 
 interface UserFormProps {
   data: ExtendedUserData | null;
   onChange: (field: keyof ExtendedUserData, value: string) => void;
   previewAvatar: string;
-  handleAvatarChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handleAvatarChange: (e: ChangeEvent<HTMLInputElement>) => void;
   isCreateDialog: boolean;
   showFooterButtons?: boolean;
 }
 
-export const UserForm: React.FC<UserFormProps> = ({
+export const UserForm = ({
   data,
   onChange,
   previewAvatar,
   handleAvatarChange,
   isCreateDialog,
-}) => {
+}: UserFormProps) => {
   const [showPassword, setShowPassword] = useState(false);
   return (
     <div className="space-y-6 pr-2">
@@ -63,7 +67,7 @@ export const UserForm: React.FC<UserFormProps> = ({
                 document.getElementById("avatar-input-create")?.click()
               }
             >
-              Chọn ảnh
+              Choose Image
             </Button>
           </div>
 
@@ -80,14 +84,14 @@ export const UserForm: React.FC<UserFormProps> = ({
       {/* Username */}
       <div className="space-y-2">
         <Label htmlFor="form-username" className="text-sm font-medium">
-          Tên người dùng <span className="text-destructive">*</span>
+          Username <span className="text-destructive">*</span>
         </Label>
         <Input
           id="form-username"
           value={data?.username || ""}
           onChange={(e) => onChange("username", e.target.value)}
           className="bg-background/50 border-border/50 focus:border-primary transition-colors"
-          placeholder="Nhập tên người dùng"
+          placeholder="Enter username"
           required
         />
       </div>
@@ -114,7 +118,7 @@ export const UserForm: React.FC<UserFormProps> = ({
       {isCreateDialog && (
         <div className="space-y-2">
           <Label htmlFor="form-password" className="text-sm font-medium">
-            Mật khẩu <span className="text-destructive">*</span>
+            Password <span className="text-destructive">*</span>
           </Label>
           <div className="relative">
             <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -125,7 +129,7 @@ export const UserForm: React.FC<UserFormProps> = ({
               value={data?.password || ""}
               onChange={(e) => onChange("password", e.target.value)}
               className="pl-10 bg-background/50 border-border/50 focus:border-primary transition-colors"
-              placeholder="Nhập mật khẩu"
+              placeholder="Enter password"
               required
             />
             <button
@@ -146,7 +150,7 @@ export const UserForm: React.FC<UserFormProps> = ({
       {/* Birth */}
       <div className="space-y-2">
         <Label htmlFor="form-birth" className="text-sm font-medium">
-          Ngày sinh
+          Birth
         </Label>
         <Input
           id="form-birth"
@@ -161,7 +165,7 @@ export const UserForm: React.FC<UserFormProps> = ({
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <Label htmlFor="form-summary" className="text-sm font-medium">
-            Giới thiệu
+            Summary
           </Label>
           <span className="text-xs text-muted-foreground">
             {data?.summary?.length || 0}/2000
@@ -178,7 +182,7 @@ export const UserForm: React.FC<UserFormProps> = ({
               onChange("summary", truncatedValue);
             }}
             className="w-full min-h-30 px-3 py-2 text-sm bg-transparent focus:outline-none transition-colors resize-none border-0 overflow-hidden"
-            placeholder="Nhập giới thiệu về người dùng (tối đa 2000 ký tự)"
+            placeholder="Enter user summary (up to 2000 characters)"
             style={{ height: "auto" }}
             onInput={(e) => {
               e.currentTarget.style.height = "auto";
@@ -200,7 +204,7 @@ export const UserForm: React.FC<UserFormProps> = ({
           value={data?.instagram || ""}
           onChange={(e) => onChange("instagram", e.target.value)}
           className="bg-background/50 border-border/50 focus:border-primary transition-colors"
-          placeholder="Nhập Instagram"
+          placeholder="Enter Instagram"
         />
       </div>
 
@@ -215,7 +219,7 @@ export const UserForm: React.FC<UserFormProps> = ({
           value={data?.facebook || ""}
           onChange={(e) => onChange("facebook", e.target.value)}
           className="bg-background/50 border-border/50 focus:border-primary transition-colors"
-          placeholder="Nhập Facebook"
+          placeholder="Enter Facebook"
         />
       </div>
 
@@ -230,7 +234,7 @@ export const UserForm: React.FC<UserFormProps> = ({
           value={data?.linkedin || ""}
           onChange={(e) => onChange("linkedin", e.target.value)}
           className="bg-background/50 border-border/50 focus:border-primary transition-colors"
-          placeholder="Nhập LinkedIn"
+          placeholder="Enter LinkedIn"
         />
       </div>
 
@@ -238,20 +242,20 @@ export const UserForm: React.FC<UserFormProps> = ({
       <div className="flex gap-4">
         <div className="flex-1 space-y-2">
           <Label htmlFor="form-status" className="text-sm font-medium">
-            Trạng thái
+            Status
           </Label>
           <Select
-            value={data?.status || userStatus[0].value}
+            value={data?.status || statusSelection[0].value}
             onValueChange={(value) => onChange("status", value as EUserStatus)}
           >
             <SelectTrigger
               id="form-status"
               className="bg-background/50 border-border/50"
             >
-              <SelectValue placeholder="Chọn trạng thái" />
+              <SelectValue placeholder="Select status" />
             </SelectTrigger>
             <SelectContent>
-              {userStatus.map((item) => (
+              {statusSelection.map((item) => (
                 <SelectItem key={item.value} value={item.value}>
                   {item.label}
                 </SelectItem>
@@ -262,20 +266,21 @@ export const UserForm: React.FC<UserFormProps> = ({
 
         <div className="flex-1 space-y-2">
           <Label htmlFor="form-role" className="text-sm font-medium">
-            Vai trò
+            Role
           </Label>
           <Select
-            value={data?.role || userRole[0].value}
+            value={data?.role || roleSelection[0].value}
             onValueChange={(value) => onChange("role", value as EUserRole)}
           >
             <SelectTrigger
               id="form-role"
               className="bg-background/50 border-border/50"
             >
-              <SelectValue placeholder="Chọn vai trò" />
+              <SelectValue placeholder="Select role" />
             </SelectTrigger>
+
             <SelectContent>
-              {userRole.map((item) => (
+              {roleSelection.map((item) => (
                 <SelectItem key={item.value} value={item.value}>
                   {item.label}
                 </SelectItem>

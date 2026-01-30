@@ -1,9 +1,8 @@
 package com.example.authservice.dtos.responses;
 
-import java.util.List;
 import java.util.Map;
 
-import com.example.authservice.dtos.UserDto;
+import com.example.authservice.dtos.responses.views.UserView;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 import lombok.*;
@@ -15,17 +14,17 @@ import lombok.*;
 public class Response {
     private int statusCode;
     private String message;
-
-    private String newPassword;
-    private List<UserDto> users;
-    private String token;
-    private String role;
-    private String status;
-    private UserDto user;
     private Map<String, Object> additionalData;
 
-    public Response(int statusCode, String message) {
+    private UserView userView;
+
+    public Response(String message, int statusCode) {
         this.statusCode = statusCode;
+        this.message = message;
+    }
+
+    public Response(String message) {
+        this.statusCode = 200;
         this.message = message;
     }
 

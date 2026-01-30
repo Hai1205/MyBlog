@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 import {
   Card,
   CardContent,
@@ -22,8 +22,8 @@ import { useChangePasswordMutation } from "@/hooks/api/mutations/useAuthMutation
 export default function SettingsClient() {
   const { userAuth } = useAuthStore();
 
-  const { mutate: updateUser } = useUpdateUserMutation();
-  const { mutate: changePassword, isPending: isChangingPassword } =
+  const { mutateAsync: updateUserAsync } = useUpdateUserMutation();
+  const { mutateAsync: changePasswordAsync, isPending: isChangingPassword } =
     useChangePasswordMutation();
 
   const router = useRouter();
@@ -68,7 +68,7 @@ export default function SettingsClient() {
 
   const handleUpdate = async () => {
     if (data) {
-      updateUser({
+      updateUserAsync({
         userId: data.id,
         data: {
           birth: data.birth || "",
@@ -84,7 +84,7 @@ export default function SettingsClient() {
     }
   };
 
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setAvatarFile(file);
@@ -92,7 +92,7 @@ export default function SettingsClient() {
     }
   };
 
-  const handleChangePassword = async (e: React.FormEvent) => {
+  const handleChangePassword = async (e: FormEvent) => {
     e.preventDefault();
 
     if (data?.newPassword !== data?.confirmPassword) {
@@ -114,7 +114,7 @@ export default function SettingsClient() {
       return;
     }
 
-    changePassword(
+    changePasswordAsync(
       {
         identifier: data.email,
         data: {

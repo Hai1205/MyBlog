@@ -33,7 +33,7 @@ public class StatsController {
 
     @GetMapping("/health")
     public ResponseEntity<Response> health() {
-        Response response = new Response(200, "Stats Service is running");
+        Response response = new Response("Stats Service is running", 200);
 
         return ResponseEntity.status(response.getStatusCode()).body(response);
     }

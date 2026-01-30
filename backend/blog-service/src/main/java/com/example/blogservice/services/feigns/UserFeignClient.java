@@ -11,6 +11,6 @@ import com.example.blogservice.dtos.responses.Response;
 @FeignClient(name = "${USER_SERVICE_NAME}", url = "${USER_SERVICE_URL}")
 public interface UserFeignClient {
 
-    @GetMapping("/api/v1/users/{userId}")
+    @GetMapping("/api/v1/users/{userId}?isView=true")
     Response getUserById(@PathVariable("userId") UUID userId);
 }

@@ -10,7 +10,7 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
 import com.example.mailservice.configs.MailConfig;
-import com.example.mailservice.services.apis.MailApi;
+import com.example.mailservice.services.apis.handlers.MailHandler;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -24,7 +24,7 @@ class MailServiceTest {
     private MailConfig mailConfig;
 
     @InjectMocks
-    private MailApi mailService;
+    private MailHandler mailService;
 
     private String toEmail;
     private String otp;

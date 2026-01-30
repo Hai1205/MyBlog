@@ -7,7 +7,7 @@ import lombok.Builder;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 @Entity
@@ -52,11 +52,11 @@ public class User {
     // Audit fields
     @CreatedDate
     @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @LastModifiedDate
     @Column(nullable = false)
-    private LocalDateTime updatedAt;
+    private Instant updatedAt;
 
     // Full constructor for MapStruct
     @Builder
@@ -65,7 +65,7 @@ public class User {
             UserRole role, UserStatus status,
             String avatarUrl, String avatarPublicId,
             String facebook, String linkedin, String instagram,
-            LocalDateTime createdAt, LocalDateTime updatedAt) {
+            Instant createdAt, Instant updatedAt) {
         this.id = id;
         this.username = username;
         this.password = password;

@@ -4,37 +4,33 @@ import { Button } from "@/components/ui/button";
 import { InputWithIcon } from "@/components/ui/input-with-icon";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import type React from "react";
-import { useState } from "react";
+import { ChangeEvent, FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { useSendOTPMutation } from "@/hooks/api/mutations/useAuthMutations";
 import Link from "next/link";
 import { Loader2, Mail, ArrowLeft, Send } from "lucide-react";
 
-const ForgotPasswordClient: React.FC = () => {
-  const sendOTPMutation = useSendOTPMutation();
+const ForgotPasswordClient = () => {
+  const { mutateAsync: sendOTPMutateAsync, isPending: isSendingOTP } =
+    useSendOTPMutation();
   
   const router = useRouter();
   const [identifier, setIdentifier] = useState("");
   const [error, setError] = useState("");
 
-  const isLoading = sendOTPMutation.isPending;
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     setIdentifier(e.target.value);
     if (error) setError("");
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
     try {
-      const res = await sendOTPMutation.mutateAsync(identifier);
+      const res = await sendOTPMutateAsync(identifier);
 
       if (res) {
-        toast.success("OTP code has been sent to your email");
-
         router.push(
           `/auth/verification?identifier=${encodeURIComponent(
             identifier,
@@ -75,8 +71,8 @@ const ForgotPasswordClient: React.FC = () => {
           )}
         </div>
 
-        <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? (
+        <Button type="submit" className="w-full" disabled={isSendingOTP}>
+          {isSendingOTP ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Sending...

@@ -4,16 +4,15 @@ import Cookies from 'js-cookie';
 import {
     authService,
     IAuthDataResponse,
-    RegisterDTO,
-    LoginDTO,
-    VerifyOTPDTO,
-    ForgotPasswordDTO,
-    ChangePasswordDTO
+    Register,
+    Login,
+    VerifyOTP,
+    ForgotPassword,
+    ChangePassword
 } from "../services/authService";
 import { IApiResponse } from "@/lib/axiosInstance";
 import { useAuthStore } from "@/stores/authStore";
-import { queryKeys, invalidateQueries } from "@/lib/queryClient";
-import { EUserRole } from "@/types/enum";
+import { queryKeys } from "@/lib/queryClient";
 
 /**
  * Auth Mutations - for POST/PATCH/DELETE operations
@@ -26,7 +25,7 @@ import { EUserRole } from "@/types/enum";
 export const useRegisterMutation = (): UseMutationResult<
     IApiResponse<IAuthDataResponse>,
     Error,
-    RegisterDTO
+    Register
 > => {
     return useMutation({
         mutationFn: authService.register,
@@ -51,32 +50,16 @@ export const useRegisterMutation = (): UseMutationResult<
 export const useLoginMutation = (): UseMutationResult<
     IApiResponse<IAuthDataResponse>,
     Error,
-    LoginDTO
+    { identifier: string; data: Login }
 > => {
-    const { handleSetUserAuth } = useAuthStore();
-    const queryClient = useQueryClient();
-
     return useMutation({
-        mutationFn: authService.login,
-        onSuccess: (response) => {
+        mutationFn: ({ identifier, data }) => authService.login(identifier, data),
+        onSuccess: (response, variables) => {
             const { success, data } = response;
-            const { user, message } = data || {};
+            const { message } = data || {};
 
-            if (success && user) {
-                handleSetUserAuth(user);
-
+            if (success) {
                 toast.success(message);
-
-                if (user.role === EUserRole.ADMIN) {
-                    setTimeout(() => {
-                        queryClient.prefetchQuery({
-                            queryKey: queryKeys.stats.dashboard(),
-                        });
-                        queryClient.prefetchQuery({
-                            queryKey: queryKeys.users.lists(),
-                        });
-                    }, 100);
-                }
             }
         },
         onError: (error: any) => {
@@ -92,13 +75,13 @@ export const useLoginMutation = (): UseMutationResult<
 export const useLogoutMutation = (): UseMutationResult<
     IApiResponse,
     Error,
-    void
+    { identifier: string }
 > => {
     const authStore = useAuthStore();
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: authService.logout,
+        mutationFn: ({ identifier }) => authService.logout(identifier),
         onSuccess: (response) => {
             const { success, data } = response;
             const { message } = data || {};
@@ -161,7 +144,7 @@ export const useSendOTPMutation = (): UseMutationResult<
 export const useVerifyOTPMutation = (): UseMutationResult<
     IApiResponse,
     Error,
-    { identifier: string; data: VerifyOTPDTO }
+    { identifier: string; data: VerifyOTP }
 > => {
     return useMutation({
         mutationFn: ({ identifier, data }) => authService.verifyOTP(identifier, data),
@@ -211,7 +194,7 @@ export const useResetPasswordMutation = (): UseMutationResult<
 export const useForgotPasswordMutation = (): UseMutationResult<
     IApiResponse,
     Error,
-    { identifier: string; data: ForgotPasswordDTO }
+    { identifier: string; data: ForgotPassword }
 > => {
     return useMutation({
         mutationFn: ({ identifier, data }) => authService.forgotPassword(identifier, data),
@@ -236,7 +219,7 @@ export const useForgotPasswordMutation = (): UseMutationResult<
 export const useChangePasswordMutation = (): UseMutationResult<
     IApiResponse,
     Error,
-    { identifier: string; data: ChangePasswordDTO }
+    { identifier: string; data: ChangePassword }
 > => {
     return useMutation({
         mutationFn: ({ identifier, data }) => authService.changePassword(identifier, data),
@@ -269,8 +252,6 @@ export const useRefreshTokenMutation = (): UseMutationResult<
         retry: 1,
         onError: (error: any) => {
             console.error("Token refresh failed:", error);
-            // Don't show toast for token refresh failures
-            // The TokenRefresher component will handle this
         },
     });
 };

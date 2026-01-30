@@ -1,4 +1,4 @@
-import BlogsClient from "../blogs/BlogsClient";
+import BlogsSection from "./BlogsSection";
 import { FeaturesSection } from "./FeaturesSection";
 import { HeroSection } from "./HeroSection";
 
@@ -7,7 +7,7 @@ export default function HomeClient() {
     <div className="flex flex-col">
       <HeroSection />
       <FeaturesSection />
-      <BlogsClient />
+      <BlogsSection />
     </div>
   );
 }

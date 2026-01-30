@@ -9,7 +9,7 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Service;
 
-import com.example.mailservice.services.apis.MailApi;
+import com.example.mailservice.services.apis.handlers.MailHandler;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class MailConsumer {
 
-    private final MailApi mailService;
+    private final MailHandler mailService;
 
     @RabbitListener(bindings = @QueueBinding(value = @Queue(name = "auth.mail.send-mail-activation.queue", durable = "true", autoDelete = "false"), exchange = @Exchange(name = "auth.mail.exchange", type = "topic", durable = "true"), key = "auth.mail.send-mail-activation.request"))
     public void sendMailActivation(@Payload Map<String, Object> message) {

@@ -6,18 +6,29 @@ export interface IBlogStore extends IBaseStore {
 	blogToEdit: IBlog | null;
 	sortBy: 'newest' | 'popular' | 'oldest';
 	commentsByBlogId: Record<string, IComment[]>;
+	savedBlogs: IBlog[];
+	myBlogs: IBlog[];
 
-	handleSetSelectedBlog: (blogId: string | null) => void;
-	handleSetFilterCategory: (category: string | null) => void;
-	handleSetSortBy: (sortBy: 'newest' | 'popular' | 'oldest') => void;
-	handleSetBlogToEdit: (blog: IBlog | null) => void;
+	setSelectedBlog: (blogId: string | null) => void;
+	setFilterCategory: (category: string | null) => void;
+	setSortBy: (sortBy: 'newest' | 'popular' | 'oldest') => void;
+	setBlogToEdit: (blog: IBlog | null) => void;
 	getFilteredAndSortedBlogs: (blogs: IBlog[]) => IBlog[];
 
 	// Comment management
 	setCommentsForBlog: (blogId: string, comments: IComment[]) => void;
+	getCommentsForBlog: (blogId: string) => IComment[];
 	addCommentToBlog: (blogId: string, comment: IComment) => void;
 	removeCommentFromBlog: (blogId: string, commentId: string) => void;
-	getCommentsForBlog: (blogId: string) => IComment[];
+
+	setSavedBlogs: (blogs: IBlog[]) => void;
+	removeFromSavedBlogs: (blogId: string) => Promise<void>;
+	addToSavedBlogs: (blog: IBlog) => Promise<void>;
+
+	setMyBlogs: (blogs: IBlog[]) => void;
+	removeFromMyBlogs: (blogId: string) => Promise<void>;
+	addToMyBlogs: (blog: IBlog) => Promise<void>;
+	updateInMyBlogs: (blog: IBlog) => Promise<void>;
 
 	reset: () => void;
 }
@@ -27,27 +38,29 @@ const initialState = {
 	selectedBlogId: null,
 	filterCategory: null,
 	sortBy: 'newest' as const,
-	blogToEdit: null as IBlog | null,
-	commentsByBlogId: {} as Record<string, IComment[]>,
+	blogToEdit: null,
+	commentsByBlogId: {},
+	savedBlogs: [],
+	myBlogs: [],
 };
 
 export const useBlogStore = createStore<IBlogStore>(
 	storeName,
 	initialState,
 	(set, get) => ({
-		handleSetSelectedBlog: (blogId: string | null): void => {
+		setSelectedBlog: (blogId: string | null): void => {
 			set({ selectedBlogId: blogId });
 		},
 
-		handleSetFilterCategory: (category: string | null): void => {
+		setFilterCategory: (category: string | null): void => {
 			set({ filterCategory: category });
 		},
 
-		handleSetSortBy: (sortBy: 'newest' | 'popular' | 'oldest'): void => {
+		setSortBy: (sortBy: 'newest' | 'popular' | 'oldest'): void => {
 			set({ sortBy });
 		},
 
-		handleSetBlogToEdit: (blog: IBlog | null): void => {
+		setBlogToEdit: (blog: IBlog | null): void => {
 			set({ blogToEdit: blog });
 		},
 
@@ -119,6 +132,42 @@ export const useBlogStore = createStore<IBlogStore>(
 		getCommentsForBlog: (blogId: string): IComment[] => {
 			const { commentsByBlogId } = get();
 			return commentsByBlogId[blogId] || [];
+		},
+
+		setSavedBlogs: (blogs: IBlog[]): void => {
+			set({ savedBlogs: blogs });
+		},
+
+		removeFromSavedBlogs: (blogId: string): void => {
+			set({
+				savedBlogs: get().savedBlogs.filter((user) => user.id !== blogId),
+			});
+		},
+
+		addToSavedBlogs: (user: IBlog): void => {
+			set({ savedBlogs: [user, ...get().savedBlogs] });
+		},
+
+		setMyBlogs: (blogs: IBlog[]): void => {
+			set({ myBlogs: blogs });
+		},
+
+		removeFromMyBlogs: (blogId: string): void => {
+			set({
+				myBlogs: get().myBlogs.filter((user) => user.id !== blogId),
+			});
+		},
+
+		addToMyBlogs: (user: IBlog): void => {
+			set({ myBlogs: [user, ...get().myBlogs] });
+		},
+
+		updateInMyBlogs: (user: IBlog): void => {
+			set({
+				myBlogs: get().myBlogs.map((u) =>
+					u.id === user.id ? user : u
+				),
+			});
 		},
 
 		reset: () => {

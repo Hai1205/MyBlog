@@ -1,4 +1,3 @@
-import type React from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/commons/layout/ThemeProvider";
@@ -10,6 +9,7 @@ import "react-toastify/dist/ReactToastify.css";
 import { Navbar } from "@/components/commons/layout/navbar/Navbar";
 import { Footer } from "@/components/commons/layout/Footer";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { ReactNode } from "react";
 
 const geistSans = Geist({
   subsets: ["latin"],
@@ -34,7 +34,7 @@ export const metadata = {
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <html lang="en" suppressHydrationWarning className="overflow-hidden">

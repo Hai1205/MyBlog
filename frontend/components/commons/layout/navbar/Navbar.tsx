@@ -12,9 +12,11 @@ import { NavbarUserMenu } from "./NavbarUserMenu";
 import { NavbarAuthButtons } from "./NavbarAuthButtons";
 import { NavbarMobileMenu } from "./NavbarMobileMenu";
 import { useLogoutMutation } from "@/hooks/api/mutations/useAuthMutations";
+import { useBlogStore } from "@/stores/blogStore";
 
 export function Navbar() {
-  const authStore = useAuthStore();
+  const { userAuth, isAdmin } = useAuthStore();
+  const { setBlogToEdit } = useBlogStore();
 
   const { mutate: logout } = useLogoutMutation();
 
@@ -27,26 +29,32 @@ export function Navbar() {
 
   useEffect(() => setIsHydrated(true), []);
 
-  const userAuth = authStore?.userAuth || null;
-  const isAdmin = authStore?.isAdmin || false;
+  const handleCreate = () => {
+    setBlogToEdit(null);
+    router.push("/blogs/new");
+  };
+
+  const handleLogout = () => {
+    logout(
+      { identifier: userAuth?.id as string },
+      {
+        onSuccess: () => {
+          setMobileMenuOpen(false);
+          router.push("/");
+        },
+      },
+    );
+  };
 
   const navLinks = [
     { href: "/", label: "Home" },
+    { href: "/blogs/new", label: "New Blog", onClick: handleCreate },
     { href: "/blogs/my-blogs", label: "My Blogs" },
     { href: "/blogs/saved", label: "Saved Blogs" },
   ];
   const allNavLinks = isAdmin
     ? [...navLinks, { href: "/admin", label: "Admin Dashboard" }]
     : navLinks;
-
-  const handleLogout = () => {
-    logout(undefined, {
-      onSuccess: () => {
-        setMobileMenuOpen(false);
-        router.push("/");
-      },
-    });
-  };
 
   if (!isHydrated)
     return (

@@ -1,4 +1,4 @@
-import BlogDetailClient from "@/components/commons/blogs/BlogDetailClient";
+import BlogDetailClient from "@/components/commons/blogs/blogDetail/BlogDetailClient";
 
 export default function SettingsPage() {
   return <BlogDetailClient />;

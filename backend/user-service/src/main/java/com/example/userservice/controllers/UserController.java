@@ -1,6 +1,6 @@
 package com.example.userservice.controllers;
 
-import com.example.userservice.dtos.response.Response;
+import com.example.userservice.dtos.responses.Response;
 import com.example.userservice.services.apis.UserApi;
 
 import java.util.UUID;
@@ -35,15 +35,17 @@ public class UserController {
     }
 
     @GetMapping
-    public ResponseEntity<Response> getAllUsers() {
-        Response response = userApi.getAllUsers();
+    public ResponseEntity<Response> getAllUsers(
+            @RequestParam(value = "isView", required = false) Boolean isView) {
+        Response response = userApi.getAllUsers(isView);
 
         return ResponseEntity.status(response.getStatusCode()).body(response);
     }
 
     @GetMapping("/{userId}")
-    public ResponseEntity<Response> getUserById(@PathVariable("userId") UUID userId) {
-        Response response = userApi.getUserById(userId);
+    public ResponseEntity<Response> getUser(@PathVariable("userId") UUID userId,
+            @RequestParam(value = "isView", required = false) Boolean isView) {
+        Response response = userApi.getUser(userId, isView);
 
         return ResponseEntity.status(response.getStatusCode()).body(response);
     }
@@ -67,23 +69,6 @@ public class UserController {
         return ResponseEntity.status(response.getStatusCode()).body(response);
     }
 
-    @GetMapping("/health")
-    public ResponseEntity<Response> health() {
-        Response response = new Response();
-        response.setStatusCode(200);
-        response.setMessage("User Service is running");
-
-        return ResponseEntity.status(response.getStatusCode()).body(response);
-    }
-
-    @GetMapping("/recent")
-    // @PreAuthorize("hasAuthority('admin')")
-    public ResponseEntity<Response> getRecentUsers(@RequestParam("limit") int limit) {
-        Response response = userApi.getRecentUsers(limit);
-
-        return ResponseEntity.status(response.getStatusCode()).body(response);
-    }
-
     @PostMapping("/authenticate/{identifier}")
     public ResponseEntity<Response> authenticateUser(@PathVariable("identifier") String identifier,
             @RequestParam("password") String password) {
@@ -92,9 +77,10 @@ public class UserController {
         return ResponseEntity.status(response.getStatusCode()).body(response);
     }
 
-    @GetMapping("/find/{identifier}")
-    public ResponseEntity<Response> findUserByIdentifier(@PathVariable("identifier") String identifier) {
-        Response response = userApi.findUserByIdentifier(identifier);
+    @GetMapping("/identifier/{identifier}")
+    public ResponseEntity<Response> findUserByIdentifier(@PathVariable("identifier") String identifier,
+            @RequestParam(value = "isView", required = false) Boolean isView) {
+        Response response = userApi.findUserByIdentifier(identifier, isView);
 
         return ResponseEntity.status(response.getStatusCode()).body(response);
     }
@@ -126,14 +112,23 @@ public class UserController {
     public ResponseEntity<Response> forgotPassword(
             @PathVariable("email") String email,
             @RequestBody() String dataJson) {
+
         Response response = userApi.forgotPassword(email, dataJson);
 
         return ResponseEntity.status(response.getStatusCode()).body(response);
     }
 
     @GetMapping("/email/{email}")
-    public ResponseEntity<Response> findUserByEmail(@PathVariable("email") String email) {
-        Response response = userApi.findUserByEmail(email);
+    public ResponseEntity<Response> findUserByEmail(@PathVariable("email") String email,
+            @RequestParam(value = "isView", required = false) Boolean isView) {
+        Response response = userApi.findUserByEmail(email, isView);
+
+        return ResponseEntity.status(response.getStatusCode()).body(response);
+    }
+
+    @GetMapping("/health")
+    public ResponseEntity<Response> health() {
+        Response response = new Response("User Service is running", 200);
 
         return ResponseEntity.status(response.getStatusCode()).body(response);
     }

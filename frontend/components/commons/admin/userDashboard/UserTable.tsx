@@ -54,7 +54,6 @@ export const UserTable = ({
     {
       header: "No",
       accessor: (_: IUser, index: number) => {
-        // Calculate correct index based on current page
         const baseIndex = paginationData
           ? (paginationData.currentPage - 1) * paginationData.pageSize
           : 0;
@@ -153,7 +152,7 @@ export const UserTable = ({
       isLoading={isLoading}
       columns={columns}
       actions={actions}
-      emptyMessage="Không tìm thấy người dùng nào"
+      emptyMessage="No users found."
       showPagination={showPagination}
       paginationData={paginationData}
       onPageChange={onPageChange}

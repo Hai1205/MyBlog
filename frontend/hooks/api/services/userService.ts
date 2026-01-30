@@ -1,7 +1,7 @@
 import { EHttpType, handleRequest, IApiResponse } from "@/lib/axiosInstance";
 
 // DTO interfaces
-export interface CreateUserDTO {
+export interface CreateUser {
     email: string;
     password: string;
     username: string;
@@ -15,7 +15,7 @@ export interface CreateUserDTO {
     linkedin: string;
 }
 
-export interface UpdateUserDTO {
+export interface UpdateUser {
     birth: string;
     summary: string;
     avatar: File | null;
@@ -53,11 +53,21 @@ export const userService = {
             `/users/${userId}`
         );
     },
+    
+    /**
+     * Get single user by identifier
+     */
+    getUserByIdentifier: async (identifier: string): Promise<IApiResponse<IUserDataResponse>> => {
+        return await handleRequest<IUserDataResponse>(
+            EHttpType.GET,
+            `/users/identifier/${identifier}`
+        );
+    },
 
     /**
      * Create new user
      */
-    createUser: async (data: CreateUserDTO): Promise<IApiResponse<IUserDataResponse>> => {
+    createUser: async (data: CreateUser): Promise<IApiResponse<IUserDataResponse>> => {
         const formData = new FormData();
         formData.append("data", JSON.stringify({
             email: data.email,
@@ -87,7 +97,7 @@ export const userService = {
      */
     updateUser: async (
         userId: string,
-        data: UpdateUserDTO
+        data: UpdateUser
     ): Promise<IApiResponse<IUserDataResponse>> => {
         const formData = new FormData();
         formData.append("data", JSON.stringify({

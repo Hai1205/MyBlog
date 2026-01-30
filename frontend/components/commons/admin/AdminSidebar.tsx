@@ -5,12 +5,14 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useLogoutMutation } from "@/hooks/api/mutations/useAuthMutations";
+import { useAuthStore } from "@/stores/authStore";
+import { MouseEvent } from "react";
 
 interface AdminSidebarProps {
   collapsed: boolean;
   width: number;
   onToggle: () => void;
-  onStartResizing: (e: React.MouseEvent) => void;
+  onStartResizing: (e: MouseEvent) => void;
 }
 
 export const AdminSidebar = ({
@@ -19,17 +21,22 @@ export const AdminSidebar = ({
   onToggle,
   onStartResizing,
 }: AdminSidebarProps) => {
-  const { mutate: logout } = useLogoutMutation();
+  const { userAuth } = useAuthStore();
+
+  const { mutateAsync: logoutAsync } = useLogoutMutation();
 
   const pathname = usePathname();
   const router = useRouter();
 
   const handleLogout = async () => {
-    logout(undefined, {
-      onSuccess: () => {
-        router.push("/auth/login");
+    logoutAsync(
+      { identifier: userAuth?.id as string },
+      {
+        onSuccess: () => {
+          router.push("/auth/login");
+        },
       },
-    });
+    );
   };
 
   const menuItems = [
@@ -127,7 +134,7 @@ export const AdminSidebar = ({
           )}
         >
           <LogOut className="h-5 w-5 transition-transform duration-200 group-hover:scale-110 group-hover:-translate-x-1" />
-          {!collapsed && <span className="ml-3">Đăng xuất</span>}
+          {!collapsed && <span className="ml-3">Log out</span>}
         </button>
       </div>
 

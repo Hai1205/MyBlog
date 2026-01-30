@@ -1,10 +1,7 @@
 "use client";
 
 import { SharedFilter } from "../adminTable/SharedFilter";
-import { capitalizeFirstLetter } from "@/lib/utils";
-import { IBlogFilter, BlogFilterType } from "./BlogDashboardClient";
-import { ECategory } from "@/types/enum";
-import { blogCategories } from "./constant";
+import { IBlogFilter, BlogFilterType, categorySelection } from "./BlogDashboardClient";
 
 interface BlogFilterProps {
   openMenuFilters: boolean;
@@ -13,7 +10,7 @@ interface BlogFilterProps {
   toggleFilter: (value: string, type: BlogFilterType) => void;
   clearFilters: () => void;
   applyFilters: () => void;
-  closeMenuMenuFilters: () => void;
+  closeMenuFilters: () => void;
 }
 
 interface BlogFilterSection {
@@ -29,13 +26,13 @@ export const BlogFilter = ({
   toggleFilter,
   clearFilters,
   applyFilters,
-  closeMenuMenuFilters,
+  closeMenuFilters,
 }: BlogFilterProps) => {
   const filterSections: BlogFilterSection[] = [
     {
       key: "category",
       label: "Category",
-      options: blogCategories,
+      options: categorySelection,
     },
     {
       key: "visibility",
@@ -55,7 +52,7 @@ export const BlogFilter = ({
       toggleFilter={toggleFilter}
       clearFilters={clearFilters}
       applyFilters={applyFilters}
-      closeMenuMenuFilters={closeMenuMenuFilters}
+      closeMenuFilters={closeMenuFilters}
       filterSections={filterSections}
     />
   );

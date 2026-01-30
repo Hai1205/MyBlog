@@ -1,5 +1,6 @@
 package com.example.userservice.dtos;
 
+import java.time.Instant;
 import java.util.UUID;
 
 import lombok.*;
@@ -24,15 +25,15 @@ public class UserDto {
     private String avatarUrl;
     private String avatarPublicId;
 
-    private String createdAt;
-    private String updatedAt;
+    private Instant createdAt;
+    private Instant updatedAt;
 
     // Constructor with all fields for MapStruct
     @Builder
     public UserDto(UUID id, String username, String password, String email,
             String phone, String birth, String summary,
             String status, String role, String facebook, String linkedin, String instagram,
-            String avatarUrl, String avatarPublicId) {
+            String avatarUrl, String avatarPublicId, Instant createdAt, Instant updatedAt) {
         this.id = id;
         this.username = username;
         this.password = password;
@@ -47,6 +48,8 @@ public class UserDto {
         this.instagram = instagram;
         this.avatarUrl = avatarUrl;
         this.avatarPublicId = avatarPublicId;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
     }
 
     // Basic constructor

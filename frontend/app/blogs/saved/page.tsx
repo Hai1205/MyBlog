@@ -1,5 +1,5 @@
-import SavedBlogClient from "@/components/commons/blogs/SavedBlog";
+import SavedBlogsClient from "@/components/commons/blogs/savedBlogs/SavedBlogs";
 
-export default function SavedBlogPage() {
-  return <SavedBlogClient />;
+export default function SavedBlogsPage() {
+  return <SavedBlogsClient />;
 }

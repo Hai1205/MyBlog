@@ -1,6 +1,5 @@
 package com.example.aiservice.dtos.responses;
 
-import java.util.List;
 import java.util.Map;
 
 // import com.example.aiservice.dtos.*;
@@ -22,8 +21,13 @@ public class Response {
 
     private Map<String, Object> additionalData;
 
-    public Response(int statusCode, String message) {
+    public Response(String message, int statusCode) {
         this.statusCode = statusCode;
+        this.message = message;
+    }
+
+    public Response(String message) {
+        this.statusCode = 200;
         this.message = message;
     }
 

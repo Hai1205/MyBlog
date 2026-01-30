@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Map;
 
 import com.example.statsservice.dtos.DashboardStatsDto;
+import com.example.statsservice.dtos.responses.views.BlogView;
+import com.example.statsservice.dtos.responses.views.UserView;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 import lombok.*;
@@ -15,21 +17,21 @@ import lombok.*;
 public class Response {
     private int statusCode;
     private String message;
+    private Map<String, Object> additionalData;
 
     private DashboardStatsDto dashboardStats;
     private byte[] statsReport;
-    private List<Map<String, Object>> blogs;
-    private List<Map<String, Object>> users;
 
-    // Pagination and stats
-    private Object pagination;
-    private Map<String, Object> stats;
+    private List<BlogView> blogViews;
+    private List<UserView> userViews;
 
-    // Generic data container for any other service-specific data
-    private Map<String, Object> additionalData;
-
-    public Response(int statusCode, String message) {
+    public Response(String message, int statusCode) {
         this.statusCode = statusCode;
+        this.message = message;
+    }
+
+    public Response(String message) {
+        this.statusCode = 200;
         this.message = message;
     }
 

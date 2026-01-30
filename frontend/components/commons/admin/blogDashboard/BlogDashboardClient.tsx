@@ -1,11 +1,11 @@
 "use client";
 
-import { useCallback, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
-import { DashboardHeader } from "@/components/commons/admin/dashboard/DashboardHeader";
+import { DashboardHeader } from "@/components/commons/admin/layout/dashboard/DashboardHeader";
 import { TableSearch } from "@/components/commons/admin/adminTable/TableSearch";
 import { ConfirmationDialog } from "@/components/commons/layout/ConfirmationDialog";
 import { TableDashboardSkeleton } from "../adminTable/TableDashboardSkeleton";
@@ -14,6 +14,8 @@ import { BlogTable } from "./BlogTable";
 import { useAllBlogsQuery } from "@/hooks/api/queries/useBlogQueries";
 import { useDeleteBlogMutation } from "@/hooks/api/mutations/useBlogMutations";
 import { useBlogStore } from "@/stores/blogStore";
+import { capitalizeFirstLetter } from "@/lib/utils";
+import { ECategory } from "@/types/enum";
 
 export type BlogFilterType = "category" | "visibility";
 export interface IBlogFilter {
@@ -21,11 +23,14 @@ export interface IBlogFilter {
   visibility: string[];
   [key: string]: string[];
 }
-
 const blogInitialFilters: IBlogFilter = {
   category: [],
   visibility: [],
 };
+export const categorySelection = Object.values(ECategory).map((value) => ({
+  value,
+  label: capitalizeFirstLetter(value),
+}));
 
 export default function BlogDashboardClient() {
   const {
@@ -34,7 +39,7 @@ export default function BlogDashboardClient() {
     refetch: refetchBlogs,
   } = useAllBlogsQuery();
 
-  const { handleSetBlogToEdit } = useBlogStore();
+  const { setBlogToEdit } = useBlogStore();
 
   const blogsTable = blogsResponse?.data?.blogs || [];
 
@@ -114,11 +119,6 @@ export default function BlogDashboardClient() {
     paginationState.page * paginationState.pageSize,
   );
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Filter logic is now handled by useEffect
-  };
-
   const toggleFilter = (value: string, type: BlogFilterType) => {
     setActiveFilters((prev) => {
       const updated = { ...prev };
@@ -135,12 +135,12 @@ export default function BlogDashboardClient() {
     setActiveFilters(blogInitialFilters);
     setSearchQuery("");
     setFilteredBlogs(blogsTable);
-    closeMenuMenuFilters();
+    closeMenuFilters();
   };
 
   const applyFilters = () => {
     // Filter logic is now handled by useEffect
-    closeMenuMenuFilters();
+    closeMenuFilters();
   };
 
   const handleRefresh = () => {
@@ -150,18 +150,18 @@ export default function BlogDashboardClient() {
   };
 
   const [openMenuFilters, setOpenMenuFilters] = useState(false);
-  const closeMenuMenuFilters = () => setOpenMenuFilters(false);
+  const closeMenuFilters = () => setOpenMenuFilters(false);
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [blogToDelete, setBlogToDelete] = useState<IBlog | null>(null);
 
   const handleUpdate = async (blog: IBlog) => {
-    handleSetBlogToEdit(blog);
+    setBlogToEdit(blog);
     router.push(`/blogs/edit/${blog.id}`);
   };
 
   const handleCreate = async () => {
-    handleSetBlogToEdit(null);
+    setBlogToEdit(null);
     router.push("/blogs/new");
   };
 
@@ -209,7 +209,6 @@ export default function BlogDashboardClient() {
 
               <div className="flex items-center gap-3">
                 <TableSearch
-                  handleSearch={handleSearch}
                   searchQuery={searchQuery}
                   setSearchQuery={setSearchQuery}
                   placeholder="Search Blogs..."
@@ -234,7 +233,7 @@ export default function BlogDashboardClient() {
                   toggleFilter={toggleFilter}
                   clearFilters={clearFilters}
                   applyFilters={applyFilters}
-                  closeMenuMenuFilters={closeMenuMenuFilters}
+                  closeMenuFilters={closeMenuFilters}
                 />
               </div>
             </div>

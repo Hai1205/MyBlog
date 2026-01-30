@@ -17,7 +17,7 @@ interface SharedFilterProps<T = string, S = any> {
   toggleFilter: (value: string, type: T) => void;
   clearFilters: () => void;
   applyFilters: () => void;
-  closeMenuMenuFilters: () => void;
+  closeMenuFilters: () => void;
   filterSections: S[];
 }
 
@@ -35,11 +35,11 @@ export const SharedFilter = <
   toggleFilter,
   clearFilters,
   applyFilters,
-  closeMenuMenuFilters,
+  closeMenuFilters,
   filterSections,
 }: SharedFilterProps<T, S>) => {
   return (
-    <DropdownMenu open={openMenuFilters} onOpenChange={closeMenuMenuFilters}>
+    <DropdownMenu open={openMenuFilters} onOpenChange={closeMenuFilters}>
       <DropdownMenuTrigger asChild>
         <Button
           variant="secondary"

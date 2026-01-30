@@ -11,7 +11,7 @@ import com.example.userservice.entities.User;
 import com.example.userservice.entities.User.UserRole;
 import com.example.userservice.entities.User.UserStatus;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 @Repository
@@ -22,28 +22,28 @@ public interface UserCommandRepository extends JpaRepository<User, UUID> {
         @Query("UPDATE User u SET u.status = :status, u.updatedAt = :updatedAt WHERE u.id = :userId")
         int updateUserStatus(@Param("userId") UUID userId,
                         @Param("status") UserStatus status,
-                        @Param("updatedAt") LocalDateTime updatedAt);
+                        @Param("updatedAt") Instant updatedAt);
 
         @Modifying
         @Transactional
         @Query("UPDATE User u SET u.status = :status, u.updatedAt = :updatedAt WHERE u.email = :email")
         int updateUserStatusByEmail(@Param("email") String email,
                         @Param("status") UserStatus status,
-                        @Param("updatedAt") LocalDateTime updatedAt);
+                        @Param("updatedAt") Instant updatedAt);
 
         @Modifying
         @Transactional
         @Query("UPDATE User u SET u.password = :password, u.updatedAt = :updatedAt WHERE u.id = :userId")
         int updateUserPassword(@Param("userId") UUID userId,
                         @Param("password") String password,
-                        @Param("updatedAt") LocalDateTime updatedAt);
+                        @Param("updatedAt") Instant updatedAt);
 
         @Modifying
         @Transactional
         @Query("UPDATE User u SET u.password = :password, u.updatedAt = :updatedAt WHERE u.email = :email")
         int updateUserPasswordByEmail(@Param("email") String email,
                         @Param("password") String password,
-                        @Param("updatedAt") LocalDateTime updatedAt);
+                        @Param("updatedAt") Instant updatedAt);
 
         @Modifying
         @Transactional
@@ -55,14 +55,14 @@ public interface UserCommandRepository extends JpaRepository<User, UUID> {
                         @Param("facebook") String facebook,
                         @Param("linkedin") String linkedin,
                         @Param("instagram") String instagram,
-                        @Param("updatedAt") LocalDateTime updatedAt);
+                        @Param("updatedAt") Instant updatedAt);
 
         @Modifying
         @Transactional
         @Query("UPDATE User u SET u.role = :role, u.updatedAt = :updatedAt WHERE u.id = :userId")
         int updateUserRole(@Param("userId") UUID userId,
                         @Param("role") UserRole role,
-                        @Param("updatedAt") LocalDateTime updatedAt);
+                        @Param("updatedAt") Instant updatedAt);
 
         @Modifying
         @Transactional
@@ -70,7 +70,7 @@ public interface UserCommandRepository extends JpaRepository<User, UUID> {
         int updateUserAvatar(@Param("userId") UUID userId,
                         @Param("avatarUrl") String avatarUrl,
                         @Param("avatarPublicId") String avatarPublicId,
-                        @Param("updatedAt") LocalDateTime updatedAt);
+                        @Param("updatedAt") Instant updatedAt);
 
         @Modifying
         @Transactional
@@ -87,35 +87,35 @@ public interface UserCommandRepository extends JpaRepository<User, UUID> {
         @Query("UPDATE User u SET u.birth = :birth, u.updatedAt = :updatedAt WHERE u.id = :userId")
         int updateUserBirth(@Param("userId") UUID userId,
                         @Param("birth") String birth,
-                        @Param("updatedAt") LocalDateTime updatedAt);
+                        @Param("updatedAt") Instant updatedAt);
 
         @Modifying
         @Transactional
         @Query("UPDATE User u SET u.summary = :summary, u.updatedAt = :updatedAt WHERE u.id = :userId")
         int updateUserSummary(@Param("userId") UUID userId,
                         @Param("summary") String summary,
-                        @Param("updatedAt") LocalDateTime updatedAt);
+                        @Param("updatedAt") Instant updatedAt);
 
         @Modifying
         @Transactional
         @Query("UPDATE User u SET u.facebook = :facebook, u.updatedAt = :updatedAt WHERE u.id = :userId")
         int updateUserFacebook(@Param("userId") UUID userId,
                         @Param("facebook") String facebook,
-                        @Param("updatedAt") LocalDateTime updatedAt);
+                        @Param("updatedAt") Instant updatedAt);
 
         @Modifying
         @Transactional
         @Query("UPDATE User u SET u.instagram = :instagram, u.updatedAt = :updatedAt WHERE u.id = :userId")
         int updateUserInstagram(@Param("userId") UUID userId,
                         @Param("instagram") String instagram,
-                        @Param("updatedAt") LocalDateTime updatedAt);
+                        @Param("updatedAt") Instant updatedAt);
 
         @Modifying
         @Transactional
         @Query("UPDATE User u SET u.linkedin = :linkedin, u.updatedAt = :updatedAt WHERE u.id = :userId")
         int updateUserLinkedin(@Param("userId") UUID userId,
                         @Param("linkedin") String linkedin,
-                        @Param("updatedAt") LocalDateTime updatedAt);
+                        @Param("updatedAt") Instant updatedAt);
 
         @Modifying
         @Transactional
@@ -136,8 +136,8 @@ public interface UserCommandRepository extends JpaRepository<User, UUID> {
                         @Param("facebook") String facebook,
                         @Param("linkedin") String linkedin,
                         @Param("instagram") String instagram,
-                        @Param("createdAt") LocalDateTime createdAt,
-                        @Param("updatedAt") LocalDateTime updatedAt);
+                        @Param("createdAt") Instant createdAt,
+                        @Param("updatedAt") Instant updatedAt);
 
         @Modifying
         @Transactional
@@ -156,5 +156,5 @@ public interface UserCommandRepository extends JpaRepository<User, UUID> {
                         @Param("facebook") String facebook,
                         @Param("linkedin") String linkedin,
                         @Param("instagram") String instagram,
-                        @Param("updatedAt") LocalDateTime updatedAt);
+                        @Param("updatedAt") Instant updatedAt);
 }

@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { InputWithIcon } from "@/components/ui/input-with-icon";
 import { Eye, EyeOff, Lock, Loader2, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { FormEvent, useState } from "react";
 import { ConfirmationDialog } from "@/components/commons/layout/ConfirmationDialog";
 import { toast } from "react-toastify";
 
@@ -19,7 +19,7 @@ interface SecurityTabProps {
     field: keyof ExtendedUserData,
     value: string | string[] | boolean,
   ) => void;
-  onChangePassword: (e: React.FormEvent) => void;
+  onChangePassword: (e: FormEvent) => void;
   isLoading?: boolean;
 }
 

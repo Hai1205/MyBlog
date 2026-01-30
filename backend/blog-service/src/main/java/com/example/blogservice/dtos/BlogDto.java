@@ -4,7 +4,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-import jakarta.persistence.Column;
+import com.example.blogservice.dtos.responses.views.UserView;
+
 import lombok.*;
 
 @Data
@@ -14,17 +15,12 @@ import lombok.*;
 public class BlogDto {
     private UUID id;
     private UUID authorId;
-    private UserDto author;
+    private UserView author;
     private List<CommentDto> comments;
     private String title;
     private String category;
-
-    @Column(columnDefinition = "TEXT")
     private String description;
-
-    @Column(columnDefinition = "TEXT")
     private String content;
-
     private String thumbnailUrl;
     private String thumbnailPublicId;
 

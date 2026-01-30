@@ -24,10 +24,10 @@ import { queryKeys, invalidateQueries } from "@/lib/queryClient";
 export const useCreateBlogMutation = (): UseMutationResult<
     IApiResponse<IBlogDataResponse>,
     Error,
-    CreateBlogDTO
+    {userId: string; data: CreateBlogDTO }
 > => {
     return useMutation({
-        mutationFn: blogService.createBlog,
+        mutationFn: ({ userId, data }) => blogService.createBlog(userId, data),
         onSuccess: (response, variables) => {
             const { success, data } = response;
             const { blog, message } = data || {};
@@ -42,6 +42,35 @@ export const useCreateBlogMutation = (): UseMutationResult<
         },
         onError: (error: any) => {
             const message = error?.response?.data?.message || "Failed to create blog";
+            toast.error(message);
+        },
+    });
+};
+
+/**
+ * Duplicate blog mutation
+ */
+export const useDuplicateBlogMutation = (): UseMutationResult<
+    IApiResponse<IBlogDataResponse>,
+    Error,
+    { blogId: string; userId: string }
+> => {
+    return useMutation({
+        mutationFn: ({ blogId, userId }) => blogService.duplicateBlog(blogId, userId),
+        onSuccess: (response, variables) => {
+            const { success, data } = response;
+            const { blog, message } = data || {};
+
+            if (success && blog) {
+                toast.success(message || "Blog duplicated successfully!");
+
+                // Invalidate queries to refetch
+                invalidateQueries.allBlogs();
+                invalidateQueries.userBlogs(variables.userId);
+            }
+        },
+        onError: (error: any) => {
+            const message = error?.response?.data?.message || "Failed to duplicate blog";
             toast.error(message);
         },
     });
@@ -261,12 +290,12 @@ export const useUnsaveBlogMutation = (): UseMutationResult<
 export const useAddCommentMutation = (): UseMutationResult<
     IApiResponse<IBlogDataResponse>,
     Error,
-    AddCommentDTO
+    { blogId: string; userId: string; data: AddCommentDTO }
 > => {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: blogService.addComment,
+        mutationFn: ({ blogId, userId, data }) => blogService.addComment(blogId, userId, data),
         onSuccess: (response, variables) => {
             const { success, data } = response;
             const { message } = data || {};
