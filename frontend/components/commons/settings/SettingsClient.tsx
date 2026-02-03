@@ -18,13 +18,25 @@ import { ProfileTab } from "@/components/commons/settings/ProfileTab";
 import { SecurityTab } from "@/components/commons/settings/SecurityTab";
 import { useUpdateUserMutation } from "@/hooks/api/mutations/useUserMutations";
 import { useChangePasswordMutation } from "@/hooks/api/mutations/useAuthMutations";
+import { useUserQuery } from "@/hooks/api/queries/useUserQueries";
 
 export default function SettingsClient() {
-  const { userAuth } = useAuthStore();
+  const { userAuth, handleSetUserAuth } = useAuthStore();
 
   const { mutateAsync: updateUserAsync } = useUpdateUserMutation();
   const { mutateAsync: changePasswordAsync, isPending: isChangingPassword } =
     useChangePasswordMutation();
+
+  const { data: userResponse, error } = useUserQuery(userAuth?.id || "", {
+    enabled: !!userAuth?.id,
+  });
+
+  useEffect(() => {
+    const user = userResponse?.data?.user;
+    if (user) {
+      handleSetUserAuth(user);
+    }
+  }, [userResponse, handleSetUserAuth]);
 
   const router = useRouter();
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -179,6 +191,12 @@ export default function SettingsClient() {
       ),
     },
   ];
+
+  if(error) {
+    return (
+      <div>Invalid user</div>
+    )
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center py-12 bg-linear-to-br from-background to-muted/20">

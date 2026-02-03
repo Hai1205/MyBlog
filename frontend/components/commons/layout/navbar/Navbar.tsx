@@ -51,6 +51,8 @@ export function Navbar() {
     { href: "/blogs/new", label: "New Blog", onClick: handleCreate },
     { href: "/blogs/my-blogs", label: "My Blogs" },
     { href: "/blogs/saved", label: "Saved Blogs" },
+    { href: "/messenger", label: "Messenger" },
+    { href: "/notifications", label: "Notifications" },
   ];
   const allNavLinks = isAdmin
     ? [...navLinks, { href: "/admin", label: "Admin Dashboard" }]

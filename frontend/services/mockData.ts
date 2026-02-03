@@ -1,4 +1,4 @@
-import { ECategory, EUserRole, EUserStatus } from "@/types/enum";
+import { ECategory, ENotificationType, EUserRole, EUserStatus } from "@/types/enum";
 
 export const mockStats = {
     totalVisitors: 12543,
@@ -749,4 +749,170 @@ export const mockBlogs: IBlog[] = [
     },
 ];
 
+export const mockNoti: INotification[] = [
+    {
+        id: '1',
+        type: ENotificationType.FOLLOW,
+        actor: {
+            id: 'user1',
+            username: 'Nguyễn Văn A',
+            avatarUrl: 'https://i.pravatar.cc/150?img=1',
+        },
+        content: 'đã bắt đầu theo dõi bạn',
+        createdAt: `${new Date(Date.now() - 1000 * 60 * 5)}`,
+        isRead: false,
+    },
+    {
+        id: '2',
+        type: ENotificationType.LIKE,
+        actor: {
+            id: 'user2',
+            username: 'Trần Thị B',
+            avatarUrl: 'https://i.pravatar.cc/150?img=2',
+        },
+        content: 'đã thích bài viết của bạn',
+        blogId: 'blog1',
+        blogTitle: 'Hướng dẫn học React từ cơ bản đến nâng cao',
+        createdAt: `${new Date(Date.now() - 1000 * 60 * 15)}`,
+        isRead: false,
+    },
+    {
+        id: '3',
+        type: ENotificationType.NEW_BLOG,
+        actor: {
+            id: 'user3',
+            username: 'Lê Văn C',
+            avatarUrl: 'https://i.pravatar.cc/150?img=3',
+        },
+        content: 'vừa đăng một bài viết mới',
+        blogId: 'blog2',
+        blogTitle: 'Top 10 mẹo tăng hiệu suất làm việc',
+        createdAt: `${new Date(Date.now() - 1000 * 60 * 30)}`,
+        isRead: false,
+    },
+    {
+        id: '4',
+        type: ENotificationType.FOLLOW,
+        actor: {
+            id: 'user4',
+            username: 'Phạm Thị D',
+            avatarUrl: 'https://i.pravatar.cc/150?img=4',
+        },
+        content: 'đã bắt đầu theo dõi bạn',
+        createdAt: `${new Date(Date.now() - 1000 * 60 * 60)}`,
+        isRead: true,
+    },
+    {
+        id: '5',
+        type: ENotificationType.LIKE,
+        actor: {
+            id: 'user5',
+            username: 'Hoàng Văn E',
+            avatarUrl: 'https://i.pravatar.cc/150?img=5',
+        },
+        content: 'đã thích bài viết của bạn',
+        blogId: 'blog3',
+        blogTitle: 'Cách tối ưu hóa SEO cho website',
+        createdAt: `${new Date(Date.now() - 1000 * 60 * 120)}`,
+        isRead: true,
+    },
+    {
+        id: '6',
+        type: ENotificationType.NEW_BLOG,
+        actor: {
+            id: 'user6',
+            username: 'Võ Thị F',
+            avatarUrl: 'https://i.pravatar.cc/150?img=6',
+        },
+        content: 'vừa đăng một bài viết mới',
+        blogId: 'blog4',
+        blogTitle: 'Khám phá TypeScript 5.0',
+        createdAt: `${new Date(Date.now() - 1000 * 60 * 180)}`,
+        isRead: true,
+    },
+];
 
+export const mockConversations: IConversation[] = [
+    {
+        id: "1",
+        participant: {
+            id: "user1",
+            username: "Nguyễn Văn A",
+            avatarUrl: "https://i.pravatar.cc/150?img=1",
+            isOnline: true,
+        },
+        lastMessage: {
+            id: "m1",
+            content: "Chào bạn, bạn khỏe không?",
+            senderId: mockUsers[0].id,
+            createdAt: `${new Date(Date.now() - 1000 * 60 * 5)}`,
+            isRead: false,
+        },
+        unreadCount: 2,
+    },
+    {
+        id: "2",
+        participant: {
+            id: "user2",
+            username: "Trần Thị B",
+            avatarUrl: "https://i.pravatar.cc/150?img=2",
+            isOnline: false,
+        },
+        lastMessage: {
+            id: "m2",
+            content: "Cảm ơn bạn đã giúp đỡ!",
+            senderId: mockUsers[0].id,
+            createdAt: `${new Date(Date.now() - 1000 * 60 * 30)}`,
+            isRead: true,
+        },
+        unreadCount: 0,
+    },
+    {
+        id: "3",
+        participant: {
+            id: "user3",
+            username: "Lê Văn C",
+            avatarUrl: "https://i.pravatar.cc/150?img=3",
+            isOnline: true,
+        },
+        lastMessage: {
+            id: "m3",
+            content: "Hẹn gặp lại bạn nhé!",
+            senderId: "user3",
+            createdAt: `${new Date(Date.now() - 1000 * 60 * 60 * 2)}`,
+            isRead: true,
+        },
+        unreadCount: 0,
+    },
+];
+
+export       const mockMessages: IMessage[] = [
+        {
+          id: "1",
+          content: "Chào bạn!",
+          senderId: "user1",
+          createdAt: `${new Date(Date.now() - 1000 * 60 * 60)}`,
+          isRead: true,
+        },
+        {
+          id: "2",
+          content: "Chào! Bạn khỏe không?",
+          senderId: "current-user-id",
+          createdAt: `${new Date(Date.now() - 1000 * 60 * 50)}`,
+          isRead: true,
+        },
+        {
+          id: "3",
+          content: "Mình khỏe, cảm ơn bạn. Còn bạn thì sao?",
+          senderId: "user1",
+          createdAt: `${new Date(Date.now() - 1000 * 60 * 45)}`,
+          isRead: true,
+        },
+        {
+          id: "4",
+          content: "Mình cũng khỏe. Hôm nay bạn có rảnh không?",
+          senderId: "current-user-id",
+          createdAt: `${new Date(Date.now() - 1000 * 60 * 40)}`,
+          isRead: true,
+        },
+      ];

@@ -1,6 +1,7 @@
 package com.example.userservice.dtos;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import lombok.*;
@@ -21,6 +22,8 @@ public class UserDto {
     private String facebook;
     private String linkedin;
     private String instagram;
+    private List<UserDto> followers;
+    private List<UserDto> followings;
 
     private String avatarUrl;
     private String avatarPublicId;
@@ -33,6 +36,7 @@ public class UserDto {
     public UserDto(UUID id, String username, String password, String email,
             String phone, String birth, String summary,
             String status, String role, String facebook, String linkedin, String instagram,
+            List<UserDto> followers, List<UserDto> followings,
             String avatarUrl, String avatarPublicId, Instant createdAt, Instant updatedAt) {
         this.id = id;
         this.username = username;
@@ -46,6 +50,8 @@ public class UserDto {
         this.facebook = facebook;
         this.linkedin = linkedin;
         this.instagram = instagram;
+        this.followers = followers;
+        this.followings = followings;
         this.avatarUrl = avatarUrl;
         this.avatarPublicId = avatarPublicId;
         this.createdAt = createdAt;

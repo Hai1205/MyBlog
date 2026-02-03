@@ -8,6 +8,6 @@ import com.example.statsservice.dtos.responses.Response;
 @FeignClient(name = "${BLOG_SERVICE_NAME}", url = "${BLOG_SERVICE_URL}")
 public interface BlogFeignClient {
 
-    @GetMapping("/api/v1/blogs?isView=true")
+    @GetMapping("/api/v1/blogs")
     Response getAllBlogs();
 }

@@ -39,3 +39,20 @@ export const useUserQuery = (
         staleTime: 5 * 60 * 1000, // 5 minutes
     });
 };
+
+/**
+ * Get single user by getUserByIdentifier
+ */
+export const useUserProfileQuery = (
+    identifier: string,
+    options?: {
+        enabled?: boolean;
+    }
+): UseQueryResult<IApiResponse<IUserDataResponse>, Error> => {
+    return useQuery({
+        queryKey: queryKeys.users.detail(identifier),
+        queryFn: () => userService.getUserByIdentifier(identifier),
+        enabled: (options?.enabled ?? true) && !!identifier,
+        staleTime: 5 * 60 * 1000, // 5 minutes
+    });
+};

@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { InputWithIcon } from "@/components/ui/input-with-icon";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import type React from "react";
 import { useState, useEffect, ChangeEvent, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -13,7 +12,6 @@ import {
 } from "@/hooks/api/mutations/useAuthMutations";
 import Link from "next/link";
 import { Loader2, Mail, Lock, EyeOff, Eye } from "lucide-react";
-import { useUserQuery } from "@/hooks/api/queries/useUserQueries";
 import { useAuthStore } from "@/stores/authStore";
 
 const LoginClient = () => {

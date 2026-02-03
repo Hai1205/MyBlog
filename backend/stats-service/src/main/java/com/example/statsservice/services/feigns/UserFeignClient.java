@@ -8,6 +8,6 @@ import com.example.statsservice.dtos.responses.Response;
 @FeignClient(name = "${USER_SERVICE_NAME}", url = "${USER_SERVICE_URL}")
 public interface UserFeignClient {
 
-    @GetMapping("/api/v1/users?isView=true")
+    @GetMapping("/api/v1/users")
     Response getAllUsers();
 }

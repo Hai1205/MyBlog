@@ -35,17 +35,15 @@ public class UserController {
     }
 
     @GetMapping
-    public ResponseEntity<Response> getAllUsers(
-            @RequestParam(value = "isView", required = false) Boolean isView) {
-        Response response = userApi.getAllUsers(isView);
+    public ResponseEntity<Response> getAllUsers() {
+        Response response = userApi.getAllUsers();
 
         return ResponseEntity.status(response.getStatusCode()).body(response);
     }
 
     @GetMapping("/{userId}")
-    public ResponseEntity<Response> getUser(@PathVariable("userId") UUID userId,
-            @RequestParam(value = "isView", required = false) Boolean isView) {
-        Response response = userApi.getUser(userId, isView);
+    public ResponseEntity<Response> getUser(@PathVariable("userId") UUID userId) {
+        Response response = userApi.getUser(userId);
 
         return ResponseEntity.status(response.getStatusCode()).body(response);
     }
@@ -78,9 +76,15 @@ public class UserController {
     }
 
     @GetMapping("/identifier/{identifier}")
-    public ResponseEntity<Response> findUserByIdentifier(@PathVariable("identifier") String identifier,
-            @RequestParam(value = "isView", required = false) Boolean isView) {
-        Response response = userApi.findUserByIdentifier(identifier, isView);
+    public ResponseEntity<Response> findUserByIdentifier(@PathVariable("identifier") String identifier) {
+        Response response = userApi.findUserByIdentifier(identifier);
+
+        return ResponseEntity.status(response.getStatusCode()).body(response);
+    }
+
+    @GetMapping("/profile/{identifier}")
+    public ResponseEntity<Response> findUserProfile(@PathVariable("identifier") String identifier) {
+        Response response = userApi.findUserProfile(identifier);
 
         return ResponseEntity.status(response.getStatusCode()).body(response);
     }
@@ -119,10 +123,25 @@ public class UserController {
     }
 
     @GetMapping("/email/{email}")
-    public ResponseEntity<Response> findUserByEmail(@PathVariable("email") String email,
-            @RequestParam(value = "isView", required = false) Boolean isView) {
-        Response response = userApi.findUserByEmail(email, isView);
+    public ResponseEntity<Response> findUserByEmail(@PathVariable("email") String email) {
+        Response response = userApi.findUserByEmail(email);
 
+        return ResponseEntity.status(response.getStatusCode()).body(response);
+    }
+
+    @PostMapping("{followerId}/follow/{followingId}")
+    public ResponseEntity<Response> followUser(@PathVariable("followerId") UUID followerId,
+            @PathVariable("followingId") UUID followingId) {
+        Response response = userApi.followUser(followerId, followingId);
+
+        return ResponseEntity.status(response.getStatusCode()).body(response);
+    }
+
+    @DeleteMapping("/{followerId}/unfollow/{followingId}")
+    public ResponseEntity<Response> unfollowUser(
+            @PathVariable("followerId") UUID followerId,
+            @PathVariable("followingId") UUID followingId) {
+        Response response = userApi.unfollowUser(followerId, followingId);
         return ResponseEntity.status(response.getStatusCode()).body(response);
     }
 

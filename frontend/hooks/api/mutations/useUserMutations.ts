@@ -3,8 +3,8 @@ import { toast } from "react-toastify";
 import {
     userService,
     IUserDataResponse,
-    CreateUserDTO,
-    UpdateUserDTO,
+    CreateUser,
+    UpdateUser,
 } from "../services/userService";
 import { IApiResponse } from "@/lib/axiosInstance";
 import { queryKeys, invalidateQueries } from "@/lib/queryClient";
@@ -20,7 +20,7 @@ import { useAuthStore } from "@/stores/authStore";
 export const useCreateUserMutation = (): UseMutationResult<
     IApiResponse<IUserDataResponse>,
     Error,
-    CreateUserDTO
+    CreateUser
 > => {
     const queryClient = useQueryClient();
 
@@ -50,7 +50,7 @@ export const useCreateUserMutation = (): UseMutationResult<
 export const useUpdateUserMutation = (): UseMutationResult<
     IApiResponse<IUserDataResponse>,
     Error,
-    { userId: string; data: UpdateUserDTO }
+    { userId: string; data: UpdateUser }
 > => {
     const queryClient = useQueryClient();
     const { userAuth, handleSetUserAuth } = useAuthStore();
@@ -140,6 +140,56 @@ export const useDeleteUserMutation = (): UseMutationResult<
 
         onSettled: () => {
             invalidateQueries.allUsers();
+        },
+    });
+};
+
+/**
+ * Save blog mutation
+ */
+export const useFollowUserMutation = (): UseMutationResult<
+    IApiResponse<IUserDataResponse>,
+    Error,
+    { followerId: string; followingId: string }
+> => {
+    return useMutation({
+        mutationFn: ({ followerId, followingId }) => userService.followUser(followerId, followingId),
+        onSuccess: (response, variables) => {
+            const { success, data } = response;
+            const { message } = data || {};
+
+            if (success) {
+                toast.success(message || "User followed!");
+            }
+        },
+        onError: (error: any) => {
+            const message = error?.response?.data?.message || "Failed to follow user";
+            toast.error(message);
+        },
+    });
+};
+
+/**
+ * Save blog mutation
+ */
+export const useUnfollowUserMutation = (): UseMutationResult<
+    IApiResponse<IUserDataResponse>,
+    Error,
+    { followerId: string; followingId: string }
+> => {
+    return useMutation({
+        mutationFn: ({ followerId, followingId }) => userService.unfollowUser(followerId, followingId),
+        onSuccess: (response, variables) => {
+            const { success, data } = response;
+            const { message } = data || {};
+
+            if (success) {
+                toast.success(message || "User followed!");
+            }
+        },
+        onError: (error: any) => {
+            const message = error?.response?.data?.message || "Failed to follow user";
+            toast.error(message);
         },
     });
 };

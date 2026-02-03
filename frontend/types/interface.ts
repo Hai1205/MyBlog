@@ -1,4 +1,4 @@
-import { ECategory, EUserRole, EUserStatus } from "./enum";
+import { ECategory, ENotificationType, EUserRole, EUserStatus } from "./enum";
 
 declare global {
     // Pagination types
@@ -29,6 +29,8 @@ declare global {
         avatarUrl?: string
         role: EUserRole
         status: EUserStatus
+        followers?: IUser[]
+        followings?: IUser[]
         instagram?: string
         facebook?: string
         linkedin?: string
@@ -87,6 +89,41 @@ declare global {
         description: string;
         timestamp: string;
         userId: string;
+    }
+
+    export interface IMessage {
+        id: string;
+        content: string;
+        senderId: string;
+        createdAt: string;
+        isRead: boolean;
+    }
+
+    export interface IConversation {
+        id: string;
+        participant: {
+            id: string;
+            username: string;
+            avatarUrl?: string;
+            isOnline: boolean;
+        };
+        lastMessage?: IMessage;
+        unreadCount: number;
+    }
+
+    export interface INotification {
+        id: string;
+        type: ENotificationType;
+        actor: {
+            id: string;
+            username: string;
+            avatarUrl?: string;
+        };
+        content: string;
+        blogId?: string;
+        blogTitle?: string;
+        createdAt: string;
+        isRead: boolean;
     }
 }
 

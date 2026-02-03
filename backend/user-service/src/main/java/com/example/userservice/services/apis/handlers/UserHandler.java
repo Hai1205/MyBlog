@@ -19,14 +19,17 @@ import com.example.rediscommon.utils.CacheKeyBuilder;
 import com.example.securitycommon.models.AuthenticatedUser;
 import com.example.securitycommon.utils.SecurityUtils;
 import com.example.userservice.dtos.UserDto;
+import com.example.userservice.entities.FollowUser;
 import com.example.userservice.entities.User;
 import com.example.userservice.entities.User.UserRole;
 import com.example.userservice.entities.User.UserStatus;
 import com.example.userservice.exceptions.OurException;
 import com.example.userservice.mappers.UserMapper;
-import com.example.userservice.repositories.SimpleUserRepository;
-import com.example.userservice.repositories.UserCommandRepository;
-import com.example.userservice.repositories.UserQueryRepository;
+import com.example.userservice.repositories.followUserRepositories.FollowUserCommandRepository;
+import com.example.userservice.repositories.followUserRepositories.FollowUserQueryRepository;
+import com.example.userservice.repositories.userRepositories.SimpleUserRepository;
+import com.example.userservice.repositories.userRepositories.UserCommandRepository;
+import com.example.userservice.repositories.userRepositories.UserQueryRepository;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -36,6 +39,8 @@ public class UserHandler {
 
     private final UserQueryRepository userQueryRepository;
     private final UserCommandRepository userCommandRepository;
+    private final FollowUserQueryRepository followUserQueryRepository;
+    private final FollowUserCommandRepository followUserCommandRepository;
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
     private final CloudinaryService cloudinaryService;
@@ -53,12 +58,16 @@ public class UserHandler {
             SimpleUserRepository simpleUserRepository,
             UserQueryRepository userQueryRepository,
             UserCommandRepository userCommandRepository,
+            FollowUserQueryRepository followUserQueryRepository,
+            FollowUserCommandRepository followUserCommandRepository,
             PasswordEncoder passwordEncoder,
             UserMapper userMapper,
             CloudinaryService cloudinaryService,
             RedisCacheService cacheService) {
         this.userQueryRepository = userQueryRepository;
         this.userCommandRepository = userCommandRepository;
+        this.followUserQueryRepository = followUserQueryRepository;
+        this.followUserCommandRepository = followUserCommandRepository;
         this.passwordEncoder = passwordEncoder;
         this.userMapper = userMapper;
         this.random = new SecureRandom();
@@ -628,6 +637,46 @@ public class UserHandler {
         }
     }
 
+    @Transactional(readOnly = true)
+    public List<UserDto> handleGetFollowers(UUID userId) {
+        try {
+            log.info("Starting handleGetFollowers for userId: {}", userId);
+
+            // Get all users who are following this user (followers)
+            List<User> followers = followUserQueryRepository.findFollowersByUserId(userId);
+
+            List<UserDto> followerDtos = followers.stream()
+                    .map(userMapper::toDto)
+                    .collect(Collectors.toList());
+
+            log.info("Completed handleGetFollowers for userId: {} with {} followers", userId, followerDtos.size());
+            return followerDtos;
+        } catch (Exception e) {
+            log.error("Error in handleGetFollowers: {}", e.getMessage(), e);
+            throw e;
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public List<UserDto> handleGetFollowing(UUID userId) {
+        try {
+            log.info("Starting handleGetFollowing for userId: {}", userId);
+
+            // Get all users that this user is following
+            List<User> following = followUserQueryRepository.findUsersByUserFollowed(userId);
+
+            List<UserDto> followingDtos = following.stream()
+                    .map(userMapper::toDto)
+                    .collect(Collectors.toList());
+
+            log.info("Completed handleGetFollowing for userId: {} with {} following", userId, followingDtos.size());
+            return followingDtos;
+        } catch (Exception e) {
+            log.error("Error in handleGetFollowing: {}", e.getMessage(), e);
+            throw e;
+        }
+    }
+
     public User handleGetUserByIdentifier(String identifier) {
         try {
             log.info("Starting handleGetUserByIdentifier for identifier: {}", identifier);
@@ -637,17 +686,17 @@ public class UserHandler {
 
             if (user == null) {
                 UUID userId = isValidUUID(identifier);
-                
+
                 if (userId != null) {
                     log.debug("Identifier '{}' is UUID", identifier);
 
                     user = handleGetUserById(userId);
                 } else {
                     boolean isEmailValid = handleIsValidEmail(identifier);
-                    
+
                     if (isEmailValid) {
                         log.debug("Identifier '{}' is email", identifier);
-                        
+
                         user = handleGetUserByEmail(identifier);
                     } else {
                         log.debug("Identifier '{}' is username", identifier);
@@ -667,6 +716,108 @@ public class UserHandler {
             throw e;
         } catch (Exception e) {
             log.error("Error in handleGetUserByIdentifier: {}", e.getMessage(), e);
+            throw e;
+        }
+    }
+    
+    public UserDto handleGetUserProfile(String identifier) {
+        try {
+            log.info("Starting handleGetUserProfile for identifier: {}", identifier);
+
+            String cacheKey = cacheKeys.forMethodWithParam("handleGetUser", identifier);
+            User user = cacheService.getCacheData(cacheKey, User.class);
+
+            if (user == null) {
+                user = handleGetUserByIdentifier(identifier);
+
+                cacheService.setCacheData(cacheKey, user);
+                log.debug("Fetched user from database and cached: {}", identifier);
+            }
+
+            log.info("Completed handleGetUserByIdentifier for identifier: {}", identifier);
+
+            // Convert to DTO
+            UserDto userDto = userMapper.toDto(user);
+
+            // Set followers and following lists
+            List<UserDto> followers = handleGetFollowers(user.getId());
+            List<UserDto> followings = handleGetFollowing(user.getId());
+
+            userDto.setFollowers(followers);
+            userDto.setFollowings(followings);
+
+            log.info("User {} has {} followers and {} following", identifier, followers.size(), followings.size());
+
+            return userDto;
+        } catch (OurException e) {
+            log.warn("OurException in handleGetUserByIdentifier: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Error in handleGetUserByIdentifier: {}", e.getMessage(), e);
+            throw e;
+        }
+    }
+
+    @Transactional
+    public boolean handleFollowUser(UUID followerId, UUID followingId) {
+        try {
+            log.info("Starting handleFollowUser for followerId={}, followingId={}", followerId, followingId);
+
+            // Check if already saved
+            boolean alreadySaved = followUserQueryRepository.findFollowUsersByUserId(followerId)
+                    .stream()
+                    .anyMatch(fu -> fu.getFollowingId().equals(followingId));
+            if (alreadySaved) {
+                log.warn("User already followed for followerId={}, followingId={}", followerId, followingId);
+                throw new OurException("User already followed", 400);
+            }
+
+            UUID followUserId = UUID.randomUUID();
+            followUserCommandRepository.followUser(followUserId, followerId, followingId);
+            log.info("User followed successfully: followUserId={}", followUserId);
+            return true;
+        } catch (OurException e) {
+            log.error("OurException in handleFollowUser for followerId={}, followingId={}: {}", followerId, followingId,
+                    e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Unexpected exception in handleFollowUser for followerId={}, followingId={}: {}", followerId,
+                    followingId,
+                    e.getMessage(), e);
+            throw e;
+        }
+    }
+
+    @Transactional
+    public boolean handleUnfollowUser(UUID followerId, UUID followingId) {
+        try {
+            log.info("Starting handleUnfollowUser for followerId={}, followingId={}", followerId, followingId);
+
+            // validateService.validateUser(followerId);
+            log.debug("User validation passed for followerId={}", followerId);
+
+            // validateService.validateUser(followingId);
+            log.debug("User validation passed for followingId={}", followingId);
+
+            FollowUser followUser = followUserQueryRepository.findFollowUsersByUserId(followerId)
+                    .stream()
+                    .filter(fu -> fu.getFollowingId().equals(followingId))
+                    .findFirst()
+                    .orElseThrow(() -> new OurException("Follow user not found", 404));
+            log.debug("Found follow user for deletion: followUserId={}", followUser.getId());
+
+            followUserCommandRepository.deleteById(followUser.getId());
+            log.info("User unfollowed successfully: followerId={}, followingId={}", followerId, followingId);
+
+            return true;
+        } catch (OurException e) {
+            log.error("OurException in handleUnfollowUser for followerId={}, followingId={}: {}", followerId,
+                    followingId, e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Unexpected exception in handleUnfollowUser for followerId={}, followingId={}: {}", followerId,
+                    followingId,
+                    e.getMessage(), e);
             throw e;
         }
     }

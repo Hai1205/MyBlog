@@ -250,12 +250,11 @@ public class BlogApi {
             String rateLimitKey = cacheKeys.forMethodWithParams("saveBlog", blogId, userId);
             checkRateLimit(rateLimitKey, 45, 60);
 
-            BlogDto blog = blogHandler.handleSaveBlog(blogId, userId);
+            blogHandler.handleSaveBlog(blogId, userId);
 
             log.info("Blog saved successfully: blogId={} userId={}", blogId, userId);
 
             Response response = new Response("Blog saved successfully");
-            response.setBlog(blog);
             return response;
         } catch (OurException e) {
             return new Response(e.getMessage(), e.getStatusCode());

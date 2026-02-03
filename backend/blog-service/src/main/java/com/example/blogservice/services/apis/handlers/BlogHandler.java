@@ -402,14 +402,14 @@ public class BlogHandler {
     }
 
     @Transactional
-    public BlogDto handleSaveBlog(UUID blogId, UUID userId) {
+    public boolean handleSaveBlog(UUID blogId, UUID userId) {
         try {
             log.info("Starting handleSaveBlog for blogId={}, userId={}", blogId, userId);
 
             validateService.validateUser(userId);
             log.debug("User validation passed for userId={}", userId);
 
-            BlogDto blog = validateService.validateBlog(blogId);
+            validateService.validateBlog(blogId);
             log.debug("Blog validation passed for blogId={}", blogId);
 
             // Check if already saved
@@ -424,7 +424,8 @@ public class BlogHandler {
             UUID savedBlogId = UUID.randomUUID();
             savedBlogCommandRepository.saveSavedBlog(savedBlogId, userId, blogId);
             log.info("Blog saved successfully: savedBlogId={}", savedBlogId);
-            return blog;
+            
+            return true;
         } catch (OurException e) {
             log.error("OurException in handleSaveBlog for blogId={}, userId={}: {}", blogId, userId, e.getMessage());
             throw e;

@@ -8,6 +8,7 @@ export interface IBlogStore extends IBaseStore {
 	commentsByBlogId: Record<string, IComment[]>;
 	savedBlogs: IBlog[];
 	myBlogs: IBlog[];
+	profileBlogs: IBlog[];
 
 	setSelectedBlog: (blogId: string | null) => void;
 	setFilterCategory: (category: string | null) => void;
@@ -29,6 +30,11 @@ export interface IBlogStore extends IBaseStore {
 	removeFromMyBlogs: (blogId: string) => Promise<void>;
 	addToMyBlogs: (blog: IBlog) => Promise<void>;
 	updateInMyBlogs: (blog: IBlog) => Promise<void>;
+
+	setProfileBlogs: (blogs: IBlog[]) => void;
+	removeFromProfileBlogs: (blogId: string) => Promise<void>;
+	addToProfileBlogs: (blog: IBlog) => Promise<void>;
+	updateInProfileBlogs: (blog: IBlog) => Promise<void>;
 
 	reset: () => void;
 }
@@ -165,6 +171,28 @@ export const useBlogStore = createStore<IBlogStore>(
 		updateInMyBlogs: (user: IBlog): void => {
 			set({
 				myBlogs: get().myBlogs.map((u) =>
+					u.id === user.id ? user : u
+				),
+			});
+		},
+		
+		setProfileBlogs: (blogs: IBlog[]): void => {
+			set({ profileBlogs: blogs });
+		},
+
+		removeFromProfileBlogs: (blogId: string): void => {
+			set({
+				profileBlogs: get().profileBlogs.filter((user) => user.id !== blogId),
+			});
+		},
+
+		addToProfileBlogs: (user: IBlog): void => {
+			set({ profileBlogs: [user, ...get().profileBlogs] });
+		},
+
+		updateInProfileBlogs: (user: IBlog): void => {
+			set({
+				profileBlogs: get().profileBlogs.map((u) =>
 					u.id === user.id ? user : u
 				),
 			});

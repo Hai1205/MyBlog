@@ -1,4 +1,4 @@
-package com.example.userservice.repositories;
+package com.example.userservice.repositories.userRepositories;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;

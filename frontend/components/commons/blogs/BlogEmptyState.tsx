@@ -6,11 +6,13 @@ import { FileText, Plus } from "lucide-react";
 
 interface BlogEmptyStateProps {
   isMyBlogs?: boolean;
+  message: string;
   onProcess: () => void;
 }
 
 export const BlogEmptyState = ({
   isMyBlogs = false,
+  message,
   onProcess,
 }: BlogEmptyStateProps) => {
   return (
@@ -22,9 +24,7 @@ export const BlogEmptyState = ({
         <div>
           <h3 className="text-xl font-semibold">No blogs yet</h3>
           <p className="text-muted-foreground">
-            {isMyBlogs
-              ? "Create your first blog to get started"
-              : "No saved blogs available."}
+            {message}
           </p>
         </div>
 

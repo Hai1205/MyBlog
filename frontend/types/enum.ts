@@ -1,8 +1,3 @@
-export enum ETheme {
-    LIGHT = "light",
-    DARK = "dark",
-}
-
 export enum EUserRole {
     USER = "user",
     ADMIN = "admin",
@@ -22,4 +17,10 @@ export enum ECategory {
   EDUCATION = "education",
   ENTERTAINMENT = "entertainment",
   STUDY = "study",
+}
+
+export enum ENotificationType {
+  FOLLOW = 'follow',
+  LIKE = 'like',
+  NEW_BLOG = 'new_blog',
 }

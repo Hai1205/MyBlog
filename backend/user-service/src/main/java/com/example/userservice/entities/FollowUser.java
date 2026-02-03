@@ -1,4 +1,4 @@
-package com.example.blogservice.entities;
+package com.example.userservice.entities;
 
 import jakarta.persistence.*;
 import lombok.Data;
@@ -7,15 +7,15 @@ import lombok.AllArgsConstructor;
 import java.util.UUID;
 
 @Entity
-@Table(name = "saved_blogs")
+@Table(name = "follow_users")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class SavedBlog {
+public class FollowUser {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
-    
-    private UUID userId;
-    private UUID blogId;
+
+    private UUID followerId;
+    private UUID followingId;
 }

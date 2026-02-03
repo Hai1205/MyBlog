@@ -53,7 +53,7 @@ export const userService = {
             `/users/${userId}`
         );
     },
-    
+
     /**
      * Get single user by identifier
      */
@@ -61,6 +61,16 @@ export const userService = {
         return await handleRequest<IUserDataResponse>(
             EHttpType.GET,
             `/users/identifier/${identifier}`
+        );
+    },
+   
+    /**
+     * Get single user profile by identifier
+     */
+    getUserProfileByIdentifier: async (identifier: string): Promise<IApiResponse<IUserDataResponse>> => {
+        return await handleRequest<IUserDataResponse>(
+            EHttpType.GET,
+            `/users/profile/${identifier}`
         );
     },
 
@@ -125,5 +135,25 @@ export const userService = {
      */
     deleteUser: async (userId: string): Promise<IApiResponse> => {
         return await handleRequest(EHttpType.DELETE, `/users/${userId}`);
+    },
+
+    /**
+     * Follow user
+     */
+    followUser: async (followerId: string, followingId: string): Promise<IApiResponse<IUserDataResponse>> => {
+        return await handleRequest(
+            EHttpType.POST,
+            `/users/${followerId}/follow/${followingId}`
+        );
+    },
+    
+    /**
+     * Unfollow user
+     */
+    unfollowUser: async (followerId: string, followingId: string): Promise<IApiResponse<IUserDataResponse>> => {
+        return await handleRequest(
+            EHttpType.DELETE,
+            `/users/${followerId}/unfollow/${followingId}`
+        );
     },
 };

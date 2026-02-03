@@ -2,7 +2,9 @@ import { createStore, EStorageType, IBaseStore } from "@/lib/initialStore";
 
 export interface IUserStore extends IBaseStore {
 	adminUsers: IUser[];
+	currentUser: IUser | null;
 
+	handleSetCurrentUser: (user: IUser | null) => void;
 	setAdminUsers: (users: IUser[]) => void;
 	removeFromAdminUsers: (userId: string) => Promise<void>;
 	addToAdminUsers: (user: IUser) => Promise<void>;
@@ -14,12 +16,21 @@ export interface IUserStore extends IBaseStore {
 const storeName = "user";
 const initialState = {
 	adminUsers: [],
+	currentUser: null,
 };
 
 export const useUserStore = createStore<IUserStore>(
 	storeName,
 	initialState,
 	(set, get) => ({
+		handleSetCurrentUser: (user: IUser | null): void => {
+			if (user) {
+				set({
+					currentUser: user,
+				});
+			}
+		},
+
 		setAdminUsers: (users: IUser[]): void => {
 			set({ adminUsers: users });
 		},

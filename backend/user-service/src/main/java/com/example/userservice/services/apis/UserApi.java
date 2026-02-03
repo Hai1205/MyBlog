@@ -90,7 +90,49 @@ public class UserApi {
         }
     }
 
-    public Response getAllUsers(Boolean isView) {
+    public Response followUser(UUID followerId, UUID followingId) {
+        long startTime = requestStart("Follow user attempt");
+
+        try {
+            String rateLimitKey = cacheKeys.forMethod("followUser");
+            checkRateLimit(rateLimitKey, 45, 60);
+
+            userHandler.handleFollowUser(followerId, followingId);
+
+            Response response = new Response("User followed successfully", 201);
+            return response;
+        } catch (OurException e) {
+            return new Response(e.getMessage(), e.getStatusCode());
+        } catch (Exception e) {
+            return new Response("Internal Server Error", 500);
+        } finally {
+            requestEnd(startTime);
+        }
+    }
+
+    public Response unfollowUser(UUID followerId, UUID followingId) {
+        long startTime = requestStart(
+                "Unfollow user attempt for follower: " + followerId + " following: " + followingId);
+
+        try {
+            String rateLimitKey = cacheKeys.forMethodWithParams("unfollowUser", followerId, followingId);
+            checkRateLimit(rateLimitKey, 45, 60);
+
+            userHandler.handleUnfollowUser(followerId, followingId);
+
+            log.info("User unfollowed successfully: followerId={} followingId={}", followerId, followingId);
+
+            return new Response("User unfollowed successfully");
+        } catch (OurException e) {
+            return new Response(e.getMessage(), e.getStatusCode());
+        } catch (Exception e) {
+            return new Response("Internal Server Error", 500);
+        } finally {
+            requestEnd(startTime);
+        }
+    }
+
+    public Response getAllUsers() {
         long startTime = requestStart("Get all users attempt");
 
         try {
@@ -122,7 +164,7 @@ public class UserApi {
         }
     }
 
-    public Response getUser(UUID userId, Boolean isView) {
+    public Response getUser(UUID userId) {
         long startTime = requestStart("Get user by id attempt: " + userId);
 
         try {
@@ -132,11 +174,8 @@ public class UserApi {
             User user = userHandler.handleGetUserById(userId);
 
             Response response = new Response("User retrieved successfully");
-            if (isView != null && isView) {
-                response.setUserView(userMapper.entityToView(user));
-            } else {
-                response.setUser(userMapper.toDto(user));
-            }
+            response.setUserView(userMapper.entityToView(user));
+            response.setUser(userMapper.toDto(user));
             return response;
         } catch (OurException e) {
             Response response = new Response(e.getMessage(), e.getStatusCode());
@@ -222,7 +261,7 @@ public class UserApi {
         }
     }
 
-    public Response findUserByIdentifier(String identifier, Boolean isView) {
+    public Response findUserByIdentifier(String identifier) {
         long startTime = requestStart("Get user by identifier attempt: " + identifier);
 
         try {
@@ -232,19 +271,43 @@ public class UserApi {
             User user = userHandler.handleGetUserByIdentifier(identifier);
 
             Response response = new Response("User found successfully");
-            if (isView != null && isView) {
-                response.setUserView(userMapper.entityToView(user));
-            } else {
-                response.setUser(userMapper.toDto(user));
-            }
+            response.setUserView(userMapper.entityToView(user));
+            response.setUser(userMapper.toDto(user));
             return response;
         } catch (OurException e) {
             Response response = new Response(e.getMessage(), e.getStatusCode());
+            response.setUser(null);
             response.setUserView(null);
             return response;
         } catch (Exception e) {
             Response response = new Response("Internal Server Error", 500);
+            response.setUser(null);
             response.setUserView(null);
+            return response;
+        } finally {
+            requestEnd(startTime);
+        }
+    }
+   
+    public Response findUserProfile(String identifier) {
+        long startTime = requestStart("Get user profile attempt: " + identifier);
+
+        try {
+            String rateLimitKey = cacheKeys.forMethodWithParam("findUserProfile", identifier);
+            checkRateLimit(rateLimitKey, 45, 60);
+
+            UserDto user = userHandler.handleGetUserProfile(identifier);
+
+            Response response = new Response("User found successfully");
+            response.setUser(user);
+            return response;
+        } catch (OurException e) {
+            Response response = new Response(e.getMessage(), e.getStatusCode());
+            response.setUser(null);
+            return response;
+        } catch (Exception e) {
+            Response response = new Response("Internal Server Error", 500);
+            response.setUser(null);
             return response;
         } finally {
             requestEnd(startTime);
@@ -334,7 +397,7 @@ public class UserApi {
         }
     }
 
-    public Response findUserByEmail(String email, Boolean isView) {
+    public Response findUserByEmail(String email) {
         long startTime = requestStart("Get user by email attempt: " + email);
 
         try {
@@ -344,18 +407,17 @@ public class UserApi {
             User user = userHandler.handleGetUserByEmail(email);
 
             Response response = new Response("User found successfully");
-            if (isView != null && isView) {
-                response.setUserView(userMapper.entityToView(user));
-            } else {
-                response.setUser(userMapper.toDto(user));
-            }
+            response.setUserView(userMapper.entityToView(user));
+            response.setUser(userMapper.toDto(user));
             return response;
         } catch (OurException e) {
             Response response = new Response(e.getMessage(), e.getStatusCode());
+            response.setUser(null);
             response.setUserView(null);
             return response;
         } catch (Exception e) {
             Response response = new Response("Internal Server Error", 500);
+            response.setUser(null);
             response.setUserView(null);
             return response;
         } finally {

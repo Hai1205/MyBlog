@@ -51,9 +51,9 @@ export const UserBlogsSection = ({
       {!isLoading &&
         blogs.length === 0 &&
         (isMyBlogs ? (
-          <BlogEmptyState isMyBlogs={isMyBlogs} onProcess={onCreateNew!} />
+          <BlogEmptyState isMyBlogs={isMyBlogs} onProcess={onCreateNew!} message="You haven't created any blogs yet. Blogs will appear here once you're created." />
         ) : (
-          <BlogEmptyState onProcess={onGoHome!} />
+          <BlogEmptyState onProcess={onGoHome!} message="You haven't saved any blogs yet. Blogs will appear here once they're saved." />
         ))}
 
       {/* Blog Grid */}

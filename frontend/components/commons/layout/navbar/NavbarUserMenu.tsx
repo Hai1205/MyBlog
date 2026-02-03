@@ -14,7 +14,7 @@ export const NavbarUserMenu = ({
   onLogout,
 }: NavbarUserMenuProps) => (
   <div className="hidden md:flex items-center gap-3">
-    <Link href="/settings">
+    <Link href={`/profile/${userAuth?.id}`}>
       <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-linear-to-br from-primary/5 to-secondary/5 border border-border/50">
         <Avatar className="h-8 w-8 border-2 border-primary/20 shadow-md">
           {userAuth.avatarUrl && (

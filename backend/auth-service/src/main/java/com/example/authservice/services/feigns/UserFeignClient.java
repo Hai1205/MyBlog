@@ -16,13 +16,13 @@ public interface UserFeignClient {
     @PostMapping("/api/v1/users/register")
     Response registerUser(@RequestBody String dataJson);
 
-    @GetMapping("/api/v1/users/{userId}?isView=true")
+    @GetMapping("/api/v1/users/{userId}")
     Response getUserById(@PathVariable("userId") String userId);
 
     @PostMapping("/api/v1/users/authenticate/{identifier}")
     Response authenticateUser(@PathVariable("identifier") String identifier, @RequestParam("password") String password);
 
-    @GetMapping("/api/v1/users/identifier/{identifier}?isView=true")
+    @GetMapping("/api/v1/users/identifier/{identifier}")
     Response findUserByIdentifier(@PathVariable("identifier") String identifier);
 
     @PatchMapping("/api/v1/users/activate/{email}")
