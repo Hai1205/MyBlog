@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 /**
- * Middleware to handle authentication and access control for admin routes
+ * Proxy to handle authentication and access control for admin routes
  * 
  * Rules:
  * 1. If user accesses /admin and is not authenticated -> redirect to /auth/login
@@ -10,7 +10,7 @@ import type { NextRequest } from 'next/server'
  * 3. If user is authenticated and tries to access /auth/* -> redirect to /
  * 4. If user is on mobile and tries to access /admin or /auth -> redirect to /
  */
-export function middleware(request: NextRequest) {
+export default function proxy(request: NextRequest) {
     try {
         const pathname = request.nextUrl.pathname
 

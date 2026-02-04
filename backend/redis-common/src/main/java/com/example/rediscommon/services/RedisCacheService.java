@@ -50,6 +50,15 @@ public class RedisCacheService {
         setCacheData(cacheKey, data, DEFAULT_TTL, DEFAULT_TIME_UNIT);
     }
 
+    public void deleteCacheData(String cacheKey) {
+        try {
+            redisService.delete(cacheKey);
+            log.debug("Deleted cache for key: {}", cacheKey);
+        } catch (Exception e) {
+            log.error("Error deleting cache for key: {}", cacheKey, e);
+        }
+    }
+
     public <T> List<T> getCacheDataList(String cacheKey, Class<T> type) {
         try {
             Object cached = redisService.get(cacheKey);

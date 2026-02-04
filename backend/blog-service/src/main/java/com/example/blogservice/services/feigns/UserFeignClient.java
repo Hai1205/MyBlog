@@ -13,4 +13,7 @@ public interface UserFeignClient {
 
     @GetMapping("/api/v1/users/{userId}")
     Response getUserById(@PathVariable("userId") UUID userId);
+
+    @GetMapping("/api/v1/users/{userId}/followers")
+    Response getUserFollowers(@PathVariable("userId") UUID userId);
 }

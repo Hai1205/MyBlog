@@ -80,6 +80,31 @@ public class BlogController {
         return ResponseEntity.status(response.getStatusCode()).body(response);
     }
 
+    @PostMapping("/{blogId}/like/users/{userId}")
+    public ResponseEntity<Response> likeBlog(
+            @PathVariable("blogId") UUID blogId,
+            @PathVariable("userId") UUID userId) {
+        Response response = blogApi.likeBlog(blogId, userId);
+
+        return ResponseEntity.status(response.getStatusCode()).body(response);
+    }
+
+    @DeleteMapping("/{blogId}/unlike/users/{userId}")
+    public ResponseEntity<Response> unlikeBlog(
+            @PathVariable("blogId") UUID blogId,
+            @PathVariable("userId") UUID userId) {
+        Response response = blogApi.unlikeBlog(blogId, userId);
+
+        return ResponseEntity.status(response.getStatusCode()).body(response);
+    }
+
+    @GetMapping("/users/{userId}/liked")
+    public ResponseEntity<Response> getUserLikedBlogs(@PathVariable("userId") UUID userId) {
+        Response response = blogApi.getUserLikedBlogs(userId);
+
+        return ResponseEntity.status(response.getStatusCode()).body(response);
+    }
+
     @GetMapping("/users/{userId}")
     public ResponseEntity<Response> getUserBlogs(@PathVariable("userId") UUID userId) {
         Response response = blogApi.getUserBlogs(userId);
@@ -87,16 +112,9 @@ public class BlogController {
         return ResponseEntity.status(response.getStatusCode()).body(response);
     }
 
-    @GetMapping("/{blogId}/users/{userId}")
-    public ResponseEntity<Response> getBlog(@PathVariable("blogId") UUID blogId, @PathVariable("userId") UUID userId) {
-        Response response = blogApi.getBlog(blogId, userId);
-
-        return ResponseEntity.status(response.getStatusCode()).body(response);
-    }
-    
     @GetMapping("/{blogId}")
     public ResponseEntity<Response> getBlog(@PathVariable("blogId") UUID blogId) {
-        Response response = blogApi.getBlog(blogId, null);
+        Response response = blogApi.getBlog(blogId);
 
         return ResponseEntity.status(response.getStatusCode()).body(response);
     }

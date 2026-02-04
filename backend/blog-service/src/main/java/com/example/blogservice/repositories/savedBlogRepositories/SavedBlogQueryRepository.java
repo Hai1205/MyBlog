@@ -17,6 +17,9 @@ public interface SavedBlogQueryRepository extends JpaRepository<SavedBlog, UUID>
     @Query("SELECT sb FROM SavedBlog sb WHERE sb.userId = :userId")
     List<SavedBlog> findSavedBlogsByUserId(@Param("userId") UUID userId);
 
+    @Query("SELECT sb FROM SavedBlog sb WHERE sb.blogId = :blogId")
+    List<SavedBlog> findSavedBlogsByBlogId(@Param("blogId") UUID blogId);
+
     @Query("SELECT b FROM Blog b JOIN SavedBlog sb ON b.id = sb.blogId WHERE sb.userId = :userId ORDER BY sb.id DESC")
     List<Blog> findBlogsByUserSaved(@Param("userId") UUID userId);
 

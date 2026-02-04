@@ -69,6 +69,18 @@
             <artifactId>redis-common</artifactId>
         </dependency>
 
+        <!-- Rabbit Common Module - provides RabbitMQ DTOs -->
+        <dependency>
+            <groupId>com.example</groupId>
+            <artifactId>rabbit-common</artifactId>
+        </dependency>
+
+        <!-- RabbitMQ for message queue -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-amqp</artifactId>
+        </dependency>
+
         <!-- Testing Tools -->
         <!-- Spring Boot testing framework -->
         <dependency>

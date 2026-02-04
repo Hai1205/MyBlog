@@ -65,6 +65,8 @@
         <module>blog-service</module>
         <module>stats-service</module>
         <module>ai-service</module>
+        <module>noti-service</module>
+        <!-- <module>chat-service</module> -->
     </modules>
 
     <dependencyManagement>

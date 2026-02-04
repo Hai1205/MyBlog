@@ -47,8 +47,9 @@ declare global {
         category: ECategory;
         author?: IUser;
         comments?: IComment[];
+        likes?: string[];
+        saves?: string[];
         isVisibility: boolean;
-        isSaved: boolean;
         createdAt: string;
         updatedAt: string;
     }
@@ -101,27 +102,26 @@ declare global {
 
     export interface IConversation {
         id: string;
-        participant: {
-            id: string;
-            username: string;
-            avatarUrl?: string;
-            isOnline: boolean;
-        };
+        participant: IParticipant;
         lastMessage?: IMessage;
         unreadCount: number;
+    }
+
+    export interface IParticipant {
+        id: string;
+        username: string;
+        avatarUrl?: string;
+        isOnline: boolean;
     }
 
     export interface INotification {
         id: string;
         type: ENotificationType;
-        actor: {
-            id: string;
-            username: string;
-            avatarUrl?: string;
-        };
+        authorId: string;
+        actor: IUser;
         content: string;
         blogId?: string;
-        blogTitle?: string;
+        blog?: IBlog;
         createdAt: string;
         isRead: boolean;
     }

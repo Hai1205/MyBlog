@@ -3,7 +3,6 @@ package com.example.userservice.entities;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Builder;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -58,32 +57,6 @@ public class User {
     @Column(nullable = false)
     private Instant updatedAt;
 
-    // Full constructor for MapStruct
-    @Builder
-    public User(UUID id, String username, String password, String email,
-            String phone, String birth, String summary,
-            UserRole role, UserStatus status,
-            String avatarUrl, String avatarPublicId,
-            String facebook, String linkedin, String instagram,
-            Instant createdAt, Instant updatedAt) {
-        this.id = id;
-        this.username = username;
-        this.password = password;
-        this.email = email;
-        this.birth = birth;
-        this.summary = summary;
-        this.role = role;
-        this.status = status;
-        this.avatarUrl = avatarUrl;
-        this.avatarPublicId = avatarPublicId;
-        this.facebook = facebook;
-        this.linkedin = linkedin;
-        this.instagram = instagram;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-    }
-
-    // Basic constructor
     public User(String username, String email) {
         this.username = username;
         this.email = email;

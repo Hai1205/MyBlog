@@ -145,14 +145,14 @@ public class BlogApi {
         }
     }
 
-    public Response getBlog(UUID blogId, UUID userId) {
-        long startTime = requestStart("Get blog attempt for blog: " + blogId + " user: " + userId);
+    public Response getBlog(UUID blogId) {
+        long startTime = requestStart("Get blog attempt for blog: " + blogId);
 
         try {
-            String rateLimitKey = cacheKeys.forMethodWithParams("getBlog", blogId, userId);
+            String rateLimitKey = cacheKeys.forMethodWithId("getBlog", blogId);
             checkRateLimit(rateLimitKey, 45, 60);
 
-            BlogDto blog = blogHandler.handleGetBlog(blogId, userId);
+            BlogDto blog = blogHandler.handleGetBlog(blogId);
 
             log.info("Blog retrieved successfully: blogId={}", blogId);
 
@@ -305,6 +305,74 @@ public class BlogApi {
         } catch (Exception e) {
             log.error("Error getting saved blogs: {}", e.getMessage(), e);
             return new Response("Failed to get saved blogs", 500);
+        } finally {
+            requestEnd(startTime);
+        }
+    }
+
+    public Response likeBlog(UUID blogId, UUID userId) {
+        long startTime = requestStart("Like blog attempt for blogId: " + blogId + ", userId: " + userId);
+
+        try {
+            String rateLimitKey = cacheKeys.forMethodWithId("likeBlog", userId);
+            checkRateLimit(rateLimitKey, 30, 60);
+
+            blogHandler.handleLikeBlog(blogId, userId);
+
+            log.info("Blog liked successfully: blogId={}, userId={}", blogId, userId);
+
+            return new Response("Blog liked successfully", 200);
+        } catch (OurException e) {
+            return new Response(e.getMessage(), e.getStatusCode());
+        } catch (Exception e) {
+            log.error("Error liking blog: {}", e.getMessage(), e);
+            return new Response("Failed to like blog", 500);
+        } finally {
+            requestEnd(startTime);
+        }
+    }
+
+    public Response unlikeBlog(UUID blogId, UUID userId) {
+        long startTime = requestStart("Unlike blog attempt for blogId: " + blogId + ", userId: " + userId);
+
+        try {
+            String rateLimitKey = cacheKeys.forMethodWithId("unlikeBlog", userId);
+            checkRateLimit(rateLimitKey, 30, 60);
+
+            blogHandler.handleUnlikeBlog(blogId, userId);
+
+            log.info("Blog unliked successfully: blogId={}, userId={}", blogId, userId);
+
+            return new Response("Blog unliked successfully", 200);
+        } catch (OurException e) {
+            return new Response(e.getMessage(), e.getStatusCode());
+        } catch (Exception e) {
+            log.error("Error unliking blog: {}", e.getMessage(), e);
+            return new Response("Failed to unlike blog", 500);
+        } finally {
+            requestEnd(startTime);
+        }
+    }
+
+    public Response getUserLikedBlogs(UUID userId) {
+        long startTime = requestStart("Get user liked blogs attempt for user: " + userId);
+
+        try {
+            String rateLimitKey = cacheKeys.forMethodWithId("getUserLikedBlogs", userId);
+            checkRateLimit(rateLimitKey, 45, 60);
+
+            List<BlogDto> blogs = blogHandler.handleGetUserLikedBlogs(userId);
+
+            log.info("User liked blogs retrieved: count={}", blogs.size());
+
+            Response response = new Response("Liked blogs retrieved successfully");
+            response.setBlogs(blogs);
+            return response;
+        } catch (OurException e) {
+            return new Response(e.getMessage(), e.getStatusCode());
+        } catch (Exception e) {
+            log.error("Error getting liked blogs: {}", e.getMessage(), e);
+            return new Response("Failed to get liked blogs", 500);
         } finally {
             requestEnd(startTime);
         }

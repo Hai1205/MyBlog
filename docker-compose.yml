@@ -127,6 +127,18 @@ services:
       - "8086:8086"
     networks:
       - app-network
+ 
+  noti-service:
+    build:
+      context: .
+      dockerfile: backend/noti-service/Dockerfile
+    container_name: noti-service
+    env_file:
+      - backend/noti-service/.env
+    ports:
+      - "8088:8088"
+    networks:
+      - app-network
 
   blog-service:
     build:

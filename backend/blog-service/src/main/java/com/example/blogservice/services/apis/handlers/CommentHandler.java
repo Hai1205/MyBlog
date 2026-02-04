@@ -11,6 +11,10 @@ import com.example.blogservice.mappers.CommentMapper;
 import com.example.blogservice.repositories.commentRepositories.CommentCommandRepository;
 import com.example.blogservice.repositories.commentRepositories.CommentQueryRepository;
 import com.example.blogservice.services.ValidateService;
+import com.example.blogservice.services.rabbitmqs.producers.NotiProducer;
+import com.example.blogservice.entities.Blog;
+import com.example.blogservice.repositories.blogRepositories.BlogQueryRepository;
+import com.example.rabbitcommon.dtos.NotificationMessage;
 import com.example.rediscommon.services.RedisCacheService;
 import com.example.rediscommon.utils.CacheKeyBuilder;
 
@@ -31,19 +35,25 @@ public class CommentHandler {
         private final RedisCacheService cacheService;
         private final CacheKeyBuilder cacheKeys;
         private final ValidateService validateService;
+        private final NotiProducer notiProducer;
+        private final BlogQueryRepository blogQueryRepository;
 
         public CommentHandler(
                         CommentQueryRepository commentQueryRepository,
                         CommentCommandRepository commentCommandRepository,
                         CommentMapper commentMapper,
                         ValidateService validateService,
-                        RedisCacheService cacheService) {
+                        RedisCacheService cacheService,
+                        NotiProducer notiProducer,
+                        BlogQueryRepository blogQueryRepository) {
                 this.commentQueryRepository = commentQueryRepository;
                 this.commentCommandRepository = commentCommandRepository;
                 this.commentMapper = commentMapper;
                 this.cacheService = cacheService;
                 this.cacheKeys = CacheKeyBuilder.forService("blog");
                 this.validateService = validateService;
+                this.notiProducer = notiProducer;
+                this.blogQueryRepository = blogQueryRepository;
         }
 
         // ========== Private Helper Methods ==========
@@ -68,7 +78,7 @@ public class CommentHandler {
         public CommentDto handleAddComment(UUID blogId, UUID userId, String content) {
                 try {
                         log.info("Starting handleAddComment for blogId: {}, userId: {}", blogId, userId);
-                      
+
                         // Validate user and blog
                         log.debug("Validating user and blog");
                         UserView user = validateService.validateUser(userId);
@@ -89,6 +99,29 @@ public class CommentHandler {
                                         now);
                         log.debug("Comment inserted into database");
 
+                        // Send comment notification to blog owner
+                        try {
+                                Blog blog = blogQueryRepository.findBlogById(blogId)
+                                                .orElseThrow(() -> new OurException("Blog not found", 404));
+
+                                // Only send notification if commenter is not the blog owner
+                                if (!blog.getAuthorId().equals(userId)) {
+                                        NotificationMessage notiMessage = NotificationMessage.builder()
+                                                        .authorId(userId)
+                                                        .receiverId(blog.getAuthorId())
+                                                        .blogId(blogId)
+                                                        .content("commented on your blog: " + blog.getTitle())
+                                                        .type("COMMENT")
+                                                        .build();
+
+                                        notiProducer.sendCommentNotification(notiMessage);
+                                        log.debug("Comment notification sent for blogId={}", blogId);
+                                }
+                        } catch (Exception e) {
+                                log.error("Failed to send comment notification but comment was saved: {}",
+                                                e.getMessage());
+                        }
+
                         CommentDto result = handleBuildComment(
                                         commentId,
                                         blogId,
@@ -98,7 +131,7 @@ public class CommentHandler {
                                         now,
                                         now);
                         log.info("Completed handleAddComment for commentId: {}", commentId);
-                       
+
                         return result;
                 } catch (OurException e) {
                         log.warn("OurException in handleAddComment: {}", e.getMessage());
@@ -113,7 +146,7 @@ public class CommentHandler {
         public List<CommentDto> handleGetBlogComments(UUID blogId) {
                 try {
                         log.info("Starting handleGetBlogComments for blogId: {}", blogId);
-                        
+
                         String cacheKey = cacheKeys.forMethodWithId("handleGetBlogComments", blogId);
                         List<CommentDto> comments = cacheService.getCacheDataList(cacheKey, CommentDto.class);
 
@@ -130,7 +163,7 @@ public class CommentHandler {
                                 log.debug("Fetched {} comments from database and cached", comments.size());
                         }
                         log.info("Completed handleGetBlogComments with {} comments", comments.size());
-                      
+
                         return comments;
                 } catch (OurException e) {
                         log.warn("OurException in handleGetBlogComments: {}", e.getMessage());
@@ -190,7 +223,7 @@ public class CommentHandler {
                         boolean result = deleted > 0;
 
                         log.info("Completed handleDeleteComment for commentId: {}, deleted: {}", commentId, result);
-                        
+
                         return result;
                 } catch (OurException e) {
                         log.warn("OurException in handleDeleteComment: {}", e.getMessage());

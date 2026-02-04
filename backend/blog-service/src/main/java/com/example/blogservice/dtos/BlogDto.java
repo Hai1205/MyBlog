@@ -17,6 +17,8 @@ public class BlogDto {
     private UUID authorId;
     private UserView author;
     private List<CommentDto> comments;
+    private List<UUID> likes;
+    private List<UUID> saves;
     private String title;
     private String category;
     private String description;
@@ -25,7 +27,6 @@ public class BlogDto {
     private String thumbnailPublicId;
 
     private Boolean isVisibility;
-    private Boolean isSaved;
 
     private Instant createdAt;
     private Instant updatedAt;

@@ -86,14 +86,10 @@ export const blogService = {
     /**
      * Get single blog by ID
      */
-    getBlog: async (blogId: string, userId?: string): Promise<IApiResponse<IBlogDataResponse>> => {
-        const endpoint = userId
-            ? `/blogs/${blogId}/users/${userId}`
-            : `/blogs/${blogId}`;
-
+    getBlog: async (blogId: string): Promise<IApiResponse<IBlogDataResponse>> => {
         return await handleRequest<IBlogDataResponse>(
             EHttpType.GET,
-            endpoint
+            `/blogs/${blogId}`
         );
     },
 
@@ -186,6 +182,33 @@ export const blogService = {
         return await handleRequest<IBlogDataResponse>(
             EHttpType.DELETE,
             `/blogs/${blogId}/users/${userId}/unsave`
+        );
+    },
+
+    /**
+     * Like blog
+     */
+    likeBlog: async (
+        blogId: string,
+        userId: string
+    ): Promise<IApiResponse<IBlogDataResponse>> => {
+        return await handleRequest<IBlogDataResponse>(
+            EHttpType.POST,
+            `/blogs/${blogId}/users/${userId}/like`,
+            new FormData()
+        );
+    },
+
+    /**
+     * Unlike blog
+     */
+    unlikeBlog: async (
+        blogId: string,
+        userId: string
+    ): Promise<IApiResponse<IBlogDataResponse>> => {
+        return await handleRequest<IBlogDataResponse>(
+            EHttpType.DELETE,
+            `/blogs/${blogId}/users/${userId}/unlike`
         );
     },
 

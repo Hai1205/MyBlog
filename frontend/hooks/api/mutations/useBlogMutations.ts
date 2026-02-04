@@ -24,7 +24,7 @@ import { queryKeys, invalidateQueries } from "@/lib/queryClient";
 export const useCreateBlogMutation = (): UseMutationResult<
     IApiResponse<IBlogDataResponse>,
     Error,
-    {userId: string; data: CreateBlogDTO }
+    { userId: string; data: CreateBlogDTO }
 > => {
     return useMutation({
         mutationFn: ({ userId, data }) => blogService.createBlog(userId, data),
@@ -279,6 +279,58 @@ export const useUnsaveBlogMutation = (): UseMutationResult<
             }
 
             const message = error?.response?.data?.message || "Failed to unsave blog";
+            toast.error(message);
+        },
+    });
+};
+
+/**
+ * Like blog mutation
+ */
+export const useLikeBlogMutation = (): UseMutationResult<
+    IApiResponse<IBlogDataResponse>,
+    Error,
+    { blogId: string; userId: string }
+> => {
+    return useMutation({
+        mutationFn: ({ blogId, userId }) => blogService.likeBlog(blogId, userId),
+        onSuccess: (response, variables) => {
+            const { success, data } = response;
+            const { message } = data || {};
+
+            if (success) {
+                toast.success(message || "Blog liked!");
+                invalidateQueries.blogDetail(variables.blogId);
+            }
+        },
+        onError: (error: any) => {
+            const message = error?.response?.data?.message || "Failed to like blog";
+            toast.error(message);
+        },
+    });
+};
+
+/**
+ * Unlike blog mutation
+ */
+export const useUnlikeBlogMutation = (): UseMutationResult<
+    IApiResponse<IBlogDataResponse>,
+    Error,
+    { blogId: string; userId: string }
+> => {
+    return useMutation({
+        mutationFn: ({ blogId, userId }) => blogService.unlikeBlog(blogId, userId),
+        onSuccess: (response, variables) => {
+            const { success, data } = response;
+            const { message } = data || {};
+
+            if (success) {
+                toast.success(message || "Blog unliked!");
+                invalidateQueries.blogDetail(variables.blogId);
+            }
+        },
+        onError: (error: any) => {
+            const message = error?.response?.data?.message || "Failed to unlike blog";
             toast.error(message);
         },
     });

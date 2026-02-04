@@ -30,6 +30,8 @@ import com.example.userservice.repositories.followUserRepositories.FollowUserQue
 import com.example.userservice.repositories.userRepositories.SimpleUserRepository;
 import com.example.userservice.repositories.userRepositories.UserCommandRepository;
 import com.example.userservice.repositories.userRepositories.UserQueryRepository;
+import com.example.userservice.services.rabbitmqs.producers.NotiProducer;
+import com.example.rabbitcommon.dtos.NotificationMessage;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -47,6 +49,7 @@ public class UserHandler {
     private final SecureRandom random;
     private final RedisCacheService cacheService;
     private final CacheKeyBuilder cacheKeys;
+    private final NotiProducer notiProducer;
 
     @Value("${PRIVATE_CHARS}")
     private String privateChars;
@@ -63,7 +66,8 @@ public class UserHandler {
             PasswordEncoder passwordEncoder,
             UserMapper userMapper,
             CloudinaryService cloudinaryService,
-            RedisCacheService cacheService) {
+            RedisCacheService cacheService,
+            NotiProducer notiProducer) {
         this.userQueryRepository = userQueryRepository;
         this.userCommandRepository = userCommandRepository;
         this.followUserQueryRepository = followUserQueryRepository;
@@ -74,6 +78,7 @@ public class UserHandler {
         this.cloudinaryService = cloudinaryService;
         this.cacheService = cacheService;
         this.cacheKeys = CacheKeyBuilder.forService("user");
+        this.notiProducer = notiProducer;
     }
 
     @Transactional(readOnly = true)
@@ -719,7 +724,7 @@ public class UserHandler {
             throw e;
         }
     }
-    
+
     public UserDto handleGetUserProfile(String identifier) {
         try {
             log.info("Starting handleGetUserProfile for identifier: {}", identifier);
@@ -775,6 +780,22 @@ public class UserHandler {
             UUID followUserId = UUID.randomUUID();
             followUserCommandRepository.followUser(followUserId, followerId, followingId);
             log.info("User followed successfully: followUserId={}", followUserId);
+
+            // Send follow notification
+            try {
+                NotificationMessage notiMessage = NotificationMessage.builder()
+                        .authorId(followerId)
+                        .receiverId(followingId)
+                        .content("started following you")
+                        .type("FOLLOW")
+                        .build();
+
+                notiProducer.sendFollowNotification(notiMessage);
+                log.debug("Follow notification sent for followerId={}, followingId={}", followerId, followingId);
+            } catch (Exception e) {
+                log.error("Failed to send follow notification but follow was saved: {}", e.getMessage());
+            }
+
             return true;
         } catch (OurException e) {
             log.error("OurException in handleFollowUser for followerId={}, followingId={}: {}", followerId, followingId,

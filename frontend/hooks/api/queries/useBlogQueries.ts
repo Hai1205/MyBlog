@@ -67,14 +67,13 @@ export const useSavedBlogsQuery = (
  */
 export const useBlogQuery = (
     blogId: string,
-    userId?: string,
     options?: {
         enabled?: boolean;
     }
 ): UseQueryResult<IApiResponse<IBlogDataResponse>, Error> => {
     return useQuery({
-        queryKey: queryKeys.blogs.detail(blogId, userId),
-        queryFn: () => blogService.getBlog(blogId, userId),
+        queryKey: queryKeys.blogs.detail(blogId),
+        queryFn: () => blogService.getBlog(blogId),
         enabled: (options?.enabled ?? true) && !!blogId,
         staleTime: 5 * 60 * 1000, // 5 minutes - blog details cached longer
     });

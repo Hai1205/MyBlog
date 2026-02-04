@@ -8,6 +8,7 @@ import {
   Bookmark,
   BookmarkCheck,
   Edit,
+  Heart,
   Send,
   Trash2,
   Trash2Icon,
@@ -15,7 +16,7 @@ import {
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import { formatDateAgo } from "@/lib/utils";
+import { formatDateAgo, formatNumberStyle } from "@/lib/utils";
 import { useAuthStore } from "@/stores/authStore";
 import { useBlogStore } from "@/stores/blogStore";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -30,6 +31,8 @@ import {
   useDeleteBlogMutation,
   useSaveBlogMutation,
   useUnsaveBlogMutation,
+  useLikeBlogMutation,
+  useUnlikeBlogMutation,
 } from "@/hooks/api/mutations/useBlogMutations";
 import { BlogDetailSkeleton } from "./BlogDetailSkeleton";
 
@@ -49,10 +52,7 @@ const BlogDetailClient = () => {
   const router = useRouter();
   const { id } = useParams();
 
-  const { data: blogResponse, isLoading } = useBlogQuery(
-    id as string,
-    userAuth?.id as string,
-  );
+  const { data: blogResponse, isLoading } = useBlogQuery(id as string);
   const blog = blogResponse?.data?.blog;
 
   const { data: savedBlogsResponse } = useSavedBlogsQuery(userAuth?.id || "");
@@ -70,9 +70,10 @@ const BlogDetailClient = () => {
 
   useEffect(() => {
     if (blog && userAuth) {
-      const isSaved = blog.isSaved || false;
+      const isSaved = blog.saves?.includes(userAuth.id) || false;
       setSaved(isSaved);
-      console.log(isSaved);
+      const isLiked = blog.likes?.includes(userAuth.id) || false;
+      setLiked(isLiked);
     }
   }, [blog, userAuth]);
 
@@ -83,9 +84,12 @@ const BlogDetailClient = () => {
   const { mutateAsync: deleteBlogAsync } = useDeleteBlogMutation();
   const { mutateAsync: saveBlogAsync } = useSaveBlogMutation();
   const { mutateAsync: unsaveBlogAsync } = useUnsaveBlogMutation();
+  const { mutateAsync: likeBlogAsync } = useLikeBlogMutation();
+  const { mutateAsync: unlikeBlogAsync } = useUnlikeBlogMutation();
 
   const [content, setContent] = useState("");
   const [saved, setSaved] = useState(false);
+  const [liked, setLiked] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [commentToDelete, setCommentToDelete] = useState<string | null>(null);
 
@@ -163,6 +167,18 @@ const BlogDetailClient = () => {
     }
   };
 
+  const likeBlog = async (blogId: string) => {
+    if (!blogId || !userAuth) return;
+
+    if (!liked) {
+      setLiked(true);
+      likeBlogAsync({ blogId, userId: userAuth.id });
+    } else {
+      setLiked(false);
+      unlikeBlogAsync({ blogId, userId: userAuth.id });
+    }
+  };
+
   if (isLoading) {
     return <BlogDetailSkeleton />;
   }
@@ -196,19 +212,44 @@ const BlogDetailClient = () => {
             </Link>
 
             {userAuth && (
-              <Button
-                variant={"ghost"}
-                className="mx-3"
-                size={"lg"}
-                disabled={isLoading}
-                onClick={() => saveBlog(id as string)}
-              >
-                {saved ? (
-                  <BookmarkCheck className="text-primary" />
-                ) : (
-                  <Bookmark />
-                )}
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant={"ghost"}
+                  className="flex items-center gap-1"
+                  size={"lg"}
+                  disabled={isLoading}
+                  onClick={() => likeBlog(id as string)}
+                >
+                  {liked ? (
+                    <Heart className="text-red-500 fill-red-500" />
+                  ) : (
+                    <Heart />
+                  )}
+                  {blog?.likes && blog.likes.length > 0 && (
+                    <span className="text-sm font-medium">
+                      {formatNumberStyle(blog.likes.length)}
+                    </span>
+                  )}
+                </Button>
+                <Button
+                  variant={"ghost"}
+                  className="flex items-center gap-1"
+                  size={"lg"}
+                  disabled={isLoading}
+                  onClick={() => saveBlog(id as string)}
+                >
+                  {saved ? (
+                    <BookmarkCheck className="text-primary" />
+                  ) : (
+                    <Bookmark />
+                  )}
+                  {blog?.saves && blog.saves.length > 0 && (
+                    <span className="text-sm font-medium">
+                      {formatNumberStyle(blog.saves.length)}
+                    </span>
+                  )}
+                </Button>
+              </div>
             )}
             {blog?.author?.id === userAuth?.id && (
               <>

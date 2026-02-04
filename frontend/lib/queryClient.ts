@@ -96,13 +96,19 @@ export const queryKeys = {
     users: {
         all: ['users'] as const,
         lists: () => [...queryKeys.users.all, 'list'] as const,
-        detail: (identifier: string, ) => [...queryKeys.users.all, 'detail', identifier] as const,
+        detail: (identifier: string,) => [...queryKeys.users.all, 'detail', identifier] as const,
     },
 
     stats: {
         all: ['stats'] as const,
         dashboard: () => [...queryKeys.stats.all, 'dashboard'] as const,
         reports: () => [...queryKeys.stats.all, 'reports'] as const,
+    },
+
+    notifications: {
+        all: ['notifications'] as const,
+        list: ['notifications', 'list'] as const,
+        unreadCount: ['notifications', 'unreadCount'] as const,
     },
 };
 
